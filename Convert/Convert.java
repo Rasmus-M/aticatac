@@ -100,21 +100,18 @@ public class Convert extends VDPFrame implements Runnable {
                     int pixelHeight = graphicsHeight;
                     System.out.println("Size: " + pixelWidth + " x " + pixelHeight);
                     int[][] grid = new int[pixelHeight][pixelWidth];
-                    int[][] patterns = new int[graphicsHeight][graphicsWidth];
                     int addr = graphicsAddress + 2;
                     for (int y = 0; y < graphicsHeight; y++) {
                         for (int x = 0; x < graphicsWidth; x++) {
                             int patternByte = getByte(addr++);
                             int mask = 0x80;
                             for (int p = 0; p < 8; p++) {
-                                grid[graphicsHeight - 1 - y][(x << 3) + p] = (patternByte & mask) != 0 ? 1 : 0;
+                                grid[y][(x << 3) + p] = (patternByte & mask) != 0 ? 1 : 0;
                                 mask >>= 1;
                             }
-                            patterns[graphicsHeight - 1 - y][x] = patternByte;
                         }
                     }
                     int graphicsAttributesAddress = getWord(BACKGROUND_GRAPHICS_ATTRIBUTE_TABLE_BASE + ((graphicsType - 1) << 1));
-                    int[][] colors = new int[graphicsHeight][graphicsWidth];
                     addr = graphicsAttributesAddress + 2;
                     for (int y = 0; y < graphicsHeight; y += 8) {
                         for (int x = 0; x < graphicsWidth; x++) {
@@ -123,11 +120,10 @@ public class Convert extends VDPFrame implements Runnable {
                             for (int y1 = 0; y1 < 8; y1++) {
                                 if (y + y1 < graphicsHeight) {
                                     for (int x1 = 0; x1 < 8; x1++) {
-                                        if (grid[graphicsHeight - 1 - (y + y1)][(x << 3) + x1] != 0) {
-                                            grid[graphicsHeight - 1 - (y + y1)][(x << 3) + x1] = tiColor >> 4;
+                                        if (grid[y + y1][(x << 3) + x1] != 0) {
+                                            grid[y + y1][(x << 3) + x1] = tiColor >> 4;
                                         }
                                     }
-                                    colors[graphicsHeight - 1 - (y + y1)][x] = tiColor;
                                 }
                             }
                         }
@@ -154,23 +150,23 @@ public class Convert extends VDPFrame implements Runnable {
                     }
                     if (rotation == 0x00) {
                         System.out.println("Rotate top");
-                    }
-                    else if (rotation == 0x80) {
-                        System.out.println("Rotate bottom");
                         int[][] newGrid = new int[pixelHeight][pixelWidth];
                         for (int y = 0; y < pixelHeight; y++) {
                             for (int x = 0; x < pixelWidth; x++) {
-                                newGrid[pixelHeight - 1 - y][x] = grid[y][x];
+                                newGrid[y][x] = grid[pixelHeight - 1 - y][x];
                             }
                         }
                         grid = newGrid;
+                    }
+                    else if (rotation == 0x80) {
+                        System.out.println("Rotate bottom");
                     }
                     else if (rotation == 0x40) {
                         System.out.println("Rotate right");
                         int[][] newGrid = new int[pixelWidth][pixelHeight];
                         for (int y = 0; y < pixelHeight; y++) {
                             for (int x = 0; x < pixelWidth; x++) {
-                                newGrid[x][pixelHeight - 1 - y] = grid[y][x];
+                                newGrid[x][y] = grid[y][pixelWidth - 1 - x];
                             }
                         }
                         grid = newGrid;
@@ -180,15 +176,36 @@ public class Convert extends VDPFrame implements Runnable {
                         int[][] newGrid = new int[pixelWidth][pixelHeight];
                         for (int y = 0; y < pixelHeight; y++) {
                             for (int x = 0; x < pixelWidth; x++) {
-                                newGrid[pixelWidth - 1 - x][y] = grid[y][x];
+                                newGrid[x][y] = grid[pixelHeight - 1 - y][x];
                             }
                         }
                         grid = newGrid;
                     }
+//                    else if (rotation == 0x20) {
+//                        System.out.println("Flip vertical");
+//                        int[][] newGrid = new int[pixelHeight][pixelWidth];
+//                        for (int y = 0; y < pixelHeight; y++) {
+//                            for (int x = 0; x < pixelWidth; x++) {
+//                                newGrid[y][x] = grid[y][pixelWidth - 1 - x];
+//                            }
+//                        }
+//                        grid = newGrid;
+//                    }
+//                    else if (rotation == 0x10) {
+//                        // Same as rotate top
+//                        System.out.println("Flip horizontal");
+//                        int[][] newGrid = new int[pixelHeight][pixelWidth];
+//                        for (int y = 0; y < pixelHeight; y++) {
+//                            for (int x = 0; x < pixelWidth; x++) {
+//                                newGrid[y][x] = grid[pixelHeight - 1 - y][x];
+//                            }
+//                        }
+//                        grid = newGrid;
+//                    }
                     // vdpCanvas.bitmap(itemX, itemY - graphicsHeight, graphicsWidth, graphicsHeight, patterns, colors);
-                    vdpCanvas.bitmap(itemX, itemY - grid.length + 1, grid[0].length, grid.length, grid);
+                    bitmap(itemX, itemY - grid.length + 1, grid[0].length, grid.length, grid);
                     if (screenNo != itemScreenNo) {
-                        vdpCanvas.plot(itemX, itemY, 4);
+                        vdpCanvas.plot(itemX, 191 - itemY, 4);
                     }
                     // Next item
                     screenBackgroundItemsAddress += 2;
