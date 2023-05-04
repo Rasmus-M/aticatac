@@ -1,0 +1,765 @@
+
+<!-- saved from url=(0054)http://www.icemark.com/dataformats/aticatac/index.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="author" content="Chris Wild">
+<meta name="copyright" content="copyright Christopher Jon Wild, chris@icemark.com - All rights Reserved">
+<meta name="description" content="this page contains the data format of the classic spectrum game by ultimate - atic atac">
+<meta name="keywords" content="atic atac, dataformat, data format, formats, spectrum, ultimate">
+<title>Atic Atac Data Format</title>
+</head>
+
+<body bgcolor="#000000" text="#FFFF00" style="font-family: Arial Black">
+<div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td><img src="../Atic%20Atac%20Data%20Format_files/aa_logo.jpg" alt="Atic Atac" width="203" height="56"></td>
+    <td><font color="#FFFF00">ATIC ATAC DATA FORMAT<br>
+    <font size="2">this document contains the data format for atic atac, it is not complete
+    but gives a good start and understanding. for futher information <a href="http://www.icemark.com/downloads/index.html#Spectrum">download atic atac&nbsp; source</a> this may
+    help fill in some of the blanks. should you find any errors with this document or indeed
+    have any information to add, please send me an email. </font></font></td>
+  </tr>
+</tbody></table>
+</center></div>
+
+<p>&nbsp;</p>
+<div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="107" bgcolor="#808080"><font color="#FFFFFF">address</font></td>
+    <td width="80" bgcolor="#808080">0xA854</td>
+    <td width="409" bgcolor="#808080">screen table</td>
+  </tr>
+  <tr>
+    <td width="107"></td>
+    <td width="489" colspan="2"><font size="2">the screen table has a entry for every screen</font></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="25"></td>
+    <td width="69"><font color="#FFFFFF">type</font></td>
+    <td width="63"><font color="#FFFFFF">offset</font></td>
+    <td width="425"><font color="#FFFFFF">description</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">00</font></td>
+    <td width="425"><font size="2">attribute - colour for this screen</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">01</font></td>
+    <td width="425"><font size="2">type - <a href="http://www.icemark.com/dataformats/aticatac/index.html#ScreenTypes">screen image type</a> from
+    the following list</font></td>
+  </tr>
+</tbody></table>
+</center></div>
+
+<p align="center">&nbsp;</p>
+<div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td bgcolor="#808080"><p align="center"><a name="ScreenTypes"></a>screen types</p></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td align="center" width="98"><img src="../Atic%20Atac%20Data%20Format_files/s1.gif" width="93" height="93"></td>
+    <td align="center" width="125"><img src="../Atic%20Atac%20Data%20Format_files/s2.gif" width="98" height="98"></td>
+    <td align="center" width="133"><img src="../Atic%20Atac%20Data%20Format_files/s3.gif" width="94" height="94"></td>
+    <td align="center" width="112"><img src="../Atic%20Atac%20Data%20Format_files/s4.gif" width="93" height="61"></td>
+    <td align="center" width="100"><img src="../Atic%20Atac%20Data%20Format_files/s5.gif" width="61" height="93"></td>
+  </tr>
+  <tr>
+    <td align="center" width="98"><font size="2">00</font></td>
+    <td align="center" width="125"><font size="2">01</font></td>
+    <td align="center" width="133"><font size="2">02</font></td>
+    <td align="center" width="112"><font size="2">03</font></td>
+    <td align="center" width="100"><font size="2">04</font></td>
+  </tr>
+  <tr>
+    <td align="center" width="98"><img src="../Atic%20Atac%20Data%20Format_files/s6.gif" width="89" height="93"></td>
+    <td align="center" width="125"><img src="../Atic%20Atac%20Data%20Format_files/s7.gif" width="89" height="93"></td>
+    <td align="center" width="133"><img src="../Atic%20Atac%20Data%20Format_files/s8.gif" width="93" height="89"></td>
+    <td align="center" width="112"><img src="../Atic%20Atac%20Data%20Format_files/s9.gif" width="93" height="89"></td>
+    <td align="center" width="100"><img src="../Atic%20Atac%20Data%20Format_files/s10.gif" width="96" height="76"></td>
+  </tr>
+  <tr>
+    <td align="center" width="98"><font size="2">05</font></td>
+    <td align="center" width="125"><font size="2">06</font></td>
+    <td align="center" width="133"><font size="2">07</font></td>
+    <td align="center" width="112"><font size="2">08</font></td>
+    <td align="center" width="100"><font size="2">09</font></td>
+  </tr>
+  <tr>
+    <td align="center" width="98"><img src="../Atic%20Atac%20Data%20Format_files/s11.gif" width="76" height="98"></td>
+    <td align="center" width="125"><img src="../Atic%20Atac%20Data%20Format_files/s12.gif" align="left" width="15" height="97"></td>
+    <td align="center" width="133"><img src="../Atic%20Atac%20Data%20Format_files/s13.gif" width="93" height="93"></td>
+    <td align="center" width="112"></td>
+    <td align="center" width="100"></td>
+  </tr>
+  <tr>
+    <td align="center" width="98"><font size="2">10</font></td>
+    <td align="center" width="125"><font size="2">11<br>
+    the final screen</font></td>
+    <td align="center" width="133"><font size="2">12<br>
+    the fallin screen</font></td>
+    <td align="center" width="112"></td>
+    <td align="center" width="100"></td>
+  </tr>
+</tbody></table>
+</center></div>
+
+<p>&nbsp;</p>
+<div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="107" bgcolor="#808080"><font color="#FFFFFF">address</font></td>
+    <td width="80" bgcolor="#808080">0xA982</td>
+    <td width="409" bgcolor="#808080">screen types data</td>
+  </tr>
+  <tr>
+    <td width="107"></td>
+    <td width="489" colspan="2"><font size="2">the screen types data allows the construction
+    of all the above screen data. the table works with a list of points and then effective
+    lineto instructions using these points.</font></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="25"></td>
+    <td width="69"><font color="#FFFFFF">type</font></td>
+    <td width="63"><font color="#FFFFFF">offset</font></td>
+    <td width="425"><font color="#FFFFFF">description</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">00</font></td>
+    <td width="425"><font size="2">width - width of interior</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">01</font></td>
+    <td width="425"><font size="2">height - height of interior</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">WORD</font></td>
+    <td width="63"><font size="2">02</font></td>
+    <td width="425"><font size="2">points - offset to points data</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">WORD</font></td>
+    <td width="63"><font size="2">04</font></td>
+    <td width="425"><font size="2">lineto - offset to lineto data</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="132" colspan="2"><font color="#FFFFFF">points</font></td>
+    <td width="425"></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">00</font></td>
+    <td width="425"><font size="2">x position</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">01</font></td>
+    <td width="425"><font size="2">y position</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="63"></td>
+    <td width="425"></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="132" colspan="2"><font color="#FFFFFF">lineto</font></td>
+    <td width="425"></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">00</font></td>
+    <td width="425"><font size="2">point index </font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="488" colspan="2"><font size="2">this table list all the points required to draw
+    the screen. it is used by first reading an entry. if the value is 255 then we have
+    finished. this is the entry to the first point. we then read the next entry and draw a
+    line from the first point to this point. we keep reading until the entry = 255, and draw
+    always from the first point to this.</font><p><font size="2">psuedo code:</font></p>
+    <p><font size="2"><font color="#80FFFF">do<br>
+    &nbsp; read lineto_entry<br>
+    &nbsp; if lineto_entry == 255 then exit do<br>
+    &nbsp; startpoint = points[lineto_entry]<br>
+    &nbsp; do<br>
+    &nbsp;&nbsp;&nbsp; read lineto_entry <br>
+    &nbsp;&nbsp;&nbsp; if lineto_entry == 255 then exit do<br>
+    &nbsp;&nbsp;&nbsp; endpoint = points[lineto_entry]<br>
+    &nbsp;&nbsp;&nbsp; drawline from startpoint to endpoint<br>
+    &nbsp; loop<br>
+    loop</font><br>
+    </font></p></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="63"></td>
+    <td width="425"></td>
+  </tr>
+</tbody></table>
+</center></div>
+
+<p>&nbsp;</p>
+<div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="107" bgcolor="#808080"><font color="#FFFFFF">address</font></td>
+    <td width="80" bgcolor="#808080">0x645D</td>
+    <td width="409" bgcolor="#808080"><a name="items"></a>background items</td>
+  </tr>
+  <tr>
+    <td width="107"></td>
+    <td width="489" colspan="2"><font size="2">this table is all the background items for all
+    the screens.&nbsp; if an item is connected to another item on another screen then the item
+    it is connected to is either before or after this entry depending on if it is an odd or
+    even entry eg. 0 connects to 1, 3 connects to 2. etc.</font></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="25"></td>
+    <td width="69"><font color="#FFFFFF">type</font></td>
+    <td width="64"><font color="#FFFFFF">offset</font></td>
+    <td width="424"><font color="#FFFFFF">description</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="64"><font size="2">00</font></td>
+    <td width="424"><font size="2"><a href="http://www.icemark.com/dataformats/aticatac/index.html#GraphicTypes">graphic</a> - graphic representaion
+    of this entry</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="64"><font size="2">01</font></td>
+    <td width="424"><font size="2">screen - screen this entry belongs to</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="64"><font size="2">02</font></td>
+    <td width="424"><font size="2">unknown but common 0x34,0x38,0xc4 (0 if not a door)</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="64"><font size="2">03</font></td>
+    <td width="424"><font size="2">x position</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="64"><font size="2">04</font></td>
+    <td width="424"><font size="2">y position</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="64"><font size="2">05</font></td>
+    <td width="424"><font size="2">flags - ( do not fully understant )</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="64"></td>
+    <td width="424"><font size="2">rotation 0x00=top, 0x60=right, 0x80=bottom, 0xE0=left<br>
+    or other common values...<br>
+    0x41 - 0x11<br>
+    0x04 - used if table 0x12<br>
+    0x03 - used if trapdoor 0x19<br>
+    used by rug 0x1b<br>
+    <font color="#80FFFF">---- these are used by objects that are doors ----</font><br>
+    0x01 - 0x10<br>
+    0x61 - 0x10, 0x11<br>
+    0x81 - 0x10, 0x11, 0x015, 0x16, 0x26<br>
+    0xe1 - 0x10, 0x11, 0x1a, 0x26<br>
+    </font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="64"><font size="2">06</font></td>
+    <td width="424"><font size="2">door timing? time a door is open or closed (0 if not a
+    door)</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="64"><font size="2">07</font></td>
+    <td width="424"><font size="2">unknown (0 if not a door)</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="64"></td>
+    <td width="424"></td>
+  </tr>
+</tbody></table>
+</center></div>
+
+<p>&nbsp;</p>
+<div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="107" bgcolor="#808080"><font color="#FFFFFF">address</font></td>
+    <td width="80" bgcolor="#808080">0x757D</td>
+    <td width="409" bgcolor="#808080">screen backround item start</td>
+  </tr>
+  <tr>
+    <td width="107"></td>
+    <td width="489" colspan="2"><font size="2">index by screen. this gives an offest into the<a href="http://www.icemark.com/dataformats/aticatac/index.html#itemlist"> background item list</a>.</font></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="25"></td>
+    <td width="69"><font color="#FFFFFF">type</font></td>
+    <td width="63"><font color="#FFFFFF">offset</font></td>
+    <td width="425"><font color="#FFFFFF">description</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">WORD</font></td>
+    <td width="63"><font size="2">00</font></td>
+    <td width="425"><font size="2">offset into background list</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="63"></td>
+    <td width="425"></td>
+  </tr>
+</tbody></table>
+</center></div>
+
+<p>&nbsp;</p>
+<div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="107" bgcolor="#808080"><font color="#FFFFFF">address</font></td>
+    <td width="80" bgcolor="#808080">0x76A9</td>
+    <td width="409" bgcolor="#808080"><a name="itemlist"></a>screen background items</td>
+  </tr>
+  <tr>
+    <td width="107"></td>
+    <td width="489" colspan="2"><font size="2">variable length table. each entry points into
+    the <a href="http://www.icemark.com/dataformats/aticatac/index.html#items">background item table</a>.</font></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="25"></td>
+    <td width="69"><font color="#FFFFFF">type</font></td>
+    <td width="63"><font color="#FFFFFF">offset</font></td>
+    <td width="425"><font color="#FFFFFF">description</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">WORD</font></td>
+    <td width="63"><font size="2">00</font></td>
+    <td width="425"><font size="2">offset - offset into background items, read until = 0</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="63"></td>
+    <td width="425"></td>
+  </tr>
+</tbody></table>
+</center></div>
+
+<p align="center">&nbsp;</p>
+<div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="107" bgcolor="#808080"><font color="#FFFFFF">address</font></td>
+    <td width="80" bgcolor="#808080">0xA64E</td>
+    <td width="409" bgcolor="#808080">background graphics attribute table</td>
+  </tr>
+  <tr>
+    <td width="107"></td>
+    <td width="489" colspan="2"></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="25"></td>
+    <td width="69"><font color="#FFFFFF">type</font></td>
+    <td width="63"><font color="#FFFFFF">offset</font></td>
+    <td width="425"><font color="#FFFFFF">description</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">WORD</font></td>
+    <td width="63"><font size="2">00</font></td>
+    <td width="425">offset - offset to attribute data</td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="63"></td>
+    <td width="425"></td>
+  </tr>
+</tbody></table>
+</center></div>
+
+<p>&nbsp;</p>
+<div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="107" bgcolor="#808080"><font color="#FFFFFF">address</font></td>
+    <td width="80" bgcolor="#808080">0xA600</td>
+    <td width="409" bgcolor="#808080">background graphics table</td>
+  </tr>
+  <tr>
+    <td width="107"></td>
+    <td width="489" colspan="2"></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="25"></td>
+    <td width="69"><font color="#FFFFFF">type</font></td>
+    <td width="63"><font color="#FFFFFF">offset</font></td>
+    <td width="425"><font color="#FFFFFF">description</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">WORD</font></td>
+    <td width="63"><font size="2">00</font></td>
+    <td width="425">offset - offset to sprite data</td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="63"></td>
+    <td width="425"></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="132" colspan="2"><font size="2" color="#80FFFF">graphic data</font></td>
+    <td width="425"></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">00</font></td>
+    <td width="425"><font size="2">width - in bytes</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">01</font></td>
+    <td width="425"><font size="2">depth</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">03 ...</font></td>
+    <td width="425"><font size="2">image data ( size = width*depth )</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="63"></td>
+    <td width="425"></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+</table>
+</center></div>
+
+<p>&nbsp;</p>
+<div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td bgcolor="#808080"><p align="center"><a name="GraphicType"></a>graphic types</p></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td align="center"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b1.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b2.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b3.gif" width="98" height="66"></td>
+  </tr>
+  <tr>
+    <td align="center"></td>
+    <td align="center"><font size="2">01<br>
+    cave door frame</font></td>
+    <td align="center"><font size="2">02<br>
+    normal door frame</font></td>
+    <td align="center"><font size="2">03<br>
+    big door frame</font></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b8.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b9.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b10.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b11.gif" width="66" height="50"></td>
+  </tr>
+  <tr>
+    <td align="center"><font size="2">08<br>
+    red locked normal door</font></td>
+    <td align="center"><font size="2">09<br>
+    green locked normal door</font></td>
+    <td align="center"><font size="2">10<br>
+    white locked normal door</font></td>
+    <td align="center"><font size="2">11<br>
+    yellow locked normal door</font></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b12.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b13.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b14.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b15.gif" width="66" height="50"></td>
+  </tr>
+  <tr>
+    <td align="center"><font size="2">12<br>
+    red locked cave door</font></td>
+    <td align="center"><font size="2">13<br>
+    green locked cave door</font></td>
+    <td align="center"><font size="2">14<br>
+    white locked cave door</font></td>
+    <td align="center"><font size="2">15<br>
+    yellow locked cave door</font></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b16.gif" width="44" height="66"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b17.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b18.gif" width="66" height="46"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b19.gif" width="98" height="62"></td>
+  </tr>
+  <tr>
+    <td align="center"><font size="2">16<br>
+    clock</font></td>
+    <td align="center"><font size="2">17<br>
+    picture</font></td>
+    <td align="center"><font size="2">18<br>
+    table</font></td>
+    <td align="center"><font size="2">19<br>
+    full chicken</font></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b20.gif" width="98" height="62"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b21.gif" width="66" height="34"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b22.gif" width="34" height="34"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b23.gif" width="82" height="66"></td>
+  </tr>
+  <tr>
+    <td align="center"><font size="2">20<br>
+    chicken carcass</font></td>
+    <td align="center"><font size="2">21<br>
+    antler trophy</font></td>
+    <td align="center"><font size="2">22<br>
+    trophy</font></td>
+    <td align="center"><font size="2">23<br>
+    bookcase</font></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b24.gif" width="66" height="66"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b25.gif" width="66" height="66"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b26.gif" width="66" height="66"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b27.gif" width="98" height="80"></td>
+  </tr>
+  <tr>
+    <td align="center"><font size="2">24<br>
+    shut trapdoor</font></td>
+    <td align="center"><font size="2">25<br>
+    open trapdoor</font></td>
+    <td align="center"><font size="2">26<br>
+    barrel</font></td>
+    <td align="center"><font size="2">27<br>
+    rug</font></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b28.gif" width="34" height="34"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b29.gif" width="34" height="34"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b30.gif" width="34" height="66"></td>
+    <td align="center"></td>
+  </tr>
+  <tr>
+    <td align="center"><font size="2">28<br>
+    ACG shield</font></td>
+    <td align="center"><font size="2">29<br>
+    shield</font></td>
+    <td align="center"><font size="2">30<br>
+    knight</font></td>
+    <td align="center"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b32.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b33.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b34.gif" width="66" height="50"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b35.gif" width="66" height="50"></td>
+  </tr>
+  <tr>
+    <td align="center"><font size="2">32<br>
+    shut normal door</font></td>
+    <td align="center"><font size="2">33<br>
+    open normal door</font></td>
+    <td align="center"><font size="2">34<br>
+    shut cave door</font></td>
+    <td align="center"><font size="2">35<br>
+    open cave door</font></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b36.gif" width="130" height="82"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b37.gif" width="66" height="34"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b38.gif" width="82" height="82"></td>
+    <td align="center"><img src="../Atic%20Atac%20Data%20Format_files/b39.gif" width="82" height="56"></td>
+  </tr>
+  <tr>
+    <td align="center"><font size="2">36<br>
+    ACG exit door</font></td>
+    <td align="center"><font size="2">37<br>
+    picture</font></td>
+    <td align="center"><font size="2">38<br>
+    skeleton</font></td>
+    <td align="center"><font size="2">39<br>
+    barrels</font></td>
+  </tr>
+  <tr>
+    <td align="center"></td>
+    <td align="center"></td>
+    <td align="center"></td>
+    <td align="center"></td>
+  </tr>
+  <tr>
+    <td align="center"></td>
+    <td align="center"></td>
+    <td align="center"></td>
+    <td align="center"></td>
+  </tr>
+</tbody></table>
+</center></div>
+
+<p>&nbsp;</p>
+<div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="107" bgcolor="#808080"><font color="#FFFFFF">address</font></td>
+    <td width="80" bgcolor="#808080">0xA4BE</td>
+    <td width="409" bgcolor="#808080">sprites graphics table</td>
+  </tr>
+  <tr>
+    <td width="107"></td>
+    <td width="489" colspan="2"></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+  <tbody><tr>
+    <td width="25"></td>
+    <td width="69"><font color="#FFFFFF">type</font></td>
+    <td width="63"><font color="#FFFFFF">offset</font></td>
+    <td width="425"><font color="#FFFFFF">description</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">WORD</font></td>
+    <td width="63"><font size="2">00</font></td>
+    <td width="425">offset - offset to sprite data</td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="63"></td>
+    <td width="425"></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="132" colspan="2"><font size="2" color="#80FFFF">graphic data</font></td>
+    <td width="425"></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">00</font></td>
+    <td width="425"><font size="2">depth</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"><font size="2">BYTE</font></td>
+    <td width="63"><font size="2">02 ...</font></td>
+    <td width="425"><font size="2">image data ( size = width*depth ) WIDTH = 2</font></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="63"></td>
+    <td width="425"></td>
+  </tr>
+  <tr>
+    <td width="25"></td>
+    <td width="69"></td>
+    <td width="63"></td>
+    <td width="425"></td>
+  </tr>
+</tbody></table>
+</center></div><div align="center"><center>
+
+<table border="0" cellpadding="7" cellspacing="0" width="600">
+</table>
+</center></div>
+
+<p align="center">&nbsp;</p>
+
+</body></html>
