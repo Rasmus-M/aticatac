@@ -51,20 +51,39 @@
        .endm
 
        .defm exx
-       mov  bc,tmp0
+       mov  bc,r0
        mov  bc_,bc
-       mov  tmp0,bc_
-       mov  hl,tmp0
+       mov  r0,bc_
+       mov  hl,r0
        mov  hl_,hl
-       mov  tmp0,hl_
-       mov  de,tmp0
+       mov  r0,hl_
+       mov  de,r0
        mov  de_,de
-       mov  tmp0,de_
+       mov  r0,de_
        .endm
 
        .defm ex_de_hl
-       mov  de,tmp0
+       mov  de,r0
        mov  hl,de
-       mov  tmp0,hl
+       mov  r0,hl
        .endm
 
+       .defm ex_af_af_
+       mov  af,r0
+       mov  af_,af
+       mov  r0,af_
+       .endm
+
+       .defm daa
+       mov  a,r0
+       andi r0,>0f00
+       cb   r0,@bytes+>09
+       jle  !
+       ab   @bytes+>06,a
+!      mov  a,r0
+       andi r0,>f000
+       srl  r0,4
+       cb   r0,@bytes+>b09
+       jle  !
+       ab   @bytes+>60,a
+!      .endm

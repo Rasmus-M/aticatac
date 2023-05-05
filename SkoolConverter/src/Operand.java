@@ -4,7 +4,7 @@ import java.util.regex.Pattern;
 public class Operand {
 
     private static final Pattern immediatePattern = Pattern.compile("^[0-9]{1,5}|\\$[0-9a-f]{2,4}$");
-    private static final Pattern registerPattern = Pattern.compile("^(a|af|b|c|bc|d|e|de|h|l|hl|ix|iy|sp)$");
+    private static final Pattern registerPattern = Pattern.compile("^(a|af|b|c|bc|d|e|de|h|l|hl|ix|iy|sp|af')$");
     private static final Pattern indirectPattern = Pattern.compile("^\\(([0-9]{1,5}|\\$[0-9a-f]{2,4})\\)$");
     private static final Pattern indirectRegisterPattern = Pattern.compile("^\\((bc|de|hl|ix|iy|sp)\\)$");
     private static final Pattern indexedPattern = Pattern.compile("^\\((ix|iy)([+-](?:[0-9]{1,3}|\\$[0-9a-f]{2}))\\)$");
@@ -30,9 +30,6 @@ public class Operand {
     private String flag;
 
     public Operand(String operand, String opcode) {
-        if (operand.equals("$5b80")) {
-            System.out.println();
-        }
         this.operand = operand;
         Matcher m;
         m = immediatePattern.matcher(operand);

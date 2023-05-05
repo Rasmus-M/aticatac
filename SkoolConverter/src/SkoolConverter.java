@@ -68,6 +68,11 @@ public class SkoolConverter {
 
     private List<Label> findLabels(List<Z80Line> z80Lines) {
         List<Label> labels = new ArrayList<>();
+        labels.add(new Label(0x4000, "zx_screen"));
+        labels.add(new Label(0x5800, "zx_attrs"));
+        labels.add(new Label(0x5b00, "zx_buffer"));
+        labels.add(new Label(0x5c00, "zx_sys_var"));
+        labels.add(new Label(0x5c78, "zx_frames"));
         String labelText = null;
         for (Z80Line z80Line : z80Lines) {
             if (z80Line.getType() == Z80Line.Type.Label) {
@@ -115,7 +120,7 @@ public class SkoolConverter {
                             boolean lastLineWasALabel = lastLineWasALabel(tms9900Lines);
                             TMS9900Line label = new TMS9900Line(TMS9900Line.Type.Label);
                             label.setLabel(getValidLabel(z80Line.getAddress()));
-                            String addressString = hexOutput ? Util.hexString(z80Line.getAddress(), 4) : Integer.toString(z80Line.getAddress());
+                            String addressString = Util.intToStr(z80Line.getAddress(), hexOutput, true);
                             if (!label.getLabel().contains(addressString)) {
                                 label.setComment(addressString);
                             }
@@ -202,7 +207,7 @@ public class SkoolConverter {
             case "and":
                 if (opr1 != null) {
                     if (opr1.getType() == Operand.Type.Immediate) {
-                        tms9900Line.setInstruction("andi a," + opr1.getValue() + "*256");
+                        tms9900Line.setInstruction("andi a," + (hexOutput ? Util.tiHexString(opr1.getValue() * 256, true) : opr1.getValue() + "*256"));
                     } else {
                         tms9900Line.setInstruction("; " + instruction);
                     }
@@ -210,7 +215,7 @@ public class SkoolConverter {
                 break;
             case "bit":
                 tms9900Line.setInstruction("movb " + getTMS9900Equivalent(opr2) + ",r0");
-                additionalLines.add(new TMS9900Line(TMS9900Line.Type.Instruction, null, "andi r0," + (1 << opr1.getValue()) + "*256"));
+                additionalLines.add(new TMS9900Line(TMS9900Line.Type.Instruction, null, "andi r0," + (hexOutput ? Util.tiHexString((1 << opr1.getValue()) * 256, true) : (1 << opr1.getValue()) + "*256")));
                 break;
             case "call":
                 if (opr1 != null && opr2 == null) {
@@ -230,6 +235,9 @@ public class SkoolConverter {
                 break;
             case "cpl":
                 tms9900Line.setInstruction("inv  a");
+                break;
+            case "daa":
+                tms9900Line.setInstruction(".daa");
                 break;
             case "dec":
                 if (opr1 != null) {
@@ -358,8 +366,22 @@ public class SkoolConverter {
                     tms9900Line.setInstruction("; " + instruction);
                 }
                 break;
+            case "rl":
             case "rlc":
-                tms9900Line.setInstruction("sra  " + getTMS9900Equivalent(opr1) + ",1");
+                if (!lsbRegisterPattern.matcher(opr1.getRegister()).matches()) {
+                    tms9900Line.setInstruction("sla  " + getTMS9900Equivalent(opr1) + ",1");
+                    tms9900Line.setComment("TODO: check code. " + tms9900Line.getComment());
+                } else {
+                    tms9900Line.setInstruction("; " + instruction);
+                }
+                break;
+            case "rlca":
+                tms9900Line.setInstruction("sla  a,1");
+                tms9900Line.setComment("TODO: check code. " + tms9900Line.getComment());
+                break;
+            case "rra":
+                tms9900Line.setInstruction("srl  a,1");
+                tms9900Line.setComment("TODO: check code. " + tms9900Line.getComment());
                 break;
             case "set":
                 tms9900Line.setInstruction("socb @bits+" + opr1.getValue() + "," + getTMS9900Equivalent(opr2));
@@ -371,6 +393,13 @@ public class SkoolConverter {
                 if (opr1 != null) {
                     boolean isWord = opr1.isWordOperand();
                     tms9900Line.setInstruction((isWord ? "s    " : "sb   ") + getTMS9900Equivalent(opr2) + "," + getTMS9900Equivalent(opr1));
+                }
+                break;
+            case "sla":
+                if (!lsbRegisterPattern.matcher(opr1.getRegister()).matches()) {
+                    tms9900Line.setInstruction("sla  " + getTMS9900Equivalent(opr1) + ",1");
+                } else {
+                    tms9900Line.setInstruction("; " + instruction);
                 }
                 break;
             case "sra":
@@ -458,25 +487,25 @@ public class SkoolConverter {
                     } else if (operand.getValue() == 255) {
                         return "@b255";
                     } else {
-                        return "@bytes+" + operand.getValue();
+                        return "@bytes+" + Util.intToStr(operand.getValue(), hexOutput, false);
                     }
                 } else {
                     if (operand.getValue() < 16384) {
-                        return Util.tiHexString(operand.getValue(), isWord);
+                        return Util.intToStr(operand.getValue(), hexOutput, isWord);
                     } else {
                         return getValidLabel(operand.getValue());
                     }
                 }
             case Register:
                 String reg = operand.getRegister();
-                return (lsbRegisterPattern.matcher(reg).matches() ? "@" : "") + reg;
+                return (lsbRegisterPattern.matcher(reg).matches() ? "@" : "") + (reg.equals("af'") ? "af_" : reg);
             case Indirect:
                 return "@" + getValidLabel(operand.getValue());
             case IndirectRegister:
                 return "*" + operand.getRegister();
             case Indexed:
                 if (operand.getValue() != 0) {
-                    return "@" + operand.getValue() + "(" + operand.getRegister() + ")";
+                    return "@" + Util.intToStr(operand.getValue(), hexOutput, false) + "(" + operand.getRegister() + ")";
                 } else {
                     return "*" + operand.getRegister();
                 }
@@ -509,13 +538,13 @@ public class SkoolConverter {
                 if (i > 0) {
                     Label previousLabel = labels.get(i - 1);
                     int previousAddr = previousLabel.getAddress();
-                    return previousLabel.toString(hexOutput) + "+" + (address - previousAddr);
+                    return previousLabel.toString(hexOutput) + "+" + Util.intToStr(address - previousAddr, hexOutput, true);
                 } else {
-                    return Integer.toString(address);
+                    return Util.intToStr(address, hexOutput, true);
                 }
             }
         }
-        return Integer.toString(address);
+        return Util.intToStr(address, hexOutput, true);
     }
 
     private String getLastInstruction(List<TMS9900Line> tms9900Lines) {

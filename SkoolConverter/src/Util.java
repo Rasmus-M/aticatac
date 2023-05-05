@@ -1,5 +1,13 @@
 public class Util {
 
+    public static String intToStr(int i, boolean hex, boolean isWord) {
+        if (hex) {
+            return tiHexString(i, isWord);
+        } else {
+            return Integer.toString(i);
+        }
+    }
+
     public static String hexString(int i, int length) {
         StringBuilder hex = new StringBuilder(Integer.toHexString(i));
         while (hex.length() < length) {

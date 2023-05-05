@@ -17,6 +17,8 @@ spchrd:
        equ  >9000
 rndsd:
        equ  >83c0                      ; Random number seed
+kscan:
+       equ  >02b2
 
 **
 * Scratch pad
@@ -82,6 +84,7 @@ af_    requ 12
 bc_    requ 13
 de_    requ 14
 hl_    requ 15
+r      requ 0
 
 **
 * VDP memory map
@@ -100,15 +103,17 @@ name_table_2:                          ; Name table 2
        equ  >3c00
 
 **
-* Misc
+* ZX Spectrum memory map
 *
 zx_screen:
        equ  >4000
-zx_attributes:
+zx_attrs:
        equ  >5800
-graphics_bank_select:
-       equ  >6008
-kscan:
-       equ  >02b2
+zx_buffer:
+       equ  >5b00
+zx_sys_var:
+       equ  >5c00
+zx_frames:
+       equ  >5C78
 
        copy "sound-defs.a99"
