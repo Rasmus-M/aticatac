@@ -1,0 +1,114 @@
+**
+* Memory mapped addresses
+*
+vdpwd:                                 ; VDP write data
+       equ  >8c00
+vdpwa:                                 ; VDP set read/write address
+       equ  >8c02
+vdprd:                                 ; VDP read data
+       equ  >8800
+vdpsta:                                ; VDP status
+       equ  >8802
+sound1:                                 ; Sound
+       equ  >8400
+spchwt:
+       equ  >9400
+spchrd:
+       equ  >9000
+rndsd:
+       equ  >83c0                      ; Random number seed
+
+**
+* Scratch pad
+*
+ti_wrksp:
+       equ  >8300
+sndws:
+       equ  ti_wrksp
+ti_r0lb:
+       equ  ti_wrksp+1
+ti_r1lb:
+       equ  ti_wrksp+3
+wrksp:
+       equ  ti_wrksp+>1A               ; tmp0-tmp2 overlaps ti_wrksp r13-r15
+r0lb:
+       equ  wrksp+1
+r1lb:
+       equ  wrksp+3
+bits:
+       equ  wrksp+>20
+stack:
+       equ  bits+8
+b255:
+       equ  stack+>20
+b254:
+       equ  b255+1
+frame:
+       equ  b254+1
+vdp_status:
+       equ  frame+2
+pad_max:
+       equ  vdp_status+2
+kscan_device:
+       equ  >8374
+kscan_key:
+       equ  >8375
+kscan_status:
+       equ  >837c
+gplws:
+       equ  >83e0
+
+
+**
+* Z80 register mapping
+*
+one    requ 3                          ; >0100
+zero   equ  wrksp+7
+af     requ 4
+a      requ 4
+bc     requ 5
+b      requ 5
+c      equ wrksp+11
+de     requ 6
+d      requ 6
+e      equ wrksp+13
+hl     requ 7
+h      requ 7
+l      equ wrksp+15
+ix     requ 8
+iy     requ 9
+sp     requ 10
+af_    requ 12
+bc_    requ 13
+de_    requ 14
+hl_    requ 15
+
+**
+* VDP memory map
+*
+pattern_table:                         ; Pattern table
+       equ  >0000
+sprite_pattern_table:                  ; Sprite pattern table
+       equ  >1800
+color_table:                           ; Color table
+       equ  >2000
+name_table:                            ; Name table 1
+       equ  >3800
+sprite_attr_table:                     ; Sprite attribute table
+       equ  >3b00
+name_table_2:                          ; Name table 2
+       equ  >3c00
+
+**
+* Misc
+*
+zx_screen:
+       equ  >4000
+zx_attributes:
+       equ  >5800
+graphics_bank_select:
+       equ  >6008
+kscan:
+       equ  >02b2
+
+       copy "sound-defs.a99"

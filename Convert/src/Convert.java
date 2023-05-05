@@ -1,9 +1,7 @@
-import vdp.VDPCanvas;
 import vdp.VDPFrame;
 import vdp.VectorGraphicsRenderer;
 
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.io.FileInputStream;
 
