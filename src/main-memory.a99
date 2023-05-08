@@ -1,0 +1,13 @@
+       copy "equates.a99"
+       copy "macros.a99"
+
+       copy "background-graphics.a99"
+       copy "sprite-graphics.a99"
+       copy "room-data.a99"
+       copy "side-panel.a99"
+
+       save >2000,>3fff
+       copy "lower-memory.a99"
+
+       save >a000,
+       copy "upper-memory.a99"

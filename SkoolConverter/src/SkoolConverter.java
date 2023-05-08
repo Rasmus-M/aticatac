@@ -375,11 +375,22 @@ public class SkoolConverter {
                     tms9900Line.setInstruction("; " + instruction);
                 }
                 break;
+            case "rla":
             case "rlca":
                 tms9900Line.setInstruction("sla  a,1");
                 tms9900Line.setComment("TODO: check code. " + tms9900Line.getComment());
                 break;
+            case "rr":
+            case "rrc":
+                if (!lsbRegisterPattern.matcher(opr1.getRegister()).matches()) {
+                    tms9900Line.setInstruction("sra  " + getTMS9900Equivalent(opr1) + ",1");
+                    tms9900Line.setComment("TODO: check code. " + tms9900Line.getComment());
+                } else {
+                    tms9900Line.setInstruction("; " + instruction);
+                }
+                break;
             case "rra":
+            case "rrca":
                 tms9900Line.setInstruction("srl  a,1");
                 tms9900Line.setComment("TODO: check code. " + tms9900Line.getComment());
                 break;

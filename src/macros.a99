@@ -74,6 +74,12 @@
        mov  r0,af_
        .endm
 
+       .defm ex_sp_hl
+       mov  hl,r0
+       mov  @-2(sp),hl
+       mov  r0,@-2(sp)
+       .endm
+
        .defm daa
        mov  a,r0
        andi r0,>0f00
@@ -86,4 +92,5 @@
        cb   r0,@bytes+>b09
        jle  !
        ab   @bytes+>60,a
-!      .endm
+!
+       .endm

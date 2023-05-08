@@ -1,0 +1,766 @@
+*********************************************************************
+*
+* Setup environment
+*
+ti_setup_environment:
+       mov  @rndsd,@rnd_seed
+       li   one,>0100
+       li   r0,>fffe
+       mov  r0,@b255
+       clr  @frame
+       li   sp,stack
+       .proc
+       bl   @init_bits
+       bl   @copy_to_pad
+       bl   @graphics_mode
+       .endproc
+*// ti_setup_environment
+
+*********************************************************************
+*
+* Init bits for bit operations
+*
+init_bits:
+       li   r0,>0100
+       li   r1,bits
+       li   r2,8
+init_bits_1:
+       movb r0,*r1+
+       sla  r0,1
+       dec  r2
+       jne  init_bits_1
+       rt
+*// init_bits
+
+*********************************************************************
+*
+* Copy routines to pad
+*
+copy_to_pad:
+;       li   r0,draw_display_buffer_start
+;       li   r1,draw_display_buffer_pad
+;       li   r2,draw_display_buffer_end-draw_display_buffer_start
+;copy_to_pad_1:
+;       mov  *r0+,*r1+
+;       dect r2
+;       jne  copy_to_pad_1
+       rt
+*// copy_to_pad
+
+*********************************************************************
+*
+* Set graphics mode
+*
+graphics_mode:
+       lwpi ti_wrksp
+       clr  r0
+       li   r1,vdp_registers
+       li   r2,8
+graphics_mode_1:
+       movb *r1+,@ti_r0lb
+       bl   @vwtr                      ; Set register
+       ai   r0,>0100
+       dec  r2
+       jne  graphics_mode_1
+*      Clear VDP RAM
+       clr  r0
+       clr  r1
+       li   r2,>4000
+       bl   @vsmw
+*      Disable sprites
+       li   r0,sprite_attr_table
+       li   r1,>d000
+       bl   @vsbw
+*      Init color table
+       li   r0,color_table
+       li   r1,>f100
+       li   r2,>1800
+       bl   @vsmw
+*      Init name tables
+       li   r0,name_table
+       bl   @vwad
+       bl   @ti_init_name_table
+       li   r0,name_table_2
+       bl   @vwad
+       bl   @ti_init_name_table
+*      Sprite patterns
+;       li   r0,sprite_pattern_table
+;       li   r1,SPR0
+;       li   r2,32
+;       bl   @vmbw
+       lwpi wrksp
+       rt
+*      VDP registers
+vdp_registers:
+       byte >02                        ; Graphics II mode
+       byte >e2                        ; 16K, display on, interrupt enabled
+       byte name_table/>400            ; Name table
+       byte >ff                        ; Color table
+       byte pattern_table/>800+>03     ; Pattern table
+       byte sprite_attr_table/>80      ; Sprite attribute table
+       byte sprite_pattern_table/>800  ; Sprite pattern table
+       byte >00                        ; Backdrop color
+*// graphics_mode
+
+*********************************************************************************
+*
+* Initialize name table for bitmap drawing
+*
+ti_init_name_table:
+       clr  r1
+       li   r2,768
+ti_init_name_table_1:
+       movb r1,@vdpwd
+       ai   r1,>0100
+       dec  r2
+       jne  ti_init_name_table_1
+       rt
+*// ti_init_name_table
+
+*********************************************************************************
+*
+* Select name table 1
+*
+ti_select_name_table_1:
+       lwpi ti_wrksp
+       li   r0,>020e
+       bl   @vwtr
+       lwpi wrksp
+       rt
+*// ti_select_name_table_1
+
+*********************************************************************************
+*
+* Select name table 2
+*
+ti_select_name_table_2:
+       lwpi ti_wrksp
+       li   r0,>020f
+       bl   @vwtr
+       lwpi wrksp
+       rt
+*// ti_select_name_table_2
+
+*********************************************************************************
+*
+* Display off
+*
+ti_display_off:
+       lwpi ti_wrksp
+       li   r0,>01a2
+       bl   @vwtr
+       lwpi wrksp
+       rt
+*// ti_display_off
+
+*********************************************************************************
+*
+* Display off
+*
+ti_display_on:
+       lwpi ti_wrksp
+       li   r0,>01e2
+       bl   @vwtr
+       lwpi wrksp
+       rt
+*// ti_display_on
+
+*********************************************************************************
+*
+* Clear screen
+*
+ti_clear_screen:
+       .proc
+       bl   @ti_display_off
+;       bl   @module_player
+       li   r1,vdpwd
+       li   r0,pattern_table
+       bl   @vwad
+       bl   @ti_clear_screen_part
+       bl   @ti_clear_screen_part
+       bl   @ti_clear_screen_part
+       li   r0,color_table
+       bl   @vwad
+       bl   @ti_clear_screen_part
+       bl   @ti_clear_screen_part
+       bl   @ti_clear_screen_part
+       bl   @ti_display_on
+       .endproc
+*// ti_clear_screen
+
+ti_clear_screen_part:
+       .proc
+       li   r2,>800
+ti_clear_screen_part_1:
+       clr  *r1
+       dec  r2
+       jne  ti_clear_screen_part_1
+;       bl   @module_player
+       .endproc
+
+*********************************************************************************
+*
+* Set color of whole screen
+*
+* a: zx attribute
+*
+ti_set_screen_color:
+       .proc
+       bl   @ti_color
+       movb r0,r1
+       li   r0,color_table+(3*256)
+       li   r2,5*256
+       bl   @vsmw
+;       bl   @module_player
+       li   r0,color_table+(8*256)
+       li   r2,5*256
+       bl   @vsmw
+;       bl   @module_player
+       li   r0,color_table+(13*256)
+       li   r2,5*256
+       bl   @vsmw
+;       bl   @module_player
+       .endproc
+*// ti_set_screen_color
+
+*********************************************************************************
+*
+* Set border color
+*
+* a: zx color
+*
+ti_set_border_color:
+       .proc
+       bl   @ti_color
+       srl  r0,12
+       ori  r0,>0700
+       bl   @vwtr
+       .endproc
+*// ti_set_border_color
+
+*********************************************************************
+*
+* Draw graphics
+*
+* r0 (r13): VDP address
+* r1 (r14): Source address
+* r2 (r15) MSB: width in characters
+* r2 (r15) LSB: height in characters
+*
+ti_draw_graphics:
+       .proc
+       lwpi ti_wrksp
+       mov  r13,r0
+       mov  r14,r1
+       mov  r15,r2                     ; Width and height
+       andi r2,>00ff                   ; Height
+       mov  r15,r4                     ; Width and height
+       srl  r4,8                       ; Width
+       mov  @row_src_skip,r5
+       li   r6,vdpwd
+       ori  r0,>4000                   ; Set read/write bits 14 and 15 to write (01)
+ti_draw_graphics_1:
+       movb @ti_r0lb,@vdpwa            ; Send low byte of VDP RAM write address
+       movb r0,@vdpwa                  ; Send high byte of VDP RAM write address
+       mov  r4,r3                      ; Width in characters
+ti_draw_graphics_2:
+       movb *r1+,*r6
+       movb *r1+,*r6
+       movb *r1+,*r6
+       movb *r1+,*r6
+       movb *r1+,*r6
+       movb *r1+,*r6
+       movb *r1+,*r6
+       movb *r1+,*r6
+       dec  r3
+       jne  ti_draw_graphics_2
+       ai   r0,256                     ; Next character row
+       a    r5,r1                      ; Skip source bytes
+       dec  r2
+       jne  ti_draw_graphics_1
+       lwpi wrksp
+;       bl   @module_player
+       .endproc
+row_src_skip:
+       data 0
+*// ti_draw_graphics
+
+*********************************************************************
+*
+* Draw color area
+*
+* r0 (r13): VDP offset in color table
+* r1 (r14) LSB: ZX attribute to draw
+* r2 (r15) MSB: width in characters
+* r2 (r15) LSB: height in characters
+*
+ti_draw_color_area:
+       .proc
+       lwpi ti_wrksp
+       mov  r13,r0
+       mov  r14,r1
+       movb @ti_colors(r1),r1
+       mov  r15,r2                     ; Width and height
+       andi r2,>00ff                   ; Height
+       mov  r15,r4                     ; Width and height
+       srl  r4,8                       ; Width
+       li   r6,vdpwd
+       ori  r0,>4000 + color_table     ; Set read/write bits 14 and 15 to write (01) + color table base
+ti_draw_color_area_1:
+       movb @ti_r0lb,@vdpwa            ; Send low byte of VDP RAM write address
+       movb r0,@vdpwa                  ; Send high byte of VDP RAM write address
+       mov  r4,r3                      ; Width in characters
+ti_draw_color_area_2:
+       movb r1,*r6
+       movb r1,*r6
+       movb r1,*r6
+       movb r1,*r6
+       movb r1,*r6
+       movb r1,*r6
+       movb r1,*r6
+       movb r1,*r6
+       dec  r3
+       jne  ti_draw_color_area_2
+       ai   r0,256                     ; Next character row
+       dec  r2
+       jne  ti_draw_color_area_1
+       lwpi wrksp
+;       bl   @module_player
+       .endproc
+*// ti_draw_color_area
+
+*********************************************************************************
+*
+* Draw attribute
+*
+* a: zx attribute
+* r1: address in zx attribute file
+*
+ti_draw_attribute:
+*      VDP write address
+       ai   r1,-zx_attrs
+       sla  r1,3
+       ai   r1,color_table+>4000
+*      Set VDP write address
+       movb @r1lb,@vdpwa               ; Send low byte of VDP RAM write address
+       movb r1,@vdpwa                ; Send high byte of VDP RAM write address
+*      Color
+       swpb a
+       movb @ti_colors(a),r0
+       swpb a
+*      Draw
+       li   r2,vdpwd
+       movb r0,*r2
+       movb r0,*r2
+       movb r0,*r2
+       movb r0,*r2
+       movb r0,*r2
+       movb r0,*r2
+       movb r0,*r2
+       movb r0,*r2
+       rt
+*// ti_draw_attribute
+
+*********************************************************************************
+*
+* Get TI-99 color from ZX Spectrum color
+*
+* a: Colour-byte FBPPPIII
+*  - I - Ink colour (0-7)
+*  - P - Paper colour (0-7)
+*  - B - Bright (0-No, 1-Yes)
+*  - F - Flash  (0-No, 1-Yes)
+*
+* On return r0 MSB contains the TI color FFFFBBBB.
+*
+ti_color:
+       clr  r0                       ; Result
+       mov  a,r2
+       andi r2,>4000                 ; Bright bit
+       srl  r2,3
+*      Foreground
+       mov  a,r1
+       andi r1,>0700                 ; Foreground bits
+       soc  r2,r1
+       swpb r1
+       movb @ti_pal(r1),r0
+       sla  r0,4
+*      Background
+       mov  a,r1
+       andi r1,>3800                 ; Background bits
+       srl  r1,3
+       soc  r2,r1
+       swpb r1
+       socb @ti_pal(r1),r0
+       rt
+
+* Spectrum palette
+* 0  Black,    1 D Blue,   2 D Red,     3 D Magenta
+* 4  D Green,  5 D Cyan,   6 D Yellow,  7 Grey
+* 8  Black,    9 Blue,    10 Red,      11 Magenta
+* 12 Green,   13 Cyan,    14 Yellow,   15 White
+
+* TI palette
+* 0  Trans,    1 Black,    2 M Green,   3 L Green
+* 4  D Blue,   5 L Blue,   6 D Red,     7 Cyan
+* 8  M Red,    9 L Red,   10 D Yellow, 11 L Yellow
+* 12 D Green, 13 Magenta, 14 Gray,     15 White
+
+ti_pal  byte 1,4,6,13,12,7,10,14,1,5,8,13,2,7,11,15
+* Not used: 3 L Green, 9 L Red
+* Not available: D Cyan, D Magenta
+*// ti_color
+
+*********************************************************************
+*
+* VDP Write To Register
+*
+* R0 MSB: VDP register to write to
+* R0 LSB: Value to write
+*
+vwtr:
+       swpb r0
+       movb r0,@vdpwa                  ; Send low byte (value) to write to VDP register
+       swpb r0
+       ori  r0,>8000                   ; Set up a VDP register write operation (10)
+       movb r0,@vdpwa                  ; Send high byte (address) of VDP register
+       rt
+*// vwtr
+
+*********************************************************************
+*
+* VDP Set Write Address
+*
+* R0: Write address in VDP RAM
+*
+vwad:
+       swpb r0
+       movb r0,@vdpwa                  ; Send low byte of VDP RAM write address
+       swpb r0
+       ori  r0,>4000                   ; Set read/write bits 14 and 15 to write (01)
+       movb r0,@vdpwa                  ; Send high byte of VDP RAM write address
+       rt
+*// vwad
+
+*********************************************************************
+*
+* VDP Single Byte Write
+*
+* R0: Write address in VDP RAM
+* R1: MSB of R1 sent to VDP RAM
+*
+vsbw:
+       swpb r0
+       movb r0,@vdpwa                  ; Send low byte of VDP RAM write address
+       swpb r0
+       ori  r0,>4000                   ; Set read/write bits 14 and 15 to write (01)
+       movb r0,@vdpwa                  ; Send high byte of VDP RAM write address
+       movb r1,@vdpwd                  ; Write byte to VDP RAM
+       rt
+*// vsbw
+
+*********************************************************************
+*
+* VDP multiple Byte Write
+*
+* R0: Write address in VDP RAM
+* R1: Starting read address in CPU RAM
+* R2: Number of bytes to send
+*
+vmbw:
+       swpb r0
+       movb r0,@vdpwa                  ; Send low byte of VDP RAM write address
+       swpb r0
+       ori  r0,>4000                   ; Set read/write bits 14 and 15 to write (01)
+       movb r0,@vdpwa                  ; Send high byte of VDP RAM write address
+       li   r0,vdpwd
+vmbw_1:
+       movb *r1+,*r0                   ; Write byte to VDP RAM
+       dec  r2
+       jne  vmbw_1
+       rt
+*// vmbw
+
+*********************************************************************
+*
+* VDP Single Byte Multiple Write
+*
+* R0: Write address in VDP RAM
+* R1: MSB of R1 sent to VDP RAM
+* R2: Number of bytes to write to VDP RAM
+*
+vsmw:
+       swpb r0
+       movb  r0,@vdpwa                 ; Send low byte of VDP RAM write address
+       swpb r0
+       ori  r0,>4000                   ; Set read/write bits 14 and 15 to write (01)
+       movb r0,@vdpwa                  ; Send high byte of VDP RAM write address
+       li   r0,vdpwd
+vsmw_1:
+       movb r1,*r0                     ; Write byte to VDP RAM
+       dec  r2                         ; Byte counter
+       jne  vsmw_1
+       rt
+*// vsmw
+
+*********************************************************************
+*
+* VDP Set Read Address
+*
+* R0: Read address in VDP RAM
+*
+;vrad:
+;       swpb r0
+;       movb r0,@vdpwa                  ; Send low byte of VDP RAM read address
+;       swpb r0
+;       movb r0,@vdpwa                  ; Send high byte of VDP RAM read address
+;       rt
+;*// vrad
+
+;*********************************************************************
+;*
+;* VDP Single Byte Read
+;*
+;* R0:  Read address in VDP RAM
+;* R1:  MSB of R1 set to byte from VDP RAM
+;*
+;vsbr:
+;       swpb r0
+;       movb r0,@vdpwa                  ; Send low byte of VDP RAM read address
+;       swpb r0
+;       movb r0,@vdpwa                  ; Send high byte of VDP RAM read address
+;       nop
+;       movb @vdprd,r1                  ; Read byte from VDP RAM
+;       rt
+;*// vsbr
+
+*********************************************************************
+*
+* VDP Multiple Byte Read
+*
+* R0: Starting read address in VDP RAM
+* R1: Starting write address in CPU RAM
+* R2: Number of bytes to read from VDP RAM
+*
+* Modifies R0-R2
+*
+vmbr:
+       swpb r0
+       movb  r0,@vdpwa                 ; Send low byte of VDP RAM read address
+       swpb r0
+       andi r0,>3fff                   ; Set read/write bits 14 and 15 to read (00)
+       movb r0,@vdpwa                  ; Send high byte of VDP RAM read address
+       li   r0,vdprd
+vmbr_1:
+       movb *r0,*r1+                   ; Read byte from VDP RAM
+       dec  r2                         ; Byte counter
+       jne  vmbr_1                     ; Check if finished
+       rt
+*// vmbr
+
+*********************************************************************
+*
+* Check key
+*
+* r0: Column in MSB: >0000 - >0700, Row in LSB: >0006 - >0014
+*
+*       Column   0      1    2    3    4    5     6       7
+*     Row
+*     >0006      =      .    ,    M    N    /    Fire    Fire
+*     >0008    Space    L    K    J    H    ;    Left    Left
+*     >000A    Enter    O    I    U    Y    P    Right   Right
+*     >000C             9    8    7    6    0    Down    Down
+*     >000E    Fctn     2    3    4    5    1    Up      Up
+*     >0010    Shift    S    D    F    G    A
+*     >0012    Ctrl     W    E    R    T    Q
+*     >0014             X    C    V    B    Z
+*
+* On return NEQ means that the key is pressed
+*
+KEY_FI EQU  >0606
+KEY_LF EQU  >0608
+KEY_RG EQU  >060A
+KEY_DN EQU  >060C
+KEY_UP EQU  >060E
+KEY_CM EQU  >0206
+KEY_FS EQU  >0106
+KEY_0  EQU  >050C
+KEY_1  EQU  >050E
+KEY_2  EQU  >010E
+KEY_3  EQU  >020E
+KEY_4  EQU  >030E
+KEY_5  EQU  >040E
+KEY_6  EQU  >040C
+KEY_7  EQU  >030C
+KEY_8  EQU  >020C
+KEY_9  EQU  >010C
+KEY_A  EQU  >0510
+KEY_B  EQU  >0414
+KEY_C  EQU  >0214
+KEY_D  EQU  >0210
+KEY_E  EQU  >0212
+KEY_F  EQU  >0310
+KEY_G  EQU  >0410
+KEY_H  EQU  >0408
+KEY_I  EQU  >020A
+KEY_J  EQU  >0308
+KEY_K  EQU  >0208
+KEY_L  EQU  >0108
+KEY_M  EQU  >0306
+KEY_N  EQU  >0406
+KEY_O  EQU  >010A
+KEY_P  EQU  >050A
+KEY_Q  EQU  >0512
+KEY_R  EQU  >0312
+KEY_S  EQU  >0110
+KEY_T  EQU  >0412
+KEY_U  EQU  >030A
+KEY_V  EQU  >0314
+KEY_W  EQU  >0112
+KEY_X  EQU  >0114
+KEY_Y  EQU  >040A
+KEY_Z  EQU  >0514
+KEY_SP EQU  >0008
+KEY_EN EQU  >000A
+KEY_FN EQU  >000E
+KEY_SH EQU  >0010
+KEY_CT EQU  >0012
+JOY_FI EQU  >0606
+JOY_LT EQU  >0608
+JOY_RT EQU  >060A
+JOY_DN EQU  >060C
+JOY_UP EQU  >060E
+*
+ti_check_key:
+       li   r12,>0024                  ; CRU address of the column decoder
+       ldcr r0,3                       ; Select column
+       andi r0,>00ff
+       mov  r0,r12                     ; Select row
+       tb   0                          ; Test key, EQ if not pressed
+       rt
+*// ti_check_key
+
+***************************************************************************
+*
+* Check quit
+*
+ti_check_quit:
+       clr  r1                         ; Test column 0
+       li   r12,>0024                  ; Address for column selection
+       ldcr r1,3                       ; Select column
+       li   r12,>0006                  ; Address to read rows
+       stcr r1,8
+       andi r1,>1100
+       jeq  ti_quit
+*      Return
+       rt
+*      Quit
+ti_quit:
+       clr  @>83c4                     ; Reset user ISR address
+       seto @>6000                     ; Select first ROM bank
+       blwp @>0000
+*// ti_check_quit
+
+*********************************************************************
+*
+* Scan keyboard
+*
+ti_keyscan:
+       .proc
+       lwpi gplws
+       movb @zero,@kscan_device
+       bl   @kscan
+       lwpi wrksp
+       movb @kscan_status,a
+       andi a,>2000
+       jeq  !
+       movb @kscan_key,a
+!      .endproc
+*// ti_keyscan
+
+*********************************************************************
+*
+* Generate a pseudo random number within the given limit
+*
+* a: Maximum number (0 - 255) exclusive
+*
+* On return a contains the number [0; a[
+*
+ti_rnd_range:
+       .proc                           ; Push return address onto the stack
+       bl   @ti_rnd                    ; Generate a random number in r0
+       andi r0,>00ff                 ; Clear MSB: [0-255]
+       mov  af,r1                    ; range in MSB
+       srl  r1,8                     ; range in LSB
+       mpy  r1,r0                  ; range * [0-255]
+       srl  r1,8                     ; (range * [0-255]) / 256
+       mov  r1,a                     ; Copy result back
+       swpb a                          ; to MSB
+       .endproc                        ; Pop return address off the stack
+*// ti_rnd_range
+
+*********************************************************************
+*
+* Generate a pseudo random number
+*
+* On return r0 contains the number, which is also stored at @rnd_seed
+*
+* r1 and r2 are modified
+*
+ti_rnd:
+       li   r1,28643                 ; A prime number to multiply by
+       mpy  @rnd_seed,r1             ; Multiply by last random number
+       ai   r2,31873                 ; Add a prime number
+       src  r2,7                     ; Mix up the number to break odd/even pattern
+       mov  r2,@rnd_seed             ; Save this number for next time
+       mov  r2,r0
+       rt
+rnd_seed:
+       data 0
+*// ti_rnd
+
+*********************************************************************
+*
+* Wait for vertical retrace (CRU)
+*
+ti_vsync:
+       .proc
+       movb @vdpsta,@vdp_status
+ti_vsync_1:
+       clr  r12
+       tb   2                          ; Test CRU bit for VDP interrupt
+       jeq  ti_vsync_1
+;       bl   @module_player
+       .endproc
+*// ti_vsync
+
+*********************************************************************
+*
+* Wait for r0 frames
+*
+ti_delay:
+       .proc
+ti_delay_1:
+       bl   @ti_vsync
+       dec  r0
+       jne  ti_delay_1
+       .endproc
+*// ti_delay
+
+*********************************************************************
+*
+* For routines that set or reset the carry flag on return
+*
+return_with_carry:
+       .pop  r11
+return_with_carry_1:
+       seto r0
+       inc  r0
+       rt
+
+return_without_carry:
+       .pop  r11
+return_without_carry_1:
+       clr  r0
+       inc  r0
+       rt
