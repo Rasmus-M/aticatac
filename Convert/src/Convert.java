@@ -83,9 +83,12 @@ public class Convert extends VDPFrame implements Runnable {
                 int backgroundItemAddress = getWord(screenBackgroundItemsAddress);
                 while (backgroundItemAddress != 0) {
                     // Get background item
+                    int itemScreenNo = getByte(backgroundItemAddress + 1);
+                    if (screenNo != itemScreenNo) { //  && screenNo == getByte(backgroundItemAddress + 8 + 1)
+                        backgroundItemAddress += 8;
+                    }
                     int graphicsType = getByte(backgroundItemAddress);
                     System.out.println("Graphics type: " + graphicsType);
-                    int itemScreenNo = getByte(backgroundItemAddress + 1);
                     int itemX = getByte(backgroundItemAddress + 3);
                     int itemY = getByte(backgroundItemAddress + 4);
                     System.out.println("Item position (" + itemX + "," + itemY + ")");
@@ -114,6 +117,9 @@ public class Convert extends VDPFrame implements Runnable {
                     for (int y = 0; y < graphicsHeight; y += 8) {
                         for (int x = 0; x < graphicsWidth; x++) {
                             int attribute = getByte(addr++);
+                            if (attribute == 0xff) {
+                                attribute = screenAttribute;
+                            }
                             int tiColor = getTIColor(attribute) & 0xF0;
                             for (int y1 = 0; y1 < 8; y1++) {
                                 if (y + y1 < graphicsHeight) {
@@ -126,28 +132,23 @@ public class Convert extends VDPFrame implements Runnable {
                             }
                         }
                     }
-                    int rotation = itemFlags & 0xC0;
-                    if (screenNo != itemScreenNo) {
-                        System.out.println("Item belongs to screen " + itemScreenNo);
-                        if (rotation == 0x00) {
-                            rotation = 0x80;
-                            itemY = 190 + pixelHeight - itemY;
+                    itemY = 190 + pixelHeight - itemY;
+                    if ((itemFlags & 0x20) != 0) {
+                        System.out.println("Flip vertical");
+                        int[][] newGrid = new int[pixelHeight][pixelWidth];
+                        for (int y = 0; y < pixelHeight; y++) {
+                            for (int x = 0; x < pixelWidth; x++) {
+                                newGrid[y][x] = grid[y][pixelWidth - 1 - x];
+                            }
                         }
-                        else if (rotation == 0x80) {
-                            rotation = 0x00;
-                            itemY = 190 + pixelHeight - itemY;
-                        }
-                        else if (rotation == 0x40) {
-                            rotation = 0xC0;
-                            itemX = 192 - pixelHeight - itemX;
-                        }
-                        else if (rotation == 0xC0) {
-                            rotation = 0x40;
-                            itemX = 192 - pixelHeight - itemX;
-                        }
+                        grid = newGrid;
                     }
+                    int rotation = itemFlags & 0xC0;
                     if (rotation == 0x00) {
                         System.out.println("Rotate top");
+                    }
+                    else if (rotation == 0x80) {
+                        System.out.println("Rotate bottom");
                         int[][] newGrid = new int[pixelHeight][pixelWidth];
                         for (int y = 0; y < pixelHeight; y++) {
                             for (int x = 0; x < pixelWidth; x++) {
@@ -155,9 +156,6 @@ public class Convert extends VDPFrame implements Runnable {
                             }
                         }
                         grid = newGrid;
-                    }
-                    else if (rotation == 0x80) {
-                        System.out.println("Rotate bottom");
                     }
                     else if (rotation == 0x40) {
                         System.out.println("Rotate right");
@@ -168,6 +166,7 @@ public class Convert extends VDPFrame implements Runnable {
                             }
                         }
                         grid = newGrid;
+                        itemY = 190 + pixelHeight - itemY;
                     }
                     else if (rotation == 0xC0) {
                         System.out.println("Rotate left");
@@ -178,33 +177,9 @@ public class Convert extends VDPFrame implements Runnable {
                             }
                         }
                         grid = newGrid;
+                        itemY = 190 + pixelHeight - itemY;
                     }
-//                    else if (rotation == 0x20) {
-//                        System.out.println("Flip vertical");
-//                        int[][] newGrid = new int[pixelHeight][pixelWidth];
-//                        for (int y = 0; y < pixelHeight; y++) {
-//                            for (int x = 0; x < pixelWidth; x++) {
-//                                newGrid[y][x] = grid[y][pixelWidth - 1 - x];
-//                            }
-//                        }
-//                        grid = newGrid;
-//                    }
-//                    else if (rotation == 0x10) {
-//                        // Same as rotate top
-//                        System.out.println("Flip horizontal");
-//                        int[][] newGrid = new int[pixelHeight][pixelWidth];
-//                        for (int y = 0; y < pixelHeight; y++) {
-//                            for (int x = 0; x < pixelWidth; x++) {
-//                                newGrid[y][x] = grid[pixelHeight - 1 - y][x];
-//                            }
-//                        }
-//                        grid = newGrid;
-//                    }
-                    // vdpCanvas.bitmap(itemX, itemY - graphicsHeight, graphicsWidth, graphicsHeight, patterns, colors);
-                    bitmap(itemX, itemY - grid.length + 1, grid[0].length, grid.length, grid);
-                    if (screenNo != itemScreenNo) {
-                        vdpCanvas.plot(itemX, 191 - itemY, 4);
-                    }
+                    bitmap(itemX, itemY, grid[0].length, grid.length, grid);
                     // Next item
                     screenBackgroundItemsAddress += 2;
                     backgroundItemAddress = getWord(screenBackgroundItemsAddress);
@@ -218,7 +193,7 @@ public class Convert extends VDPFrame implements Runnable {
     public void bitmap(int x, int y, int width, int height, int[][] grid) {
         for (int j = 0; j < height; j++) {
             for (int i = 0; i < width; i++) {
-                vdpCanvas.plot(x + i, 191 - (y + j), grid[j][i]);
+                vdpCanvas.plot(x + i, 190 + height - y - j, grid[j][i]);
             }
         }
     }

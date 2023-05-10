@@ -29,12 +29,12 @@ start:                                 ; >6000
 reset_menu:                            ; >7c19
        li   hl,menu_selection          ; LD HL,$5E00       ; 
        movb @bytes+>10,b               ; LD B,$10          ; 
-loc_7c1e:                              ; >7c1e
+clear_menu_data:                       ; >7c1e
        sb   *hl,*hl                    ; LD (HL),$00       ; clear menu data
        inc  hl                         ; INC HL            ; 
        sb   one,b                      ; DJNZ $7C1E        ; 
-       jne  loc_7c1e                   ;                   
-       li   hl,charset_base                   ; LD HL,$BE4C       ;
+       jne  clear_menu_data            ;
+       li   hl,charset_base            ; LD HL,$BE4C       ;
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
 * This entry point is used by the routine at #R$8c35.
 main_menu:                             ; >7c29
@@ -549,9 +549,11 @@ loc_809f:                              ; >809f
 * 
 * Used by the routines at #R$7c19 and #R$7d9a.
 clear_screen:                          ; >80aa
-       .call @clear_attrs              ; CALL $80C2        ; clear attribute file
-       .call @clear_display            ; CALL $80B4        ; clear display file
+       bl   @ti_clear_screen
+;       .call @clear_attrs              ; CALL $80C2        ; clear attribute file
+;       .call @clear_display            ; CALL $80B4        ; clear display file
        sb   a,a                        ; XOR A             ; 
+       bl   @ti_set_border_color
        ; OUT ($FE),A                   ; OUT ($FE),A       ; black border
        .ret                            ; RET               ; 
 
@@ -3286,7 +3288,7 @@ trap_common:                           ; >91cc
        xor  one,a                      ; XOR $01           ; toggle open/closed state
        movb a,*ix                      ; LD (IX+$00),A     ; 
        .call @draw_rot_obj             ; CALL $9213        ; 
-       .pop af                         ; POP AF            ; 
+       .pop af                         ; POP AF            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
        .call @h_room_item              ; CALL $91FE        ; draw room item
        b    @door_sound                ; JP $A46E          ; door sound (short burst of white noise)
@@ -4501,14 +4503,14 @@ jump_table_b:                          ; >9965
 
 * Data block at 9970
 disp_funcs:                            ; >9970
-       data draw_disp_0                                              ; normal
-       data draw_disp_1
-       data draw_disp_2
-       data draw_disp_3
-       data draw_disp_4                                              ; 180 degrees
-       data draw_disp_5
-       data draw_disp_6                                              ; right 90 degrees
-       data draw_disp_7                                              ; left 90 degrees
+       data draw_disp_0                ; 000 >00           ; normal
+       data draw_disp_1                ; 001 >20
+       data draw_disp_2                ; 010 >40
+       data draw_disp_3                ; 011 >60           ; right?
+       data draw_disp_4                ; 100 >80           ; 180 degrees
+       data draw_disp_5                ; 101 >A0
+       data draw_disp_6                ; 110 >C0           ; right 90 degrees
+       data draw_disp_7                ; 111 >E0           ; left 90 degrees
 
 * B=attr, C=graphic, E=xpos, D=ypos
 * 
@@ -5620,7 +5622,7 @@ loc_9e6f:                              ; >9e6f
 * return address of sprite A in DE
 * 
 * Used by the routine at #R$9f80.
-get_sprite_a:                          ; >9e86
+get_saved_sprite_addr:                 ; >9e86
        movb @saved_graphic,a           ; LD A,($5E15)      ; 
 
 * return address of sprite A in DE
@@ -5641,9 +5643,10 @@ get_sprite_addr:                       ; >9e89
 * return addr of entity sprite addr in DE
 * 
 * Used by the routine at #R$9f9f.
-get_entity_sprite:                     ; >9e96
+get_sprite_addr_ix:                    ; >9e96
        movb *ix,a                      ; LD A,(IX+$00)     ; 
        jmp  get_sprite_addr            ; JR $9E89          ; return address of sprite A in DE
+
 * This entry point is used by the routines at #R$9f4a, #R$9f56 and #R$9fca.
 loc_9e9b:                              ; >9e9b
        movb @c,a                       ; LD A,C            ; 
@@ -5881,7 +5884,7 @@ loc_9f6d:                              ; >9f6d
 * 
 * Used by the routines at #R$9f56 and #R$9fca.
 prepare_draw23:                        ; >9f80
-       .call @get_sprite_a             ; CALL $9E86        ; return address of sprite A in DE
+       .call @get_saved_sprite_addr             ; CALL $9E86        ; return address of sprite A in DE
 * This entry point is used by the routines at #R$9f45 and #R$9f56.
 prepare_draw23_de:                     ; >9f83
        mov  @saved_x,hl                ; LD HL,($5E16)     ; 
@@ -5907,7 +5910,7 @@ loc_9f9b:                              ; >9f9b
 * 
 * Used by the routines at #R$9f4a and #R$9fca.
 prepare_draw2:                         ; >9f9f
-       .call @get_entity_sprite        ; CALL $9E96        ; return addr of entity sprite addr in DE
+       .call @get_sprite_addr_ix        ; CALL $9E96        ; return addr of entity sprite addr in DE
 * This entry point is used by the routines at #R$9f40 and #R$9f56.
 prepare_draw2_de:                      ; >9fa2
        movb @>03(ix),@l                ; LD L,(IX+$03)     ; x
@@ -6591,7 +6594,7 @@ draw_menu_icons:                       ; >a311
        li   ix,entity_to_draw          ; LD IX,$A17D       ; 
        li   hl,menu_entities           ; LD HL,$A331       ; entities for icons in the menu position
        movb @bytes+>09,b               ; LD B,$09          ; 3*2 icons for controls, 3 player characters
-loc_a31a:                              ; >a31a
+draw_menu_icons_1:                     ; >a31a
        .push bc                        ; PUSH BC           ; 
        li   de,entity_to_draw          ; LD DE,$A17D       ; 
        li   bc,>0008                   ; LD BC,$0008       ; 
@@ -6604,7 +6607,7 @@ loc_a31a:                              ; >a31a
        .pop hl                         ; POP HL            ; 
        .pop bc                         ; POP BC            ; 
        sb   one,b                      ; DJNZ $A31A        ; 
-       jne  loc_a31a                   ;                   
+       jne  draw_menu_icons_1                   ;
        .ret                            ; RET               ; 
 
 * Data block at a331
@@ -6725,7 +6728,7 @@ walk_low:                              ; >a3d8
        jne  !                          ; RET Z             ; return if not
        .ret                            ;                   
 !
-       li   bc,_6004                   ; LD BC,$6004       ; low beep
+       li   bc,>6004                   ; LD BC,$6004       ; low beep
        jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
 
 * Routine at a3e0
