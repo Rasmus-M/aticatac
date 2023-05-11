@@ -117,15 +117,14 @@ public class Convert extends VDPFrame implements Runnable {
                     for (int y = 0; y < graphicsHeight; y += 8) {
                         for (int x = 0; x < graphicsWidth; x++) {
                             int attribute = getByte(addr++);
-                            if (attribute == 0xff) {
-                                attribute = screenAttribute;
-                            }
-                            int tiColor = getTIColor(attribute) & 0xF0;
+                            int tiColor = getTIColor(attribute != 0xff ? attribute : screenAttribute);
                             for (int y1 = 0; y1 < 8; y1++) {
                                 if (y + y1 < graphicsHeight) {
                                     for (int x1 = 0; x1 < 8; x1++) {
                                         if (grid[y + y1][(x << 3) + x1] != 0) {
                                             grid[y + y1][(x << 3) + x1] = tiColor >> 4;
+                                        } else {
+                                            grid[y + y1][(x << 3) + x1] = attribute != 0xff || (itemFlags & 1) == 0  ? tiColor & 0x07 : 0;
                                         }
                                     }
                                 }
@@ -167,7 +166,7 @@ public class Convert extends VDPFrame implements Runnable {
                         grid = rotateLeft(grid);
                         itemY += pixelHeight - pixelWidth;
                     }
-                    vdpCanvas.bitmap(itemX, itemY, grid[0].length, grid.length, grid);
+                    vdpCanvas.transparentBitmap(itemX, itemY, grid[0].length, grid.length, grid);
                     // Next item
                     screenBackgroundItemsAddress += 2;
                     backgroundItemAddress = getWord(screenBackgroundItemsAddress);

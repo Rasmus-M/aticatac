@@ -175,8 +175,10 @@ public class VDPCanvas extends Canvas {
     public void transparentBitmap(int x, int y, int width, int height, int[][] grid) {
         for (int j = 0; j < height; j++) {
             for (int i = 0; i < width; i++) {
-                if (buffer[y + j][x + i] == 0) {
+                if (grid[j][i] != 0) {
                     plot(x + i, y + j, grid[j][i]);
+                } else {
+                    System.out.println();
                 }
             }
         }

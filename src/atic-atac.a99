@@ -4504,13 +4504,13 @@ jump_table_b:                          ; >9965
 * Data block at 9970
 disp_funcs:                            ; >9970
        data draw_disp_0                ; 000 >00           ; normal
-       data draw_disp_1                ; 001 >20
-       data draw_disp_2                ; 010 >40
-       data draw_disp_3                ; 011 >60           ; right?
-       data draw_disp_4                ; 100 >80           ; 180 degrees
-       data draw_disp_5                ; 101 >A0
-       data draw_disp_6                ; 110 >C0           ; right 90 degrees
-       data draw_disp_7                ; 111 >E0           ; left 90 degrees
+       data draw_disp_1                ; 001 >20           ; normal and flip? Not used
+       data draw_disp_2                ; 010 >40           ; right
+       data draw_disp_3                ; 011 >60           ; right and flip
+       data draw_disp_4                ; 100 >80           ; bottom
+       data draw_disp_5                ; 101 >A0           ; botomm and flip
+       data draw_disp_6                ; 110 >C0           ; left
+       data draw_disp_7                ; 111 >E0           ; left and not flip?
 
 * B=attr, C=graphic, E=xpos, D=ypos
 * 
