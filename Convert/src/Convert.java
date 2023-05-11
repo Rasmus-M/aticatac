@@ -132,54 +132,42 @@ public class Convert extends VDPFrame implements Runnable {
                             }
                         }
                     }
-                    if ((itemFlags & 0x20) != 0) {
-                        System.out.println("Flip vertical");
+                    {
+                        // Normalize upside-down graphics.
                         int[][] newGrid = new int[pixelHeight][pixelWidth];
                         for (int y = 0; y < pixelHeight; y++) {
-                            for (int x = 0; x < pixelWidth; x++) {
-                                // Swap left and right
-                                newGrid[y][x] = grid[y][pixelWidth - 1 - x];
-                            }
+                            newGrid[y] = grid[pixelHeight - 1 - y];
                         }
                         grid = newGrid;
+                        itemY -= pixelHeight - 1;
                     }
                     int rotation = itemFlags & 0xC0;
                     if (rotation == 0x00) {
                         System.out.println("Rotate top");
-                        itemY = 190 + pixelHeight - itemY;
                     }
                     else if (rotation == 0x80) {
                         System.out.println("Rotate bottom");
-                        int[][] newGrid = new int[pixelHeight][pixelWidth];
-                        for (int y = 0; y < pixelHeight; y++) {
-                            for (int x = 0; x < pixelWidth; x++) {
-                                newGrid[y][x] = grid[pixelHeight - 1 - y][x];
-                            }
+                        if ((itemFlags & 0x20) != 0) {
+                            System.out.println("Flip vertical");
+                            grid = flipVertical(grid);
                         }
-                        grid = newGrid;
-                        itemY = 190 + pixelHeight - itemY;
+                        grid = rotateBottom(grid);
                     }
                     else if (rotation == 0x40) {
                         System.out.println("Rotate right");
-                        int[][] newGrid = new int[pixelWidth][pixelHeight];
-                        for (int y = 0; y < pixelHeight; y++) {
-                            for (int x = 0; x < pixelWidth; x++) {
-                                newGrid[x][y] = grid[y][pixelWidth - 1 - x];
-                            }
+                        if ((itemFlags & 0x20) != 0) {
+                            System.out.println("Flip vertical");
+                            grid = flipVertical(grid);
                         }
-                        grid = newGrid;
+                        grid = rotateRight(grid);
+                        itemY += pixelHeight - pixelWidth;
                     }
                     else if (rotation == 0xC0) {
                         System.out.println("Rotate left");
-                        int[][] newGrid = new int[pixelWidth][pixelHeight];
-                        for (int y = 0; y < pixelHeight; y++) {
-                            for (int x = 0; x < pixelWidth; x++) {
-                                newGrid[x][y] = grid[pixelHeight - 1 - y][x];
-                            }
-                        }
-                        grid = newGrid;
+                        grid = rotateLeft(grid);
+                        itemY += pixelHeight - pixelWidth;
                     }
-                    bitmap(itemX, itemY, grid[0].length, grid.length, grid);
+                    vdpCanvas.bitmap(itemX, itemY, grid[0].length, grid.length, grid);
                     // Next item
                     screenBackgroundItemsAddress += 2;
                     backgroundItemAddress = getWord(screenBackgroundItemsAddress);
@@ -190,12 +178,53 @@ public class Convert extends VDPFrame implements Runnable {
         }
     }
 
-    public void bitmap(int x, int y, int width, int height, int[][] grid) {
-        for (int j = 0; j < height; j++) {
-            for (int i = 0; i < width; i++) {
-                vdpCanvas.plot(x + i, 190 + height - y - j, grid[j][i]);
+    int[][] flipVertical(int[][] grid) {
+        int height = grid.length;
+        int width = grid[0].length;
+        int[][] newGrid = new int[height][width];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                // Swap left and right
+                newGrid[y][x] = grid[y][width - 1 - x];
             }
         }
+        return newGrid;
+    }
+
+    int[][] rotateRight(int[][] grid) {
+        int height = grid.length;
+        int width = grid[0].length;
+        int[][] newGrid = new int[width][height];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                newGrid[x][y] = grid[height - 1 - y][x];
+            }
+        }
+        return newGrid;
+    }
+
+    int[][] rotateLeft(int[][] grid) {
+        int height = grid.length;
+        int width = grid[0].length;
+        int[][] newGrid = new int[width][height];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                newGrid[x][y] = grid[y][width - 1 - x];
+            }
+        }
+        return newGrid;
+    }
+
+    int[][] rotateBottom(int[][] grid) {
+        int height = grid.length;
+        int width = grid[0].length;
+        int[][] newGrid = new int[height][width];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                newGrid[y][x] = grid[height - 1 - y][x];
+            }
+        }
+        return newGrid;
     }
 
     public void mouseClicked(MouseEvent e) {
