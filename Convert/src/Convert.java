@@ -138,6 +138,7 @@ public class Convert extends VDPFrame implements Runnable {
                         int[][] newGrid = new int[pixelHeight][pixelWidth];
                         for (int y = 0; y < pixelHeight; y++) {
                             for (int x = 0; x < pixelWidth; x++) {
+                                // Swap left and right
                                 newGrid[y][x] = grid[y][pixelWidth - 1 - x];
                             }
                         }
