@@ -132,7 +132,6 @@ public class Convert extends VDPFrame implements Runnable {
                             }
                         }
                     }
-                    itemY = 190 + pixelHeight - itemY;
                     if ((itemFlags & 0x20) != 0) {
                         System.out.println("Flip vertical");
                         int[][] newGrid = new int[pixelHeight][pixelWidth];
@@ -147,6 +146,7 @@ public class Convert extends VDPFrame implements Runnable {
                     int rotation = itemFlags & 0xC0;
                     if (rotation == 0x00) {
                         System.out.println("Rotate top");
+                        itemY = 190 + pixelHeight - itemY;
                     }
                     else if (rotation == 0x80) {
                         System.out.println("Rotate bottom");
@@ -157,6 +157,7 @@ public class Convert extends VDPFrame implements Runnable {
                             }
                         }
                         grid = newGrid;
+                        itemY = 190 + pixelHeight - itemY;
                     }
                     else if (rotation == 0x40) {
                         System.out.println("Rotate right");
@@ -167,7 +168,6 @@ public class Convert extends VDPFrame implements Runnable {
                             }
                         }
                         grid = newGrid;
-                        itemY = 190 + pixelHeight - itemY;
                     }
                     else if (rotation == 0xC0) {
                         System.out.println("Rotate left");
@@ -178,7 +178,6 @@ public class Convert extends VDPFrame implements Runnable {
                             }
                         }
                         grid = newGrid;
-                        itemY = 190 + pixelHeight - itemY;
                     }
                     bitmap(itemX, itemY, grid[0].length, grid.length, grid);
                     // Next item
