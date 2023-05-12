@@ -97,6 +97,14 @@ public class VDPCanvas extends Canvas {
         }
     }
 
+    public void drawGrid() {
+        g.setColor(Color.GRAY);
+        for (int y = 0; y < HEIGHT; y += 8) {
+            for (int x = 0; x < WIDTH; x += 8) {
+                g.drawRect(x * scale, y * scale, 8 * scale, 8 * scale);
+            }
+        }
+    }
     public void setBackColor(int backColor) {
         this.backColor = backColor;
     }

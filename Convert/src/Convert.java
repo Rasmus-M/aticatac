@@ -56,9 +56,7 @@ public class Convert extends VDPFrame implements Runnable {
                 System.out.println("Screen type: " + screenType);
                 int screenTypesDataAddress = SCREEN_TYPES_DATA_BASE + screenType * 6;
                 int width = getByte(screenTypesDataAddress);
-                int marginX = 0; // (192 - width) / 2;
                 int height = getByte(screenTypesDataAddress + 1);
-                int marginY = 0; // (192 - height) / 2;
                 System.out.println("Width: " + width + " Height: " + height);
                 // Draw room shape
                 int pointsAddress = getWord(screenTypesDataAddress + 2);
@@ -73,7 +71,7 @@ public class Convert extends VDPFrame implements Runnable {
                         int point2Address = pointsAddress + (point2Index << 1);
                         int point2X = getByte(point2Address);
                         int point2Y = getByte(point2Address + 1);
-                        renderer.drawLine(point1X + marginX, point1Y + marginY, point2X + marginX, point2Y + marginY, getTIColor(screenAttribute) >> 4);
+                        renderer.drawLine(point1X, point1Y, point2X, point2Y, getTIColor(screenAttribute) >> 4);
                         point2Index = getByte(linesAddress++);
                     }
                     point1Index = getByte(linesAddress++);
@@ -84,13 +82,16 @@ public class Convert extends VDPFrame implements Runnable {
                 while (backgroundItemAddress != 0) {
                     // Get background item
                     int itemScreenNo = getByte(backgroundItemAddress + 1);
-                    if (screenNo != itemScreenNo) { //  && screenNo == getByte(backgroundItemAddress + 8 + 1)
+                    if (screenNo != itemScreenNo) {
                         backgroundItemAddress += 8;
                     }
                     int graphicsType = getByte(backgroundItemAddress);
                     System.out.println("Graphics type: " + graphicsType);
                     int itemX = getByte(backgroundItemAddress + 3);
                     int itemY = getByte(backgroundItemAddress + 4);
+                    if (itemY % 8 == 0) {
+                        itemY--; // Fix bug: Y coordinates are bottom values, so they should align with the last row of a character
+                    }
                     System.out.println("Item position (" + itemX + "," + itemY + ")");
                     int itemFlags = getByte(backgroundItemAddress + 5);
                     // Draw graphics
@@ -161,7 +162,7 @@ public class Convert extends VDPFrame implements Runnable {
                         grid = rotateRight(grid);
                         itemY += pixelHeight - pixelWidth;
                     }
-                    else if (rotation == 0xC0) {
+                    else { // rotation == 0xC0
                         System.out.println("Rotate left");
                         grid = rotateLeft(grid);
                         itemY += pixelHeight - pixelWidth;
@@ -171,6 +172,7 @@ public class Convert extends VDPFrame implements Runnable {
                     screenBackgroundItemsAddress += 2;
                     backgroundItemAddress = getWord(screenBackgroundItemsAddress);
                 }
+                vdpCanvas.drawGrid();
                 System.out.println();
                 paused = true;
             }
@@ -219,9 +221,7 @@ public class Convert extends VDPFrame implements Runnable {
         int width = grid[0].length;
         int[][] newGrid = new int[height][width];
         for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                newGrid[y][x] = grid[height - 1 - y][x];
-            }
+            System.arraycopy(grid[height - 1 - y], 0, newGrid[y], 0, width);
         }
         return newGrid;
     }
