@@ -22,6 +22,7 @@ public class Convert extends VDPFrame implements Runnable {
     private static final int BACKGROUND_GRAPHICS_ATTRIBUTE_TABLE_BASE = 0xA64E;
     private static final int BACKGROUND_GRAPHICS_TABLE_BASE = 0xA600;
     private static final int SPRITES_GRAPHICS_TABLE_BASE = 0xA4BE;
+    private static final int SPRITES_INIT_DATA_BASE = 0x603D;
 
     private static final int[] TI_PAL = {1,4,6,13,12,7,10,14,1,5,8,13,2,7,11,15};
 
@@ -59,124 +60,154 @@ public class Convert extends VDPFrame implements Runnable {
                 int height = getByte(screenTypesDataAddress + 1);
                 System.out.println("Width: " + width + " Height: " + height);
                 // Draw room shape
-                int pointsAddress = getWord(screenTypesDataAddress + 2);
-                int linesAddress = getWord(screenTypesDataAddress + 4);
-                int point1Index = getByte(linesAddress++);
-                while (point1Index != 255) {
-                    int point1Address = pointsAddress + (point1Index << 1);
-                    int point1X = getByte(point1Address);
-                    int point1Y = getByte(point1Address + 1);
-                    int point2Index = getByte(linesAddress++);
-                    while (point2Index != 255) {
-                        int point2Address = pointsAddress + (point2Index << 1);
-                        int point2X = getByte(point2Address);
-                        int point2Y = getByte(point2Address + 1);
-                        renderer.drawLine(point1X, point1Y, point2X, point2Y, getTIColor(screenAttribute) >> 4);
-                        point2Index = getByte(linesAddress++);
-                    }
-                    point1Index = getByte(linesAddress++);
-                }
+                drawRoomShape(screenTypesDataAddress, screenAttribute, renderer);
                 // Draw background items
                 int screenBackgroundItemsAddress = getWord(SCREEN_BACKGROUND_ITEM_START_BASE + (screenNo << 1));
                 int backgroundItemAddress = getWord(screenBackgroundItemsAddress);
                 while (backgroundItemAddress != 0) {
-                    // Get background item
-                    int itemScreenNo = getByte(backgroundItemAddress + 1);
-                    if (screenNo != itemScreenNo) {
-                        backgroundItemAddress += 8;
-                    }
-                    int graphicsType = getByte(backgroundItemAddress);
-                    System.out.println("Graphics type: " + graphicsType);
-                    int itemX = getByte(backgroundItemAddress + 3);
-                    int itemY = getByte(backgroundItemAddress + 4);
-                    if (itemY % 8 == 0) {
-                        itemY--; // Fix bug: Y coordinates are bottom values, so they should align with the last row of a character
-                    }
-                    System.out.println("Item position (" + itemX + "," + itemY + ")");
-                    int itemFlags = getByte(backgroundItemAddress + 5);
-                    // Draw graphics
-                    int graphicsAddress = getWord(BACKGROUND_GRAPHICS_TABLE_BASE + ((graphicsType - 1) << 1));
-                    int graphicsWidth = getByte(graphicsAddress);
-                    int graphicsHeight = getByte(graphicsAddress + 1);
-                    int pixelWidth = graphicsWidth * 8;
-                    int pixelHeight = graphicsHeight;
-                    System.out.println("Size: " + pixelWidth + " x " + pixelHeight);
-                    int[][] grid = new int[pixelHeight][pixelWidth];
-                    int addr = graphicsAddress + 2;
-                    for (int y = 0; y < graphicsHeight; y++) {
-                        for (int x = 0; x < graphicsWidth; x++) {
-                            int patternByte = getByte(addr++);
-                            int mask = 0x80;
-                            for (int p = 0; p < 8; p++) {
-                                grid[y][(x << 3) + p] = (patternByte & mask) != 0 ? 1 : 0;
-                                mask >>= 1;
-                            }
-                        }
-                    }
-                    int graphicsAttributesAddress = getWord(BACKGROUND_GRAPHICS_ATTRIBUTE_TABLE_BASE + ((graphicsType - 1) << 1));
-                    addr = graphicsAttributesAddress + 2;
-                    for (int y = 0; y < graphicsHeight; y += 8) {
-                        for (int x = 0; x < graphicsWidth; x++) {
-                            int attribute = getByte(addr++);
-                            int tiColor = getTIColor(attribute != 0xff ? attribute : screenAttribute);
-                            for (int y1 = 0; y1 < 8; y1++) {
-                                if (y + y1 < graphicsHeight) {
-                                    for (int x1 = 0; x1 < 8; x1++) {
-                                        if (grid[y + y1][(x << 3) + x1] != 0) {
-                                            grid[y + y1][(x << 3) + x1] = tiColor >> 4;
-                                        } else {
-                                            grid[y + y1][(x << 3) + x1] = attribute != 0xff || (itemFlags & 1) == 0  ? tiColor & 0x07 : 0;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    {
-                        // Normalize upside-down graphics.
-                        int[][] newGrid = new int[pixelHeight][pixelWidth];
-                        for (int y = 0; y < pixelHeight; y++) {
-                            newGrid[y] = grid[pixelHeight - 1 - y];
-                        }
-                        grid = newGrid;
-                        itemY -= pixelHeight - 1;
-                    }
-                    int rotation = itemFlags & 0xC0;
-                    if (rotation == 0x00) {
-                        System.out.println("Rotate top");
-                    }
-                    else if (rotation == 0x80) {
-                        System.out.println("Rotate bottom");
-                        if ((itemFlags & 0x20) != 0) {
-                            System.out.println("Flip vertical");
-                            grid = flipVertical(grid);
-                        }
-                        grid = rotateBottom(grid);
-                    }
-                    else if (rotation == 0x40) {
-                        System.out.println("Rotate right");
-                        if ((itemFlags & 0x20) != 0) {
-                            System.out.println("Flip vertical");
-                            grid = flipVertical(grid);
-                        }
-                        grid = rotateRight(grid);
-                        itemY += pixelHeight - pixelWidth;
-                    }
-                    else { // rotation == 0xC0
-                        System.out.println("Rotate left");
-                        grid = rotateLeft(grid);
-                        itemY += pixelHeight - pixelWidth;
-                    }
-                    vdpCanvas.transparentBitmap(itemX, itemY, grid[0].length, grid.length, grid);
+                    drawBackgroundItem(backgroundItemAddress, screenNo, screenAttribute);
                     // Next item
                     screenBackgroundItemsAddress += 2;
                     backgroundItemAddress = getWord(screenBackgroundItemsAddress);
                 }
+                // Draw sprites
+                int spriteInitDataAddress = SPRITES_INIT_DATA_BASE;
+                int spriteRoom = getByte(spriteInitDataAddress + 1);
+                while (spriteInitDataAddress < 0x63d5) {
+                    int graphicsType = getByte(spriteInitDataAddress);
+                    if (spriteRoom == screenNo && graphicsType > 0 && graphicsType < 0xa0) {
+                        drawSprite(spriteInitDataAddress, graphicsType);
+                    }
+                    spriteInitDataAddress += 8;
+                    spriteRoom = getByte(spriteInitDataAddress + 1);
+                }
                 vdpCanvas.drawGrid();
-                System.out.println();
                 paused = true;
             }
         }
+    }
+
+    void drawRoomShape(int screenTypesDataAddress, int screenAttribute, VectorGraphicsRenderer renderer) {
+        int pointsAddress = getWord(screenTypesDataAddress + 2);
+        int linesAddress = getWord(screenTypesDataAddress + 4);
+        int point1Index = getByte(linesAddress++);
+        while (point1Index != 255) {
+            int point1Address = pointsAddress + (point1Index << 1);
+            int point1X = getByte(point1Address);
+            int point1Y = getByte(point1Address + 1);
+            int point2Index = getByte(linesAddress++);
+            while (point2Index != 255) {
+                int point2Address = pointsAddress + (point2Index << 1);
+                int point2X = getByte(point2Address);
+                int point2Y = getByte(point2Address + 1);
+                renderer.drawLine(point1X, point1Y, point2X, point2Y, getTIColor(screenAttribute) >> 4);
+                point2Index = getByte(linesAddress++);
+            }
+            point1Index = getByte(linesAddress++);
+        }
+    }
+
+    void drawBackgroundItem(int backgroundItemAddress, int screenNo, int screenAttribute) {
+        // Find background item
+        int itemScreenNo = getByte(backgroundItemAddress + 1);
+        if (screenNo != itemScreenNo) {
+            backgroundItemAddress += 8;
+        }
+        int graphicsType = getByte(backgroundItemAddress);
+        System.out.println("Graphics type: " + graphicsType);
+        int itemX = getByte(backgroundItemAddress + 3);
+        int itemY = getByte(backgroundItemAddress + 4);
+        if (itemY % 8 == 0) {
+            itemY--; // Fix bug: Y coordinates are bottom values, so they should align with the last row of a character
+        }
+        System.out.println("Item position (" + itemX + "," + itemY + ")");
+        int itemFlags = getByte(backgroundItemAddress + 5);
+        int rotation = itemFlags & 0xC0;
+        boolean transparencyFlag = (itemFlags & 1) != 0;
+        // Get graphics grid
+        int graphicsAddress = getWord(BACKGROUND_GRAPHICS_TABLE_BASE + ((graphicsType - 1) << 1));
+        int graphicsWidth = getByte(graphicsAddress);
+        int graphicsHeight = getByte(graphicsAddress + 1);
+        int pixelWidth = graphicsWidth * 8;
+        int pixelHeight = graphicsHeight;
+        System.out.println("Size: " + pixelWidth + " x " + pixelHeight);
+        int[][] grid = getBackgroundGraphicsGrid(graphicsAddress, graphicsType, graphicsWidth, graphicsHeight, pixelWidth, pixelHeight, screenAttribute, transparencyFlag);
+        // Normalize upside-down graphics.
+        grid = flipHorizontal(grid);
+        itemY -= pixelHeight - 1;
+        // Rotate
+        if (rotation == 0x00) {
+            System.out.println("Rotate top");
+        }
+        else if (rotation == 0x80) {
+            System.out.println("Rotate bottom");
+            if ((itemFlags & 0x20) != 0) {
+                System.out.println("Flip vertical");
+                grid = flipVertical(grid);
+            }
+            grid = rotateBottom(grid);
+        }
+        else if (rotation == 0x40) {
+            System.out.println("Rotate right");
+            if ((itemFlags & 0x20) != 0) {
+                System.out.println("Flip vertical");
+                grid = flipVertical(grid);
+            }
+            grid = rotateRight(grid);
+            itemY += pixelHeight - pixelWidth;
+        }
+        else { // rotation == 0xC0
+            System.out.println("Rotate left");
+            grid = rotateLeft(grid);
+            itemY += pixelHeight - pixelWidth;
+        }
+        // Draw
+        vdpCanvas.transparentBitmap(itemX, itemY, grid[0].length, grid.length, grid);
+    }
+
+    int[][] getBackgroundGraphicsGrid(int graphicsAddress, int graphicsType, int graphicsWidth, int graphicsHeight, int pixelWidth, int pixelHeight, int screenAttribute, boolean transparencyFlag) {
+        int[][] grid = new int[pixelHeight][pixelWidth];
+        int addr = graphicsAddress + 2;
+        for (int y = 0; y < graphicsHeight; y++) {
+            for (int x = 0; x < graphicsWidth; x++) {
+                int patternByte = getByte(addr++);
+                int mask = 0x80;
+                for (int p = 0; p < 8; p++) {
+                    grid[y][(x << 3) + p] = (patternByte & mask) != 0 ? 1 : 0;
+                    mask >>= 1;
+                }
+            }
+        }
+        int graphicsAttributesAddress = getWord(BACKGROUND_GRAPHICS_ATTRIBUTE_TABLE_BASE + ((graphicsType - 1) << 1));
+        addr = graphicsAttributesAddress + 2;
+        for (int y = 0; y < graphicsHeight; y += 8) {
+            for (int x = 0; x < graphicsWidth; x++) {
+                int attribute = getByte(addr++);
+                int tiColor = getTIColor(attribute != 0xff ? attribute : screenAttribute);
+                for (int y1 = 0; y1 < 8; y1++) {
+                    if (y + y1 < graphicsHeight) {
+                        for (int x1 = 0; x1 < 8; x1++) {
+                            if (grid[y + y1][(x << 3) + x1] != 0) {
+                                grid[y + y1][(x << 3) + x1] = tiColor >> 4;
+                            } else {
+                                grid[y + y1][(x << 3) + x1] = attribute != 0xff || !transparencyFlag  ? tiColor & 0x07 : 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return grid;
+    }
+
+    int[][] flipHorizontal(int[][] grid) {
+        int height = grid.length;
+        int width = grid[0].length;
+        int[][] newGrid = new int[height][width];
+        for (int y = 0; y < height; y++) {
+            newGrid[y] = grid[height - 1 - y];
+        }
+        return newGrid;
     }
 
     int[][] flipVertical(int[][] grid) {
@@ -224,6 +255,35 @@ public class Convert extends VDPFrame implements Runnable {
             System.arraycopy(grid[height - 1 - y], 0, newGrid[y], 0, width);
         }
         return newGrid;
+    }
+
+    void drawSprite(int spriteAddress, int graphicsType) {
+        int spriteX = getByte(spriteAddress + 3);
+        int spriteY = getByte(spriteAddress + 4);
+        int attribute = getByte(spriteAddress + 5);
+        int graphicsAddress = getWord(SPRITES_GRAPHICS_TABLE_BASE + (graphicsType << 1));
+        int height = getByte(graphicsAddress);
+        int [][] grid = getSpriteGraphicsGrid(graphicsAddress, height, attribute);
+        vdpCanvas.transparentBitmap(spriteX, spriteY, 16, height, grid);
+    }
+
+    int[][] getSpriteGraphicsGrid(int graphicsAddress, int height, int attribute) {
+        int color = getTIColor(attribute) >> 4;
+        int[][] grid = new int[height][16];
+        int addr = graphicsAddress + 1;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < 2; x++) {
+                int patternByte = getByte(addr++);
+                int mask = 0x80;
+                for (int p = 0; p < 8; p++) {
+                    grid[y][(x << 3) + p] = (patternByte & mask) != 0 ? color : 0;
+                    mask >>= 1;
+                }
+            }
+        }
+        // Normalize upside-down graphics.
+        grid = flipHorizontal(grid);
+        return grid;
     }
 
     public void mouseClicked(MouseEvent e) {
