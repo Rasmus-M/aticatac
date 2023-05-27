@@ -2,9 +2,10 @@
 * Macros
 *
        .defm call
-       li   r11,$+10
-       mov  r11,*sp+
-       b    #1
+       bl   #1
+;       li   r11,$+10
+;       mov  r11,*sp+
+;       b    #1
        .endm
 
        .defm ret
@@ -51,15 +52,16 @@
        .endm
 
        .defm exx
-       mov  bc,r0
-       mov  bc_,bc
-       mov  r0,bc_
-       mov  hl,r0
-       mov  hl_,hl
-       mov  r0,hl_
-       mov  de,r0
-       mov  de_,de
-       mov  r0,de_
+       bl   @exx_routine
+;       mov  bc,r0
+;       mov  bc_,bc
+;       mov  r0,bc_
+;       mov  hl,r0
+;       mov  hl_,hl
+;       mov  r0,hl_
+;       mov  de,r0
+;       mov  de_,de
+;       mov  r0,de_
        .endm
 
        .defm ex_de_hl

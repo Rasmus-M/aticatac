@@ -2,12 +2,14 @@
 
        b    @start
 
-       copy "ti-general-routines.a99"
        copy "data.a99"
 
-       aorg >2800
+       aorg >2500
 
-       copy "buffers.a99"
+attr_buffer:
+       bss  >300
+scrn_buffer:
+       bss  >1800
 
 lower_memory_max:
        equ  $
