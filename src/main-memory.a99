@@ -6,7 +6,7 @@
        copy "room-data.a99"
        copy "side-panel.a99"
 
-       save >2000,>3fff
+       save >2000,>4000
        copy "lower-memory.a99"
 
        save >a000,
