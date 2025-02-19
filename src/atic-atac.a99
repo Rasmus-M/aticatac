@@ -3905,22 +3905,24 @@ loc_9528:                              ; >9528
        movb a,*de                      ; LD (DE),A         ; 
        movb a,*hl                      ; LD (HL),A         ; 
        .push de                        ; PUSH DE           ; 
-       inc  de                         ; INC DE            ; 
-       inc  de                         ; INC DE            ; 
-       inc  de                         ; INC DE            ; 
-       inc  de                         ; INC DE            ; 
-       inc  de                         ; INC DE            ; + 5
-       movb *de,a                      ; LD A,(DE)         ; 
+;      inc  de                         ; INC DE            ;
+;      inc  de                         ; INC DE            ;
+;      inc  de                         ; INC DE            ;
+;      inc  de                         ; INC DE            ;
+;      inc  de                         ; INC DE            ; + 5
+       ai   de,5
+       movb *de,a                      ; LD A,(DE)         ;
        socb @bytes+>08,a               ; OR $08            ; 
        movb a,*de                      ; LD (DE),A         ; 
        .pop de                         ; POP DE            ; 
        .push hl                        ; PUSH HL           ; 
-       inc  hl                         ; INC HL            ; 
-       inc  hl                         ; INC HL            ; 
-       inc  hl                         ; INC HL            ; 
-       inc  hl                         ; INC HL            ; 
-       inc  hl                         ; INC HL            ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
+;      inc  hl                         ; INC HL            ;
+;      inc  hl                         ; INC HL            ;
+;      inc  hl                         ; INC HL            ;
+;      inc  hl                         ; INC HL            ;
+;      inc  hl                         ; INC HL            ;
+       ai   hl,5
+       movb *hl,a                      ; LD A,(HL)         ;
        socb @bytes+>08,a               ; OR $08            ; 
        movb a,*hl                      ; LD (HL),A         ; 
        .pop hl                         ; POP HL            ; 

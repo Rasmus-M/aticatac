@@ -1,15 +1,11 @@
-       aorg >2000
+*      ZX screen at >2000
+*      ZX attributes at >3800
+
+       aorg >3b00
 
        b    @start
 
        copy "data.a99"
-
-       aorg >2500
-
-attr_buffer:
-       bss  >300
-scrn_buffer:
-       bss  >1800
 
 lower_memory_max:
        equ  $

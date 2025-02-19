@@ -106,14 +106,27 @@ name_table_2:                          ; Name table 2
 * ZX Spectrum memory map
 *
 zx_screen:
-       equ  scrn_buffer
+       equ  >2000
 zx_attrs:
-       equ  attr_buffer
+       equ  >3800
 zx_buffer:
        equ  >5b00
 zx_sys_var:
        equ  >5c00
 zx_frames:
        equ  >5C78
+
+**
+* ROM bank select addresses
+*
+background_graphics_rom_bank:
+       equ  >6008
+sprite_graphics_rom_bank:
+       equ  >600a
+room_data_rom_bank:
+       equ  >600c
+loading_screen_rom_bank:
+       equ  >600e
+
 
        copy "sound-defs.a99"

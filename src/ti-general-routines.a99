@@ -206,8 +206,7 @@ ti_clear_screen_part_1:
 *
 ti_set_screen_color:
        .proc
-       bl   @ti_color
-       movb r0,r1
+       movb @ti_colors(a),r1
        li   r0,color_table+(3*256)
        li   r2,5*256
        bl   @vsmw
@@ -231,185 +230,272 @@ ti_set_screen_color:
 *
 ti_set_border_color:
        .proc
-       bl   @ti_color
+       movb @ti_colors(a),r0
        srl  r0,12
        ori  r0,>0700
        bl   @vwtr
        .endproc
 *// ti_set_border_color
 
-*********************************************************************
-*
-* Draw graphics
-*
-* r0 (r13): VDP address
-* r1 (r14): Source address
-* r2 (r15) MSB: width in characters
-* r2 (r15) LSB: height in characters
-*
-ti_draw_graphics:
-       .proc
-       lwpi ti_wrksp
-       mov  r13,r0
-       mov  r14,r1
-       mov  r15,r2                     ; Width and height
-       andi r2,>00ff                   ; Height
-       mov  r15,r4                     ; Width and height
-       srl  r4,8                       ; Width
-       mov  @row_src_skip,r5
-       li   r6,vdpwd
-       ori  r0,>4000                   ; Set read/write bits 14 and 15 to write (01)
-ti_draw_graphics_1:
-       movb @ti_r0lb,@vdpwa            ; Send low byte of VDP RAM write address
-       movb r0,@vdpwa                  ; Send high byte of VDP RAM write address
-       mov  r4,r3                      ; Width in characters
-ti_draw_graphics_2:
-       movb *r1+,*r6
-       movb *r1+,*r6
-       movb *r1+,*r6
-       movb *r1+,*r6
-       movb *r1+,*r6
-       movb *r1+,*r6
-       movb *r1+,*r6
-       movb *r1+,*r6
-       dec  r3
-       jne  ti_draw_graphics_2
-       ai   r0,256                     ; Next character row
-       a    r5,r1                      ; Skip source bytes
-       dec  r2
-       jne  ti_draw_graphics_1
-       lwpi wrksp
-;       bl   @module_player
-       .endproc
-row_src_skip:
-       data 0
-*// ti_draw_graphics
-
-*********************************************************************
-*
-* Draw color area
-*
-* r0 (r13): VDP offset in color table
-* r1 (r14) LSB: ZX attribute to draw
-* r2 (r15) MSB: width in characters
-* r2 (r15) LSB: height in characters
-*
-ti_draw_color_area:
-       .proc
-       lwpi ti_wrksp
-       mov  r13,r0
-       mov  r14,r1
-       movb @ti_colors(r1),r1
-       mov  r15,r2                     ; Width and height
-       andi r2,>00ff                   ; Height
-       mov  r15,r4                     ; Width and height
-       srl  r4,8                       ; Width
-       li   r6,vdpwd
-       ori  r0,>4000 + color_table     ; Set read/write bits 14 and 15 to write (01) + color table base
-ti_draw_color_area_1:
-       movb @ti_r0lb,@vdpwa            ; Send low byte of VDP RAM write address
-       movb r0,@vdpwa                  ; Send high byte of VDP RAM write address
-       mov  r4,r3                      ; Width in characters
-ti_draw_color_area_2:
-       movb r1,*r6
-       movb r1,*r6
-       movb r1,*r6
-       movb r1,*r6
-       movb r1,*r6
-       movb r1,*r6
-       movb r1,*r6
-       movb r1,*r6
-       dec  r3
-       jne  ti_draw_color_area_2
-       ai   r0,256                     ; Next character row
-       dec  r2
-       jne  ti_draw_color_area_1
-       lwpi wrksp
-;       bl   @module_player
-       .endproc
-*// ti_draw_color_area
+;*********************************************************************
+;*
+;* Draw graphics
+;*
+;* r0 (r13): VDP address
+;* r1 (r14): Source address
+;* r2 (r15) MSB: width in characters
+;* r2 (r15) LSB: height in characters
+;*
+;ti_draw_graphics:
+;       .proc
+;       lwpi ti_wrksp
+;       mov  r13,r0
+;       mov  r14,r1
+;       mov  r15,r2                     ; Width and height
+;       andi r2,>00ff                   ; Height
+;       mov  r15,r4                     ; Width and height
+;       srl  r4,8                       ; Width
+;       mov  @row_src_skip,r5
+;       li   r6,vdpwd
+;       ori  r0,>4000                   ; Set read/write bits 14 and 15 to write (01)
+;ti_draw_graphics_1:
+;       movb @ti_r0lb,@vdpwa            ; Send low byte of VDP RAM write address
+;       movb r0,@vdpwa                  ; Send high byte of VDP RAM write address
+;       mov  r4,r3                      ; Width in characters
+;ti_draw_graphics_2:
+;       movb *r1+,*r6
+;       movb *r1+,*r6
+;       movb *r1+,*r6
+;       movb *r1+,*r6
+;       movb *r1+,*r6
+;       movb *r1+,*r6
+;       movb *r1+,*r6
+;       movb *r1+,*r6
+;       dec  r3
+;       jne  ti_draw_graphics_2
+;       ai   r0,256                     ; Next character row
+;       a    r5,r1                      ; Skip source bytes
+;       dec  r2
+;       jne  ti_draw_graphics_1
+;       lwpi wrksp
+;;       bl   @module_player
+;       .endproc
+;row_src_skip:
+;       data 0
+;*// ti_draw_graphics
+;
+;*********************************************************************
+;*
+;* Draw color area
+;*
+;* r0 (r13): VDP offset in color table
+;* r1 (r14) LSB: ZX attribute to draw
+;* r2 (r15) MSB: width in characters
+;* r2 (r15) LSB: height in characters
+;*
+;ti_draw_color_area:
+;       .proc
+;       lwpi ti_wrksp
+;       mov  r13,r0
+;       mov  r14,r1
+;       movb @ti_colors(r1),r1
+;       mov  r15,r2                     ; Width and height
+;       andi r2,>00ff                   ; Height
+;       mov  r15,r4                     ; Width and height
+;       srl  r4,8                       ; Width
+;       li   r6,vdpwd
+;       ori  r0,>4000 + color_table     ; Set read/write bits 14 and 15 to write (01) + color table base
+;ti_draw_color_area_1:
+;       movb @ti_r0lb,@vdpwa            ; Send low byte of VDP RAM write address
+;       movb r0,@vdpwa                  ; Send high byte of VDP RAM write address
+;       mov  r4,r3                      ; Width in characters
+;ti_draw_color_area_2:
+;       movb r1,*r6
+;       movb r1,*r6
+;       movb r1,*r6
+;       movb r1,*r6
+;       movb r1,*r6
+;       movb r1,*r6
+;       movb r1,*r6
+;       movb r1,*r6
+;       dec  r3
+;       jne  ti_draw_color_area_2
+;       ai   r0,256                     ; Next character row
+;       dec  r2
+;       jne  ti_draw_color_area_1
+;       lwpi wrksp
+;;       bl   @module_player
+;       .endproc
+;*// ti_draw_color_area
+;
+;*********************************************************************************
+;*
+;* Draw attribute
+;*
+;* a: zx attribute
+;* r1: address in zx attribute file
+;*
+;ti_draw_attribute:
+;*      VDP write address
+;       ai   r1,-zx_attrs
+;       sla  r1,3
+;       ai   r1,color_table+>4000
+;*      Set VDP write address
+;       movb @r1lb,@vdpwa               ; Send low byte of VDP RAM write address
+;       movb r1,@vdpwa                ; Send high byte of VDP RAM write address
+;*      Color
+;       swpb a
+;       movb @ti_colors(a),r0
+;       swpb a
+;*      Draw
+;       li   r2,vdpwd
+;       movb r0,*r2
+;       movb r0,*r2
+;       movb r0,*r2
+;       movb r0,*r2
+;       movb r0,*r2
+;       movb r0,*r2
+;       movb r0,*r2
+;       movb r0,*r2
+;       rt
+;*// ti_draw_attribute
+;
+;*********************************************************************************
+;*
+;* Get TI-99 color from ZX Spectrum color
+;*
+;* a: Colour-byte FBPPPIII
+;*  - I - Ink colour (0-7)
+;*  - P - Paper colour (0-7)
+;*  - B - Bright (0-No, 1-Yes)
+;*  - F - Flash  (0-No, 1-Yes)
+;*
+;* On return r0 MSB contains the TI color FFFFBBBB.
+;*
+;ti_color:
+;       clr  r0                       ; Result
+;       mov  a,r2
+;       andi r2,>4000                 ; Bright bit
+;       srl  r2,3
+;*      Foreground
+;       mov  a,r1
+;       andi r1,>0700                 ; Foreground bits
+;       soc  r2,r1
+;       swpb r1
+;       movb @ti_pal(r1),r0
+;       sla  r0,4
+;*      Background
+;       mov  a,r1
+;       andi r1,>3800                 ; Background bits
+;       srl  r1,3
+;       soc  r2,r1
+;       swpb r1
+;       socb @ti_pal(r1),r0
+;       rt
+;
+;* Spectrum palette
+;* 0  Black,    1 D Blue,   2 D Red,     3 D Magenta
+;* 4  D Green,  5 D Cyan,   6 D Yellow,  7 Grey
+;* 8  Black,    9 Blue,    10 Red,      11 Magenta
+;* 12 Green,   13 Cyan,    14 Yellow,   15 White
+;
+;* TI palette
+;* 0  Trans,    1 Black,    2 M Green,   3 L Green
+;* 4  D Blue,   5 L Blue,   6 D Red,     7 Cyan
+;* 8  M Red,    9 L Red,   10 D Yellow, 11 L Yellow
+;* 12 D Green, 13 Magenta, 14 Gray,     15 White
+;
+;ti_pal  byte 1,4,6,13,12,7,10,14,1,5,8,13,2,7,11,15
+;* Not used: 3 L Green, 9 L Red
+;* Not available: D Cyan, D Magenta
+;*// ti_color
 
 *********************************************************************************
 *
-* Draw attribute
+* Upload main ZX screen buffer
 *
-* a: zx attribute
-* r1: address in zx attribute file
-*
-ti_draw_attribute:
-*      VDP write address
-       ai   r1,-zx_attrs
-       sla  r1,3
-       ai   r1,color_table+>4000
-*      Set VDP write address
-       movb @r1lb,@vdpwa               ; Send low byte of VDP RAM write address
-       movb r1,@vdpwa                ; Send high byte of VDP RAM write address
-*      Color
-       swpb a
-       movb @ti_colors(a),r0
-       swpb a
-*      Draw
-       li   r2,vdpwd
-       movb r0,*r2
-       movb r0,*r2
-       movb r0,*r2
-       movb r0,*r2
-       movb r0,*r2
-       movb r0,*r2
-       movb r0,*r2
-       movb r0,*r2
+upload_zx_screen:
+       lwpi ti_wrksp
+       mov  @wrksp+20,r10
+       clr  r0
+       li   r14,zx_screen
+       li   r15,zx_attrs
+       bl   @upload_screen_part
+       li   r0,>800
+       li   r14,zx_screen+>800
+       li   r15,zx_attrs+>100
+       bl   @upload_screen_part
+       li   r0,>1000
+       li   r14,zx_screen+>1000
+       li   r15,zx_attrs+>200
+       bl   @upload_screen_part
+       lwpi wrksp
        rt
-*// ti_draw_attribute
+*// upload_zx_screen
 
 *********************************************************************************
 *
-* Get TI-99 color from ZX Spectrum color
+* Upload screen part
 *
-* a: Colour-byte FBPPPIII
-*  - I - Ink colour (0-7)
-*  - P - Paper colour (0-7)
-*  - B - Bright (0-No, 1-Yes)
-*  - F - Flash  (0-No, 1-Yes)
+* r0: VDP table offset
+* r14: Screen address
+* r15: Attributes address
 *
-* On return r0 MSB contains the TI color FFFFBBBB.
-*
-ti_color:
-       clr  r0                       ; Result
-       mov  a,r2
-       andi r2,>4000                 ; Bright bit
-       srl  r2,3
-*      Foreground
-       mov  a,r1
-       andi r1,>0700                 ; Foreground bits
-       soc  r2,r1
-       swpb r1
-       movb @ti_pal(r1),r0
-       sla  r0,4
-*      Background
-       mov  a,r1
-       andi r1,>3800                 ; Background bits
-       srl  r1,3
-       soc  r2,r1
-       swpb r1
-       socb @ti_pal(r1),r0
-       rt
-
-* Spectrum palette
-* 0  Black,    1 D Blue,   2 D Red,     3 D Magenta
-* 4  D Green,  5 D Cyan,   6 D Yellow,  7 Grey
-* 8  Black,    9 Blue,    10 Red,      11 Magenta
-* 12 Green,   13 Cyan,    14 Yellow,   15 White
-
-* TI palette
-* 0  Trans,    1 Black,    2 M Green,   3 L Green
-* 4  D Blue,   5 L Blue,   6 D Red,     7 Cyan
-* 8  M Red,    9 L Red,   10 D Yellow, 11 L Yellow
-* 12 D Green, 13 Magenta, 14 Gray,     15 White
-
-ti_pal  byte 1,4,6,13,12,7,10,14,1,5,8,13,2,7,11,15
-* Not used: 3 L Green, 9 L Red
-* Not available: D Cyan, D Magenta
-*// ti_color
+upload_screen_part:
+       .proc
+       li   r13,vdpwd
+       li   r1,>0100
+*      Patterns
+       ai   r0,pattern_table
+       bl   @vwad
+       mov  r14,r4
+       a    r1,r14
+       mov  r14,r5
+       a    r1,r14
+       mov  r14,r6
+       a    r1,r14
+       mov  r14,r7
+       a    r1,r14
+       mov  r14,r8
+       a    r1,r14
+       mov  r14,r9
+       a    r1,r14
+       mov  r14,r11
+       a    r1,r14
+       mov  r14,r12
+       a    r1,r14
+       li   r3,256
+upload_screen_part_1:
+       movb *r4+,*r13
+       movb *r5+,*r13
+       movb *r6+,*r13
+       movb *r7+,*r13
+       movb *r8+,*r13
+       movb *r9+,*r13
+       movb *r11+,*r13
+       movb *r12+,*r13
+       dec  r3
+       jne  upload_screen_part_1
+*      Colors
+       ai   r0,color_table-pattern_table
+       bl   @vwad
+       li   r2,>100
+upload_screen_part_2:
+       movb *r15+,r1
+       srl  r1,8
+       movb @ti_colors(r1),r0
+       movb r0,*r13
+       movb r0,*r13
+       movb r0,*r13
+       movb r0,*r13
+       movb r0,*r13
+       movb r0,*r13
+       movb r0,*r13
+       movb r0,*r13
+       dec  r2
+       jne  upload_screen_part_2
+       .endproc
+*// upload_screen_buffer
 
 *********************************************************************
 *
@@ -780,43 +866,3 @@ exx_routine:
        mov  de_,de
        mov  r0,de_
        rt
-
-*********************************************************************
-*
-* Lookup tables
-*
-bytes:
-       byte >00,>01,>02,>03,>04,>05,>06,>07,>08,>09,>0a,>0b,>0c,>0d,>0e,>0f
-       byte >10,>11,>12,>13,>14,>15,>16,>17,>18,>19,>1a,>1b,>1c,>1d,>1e,>1f
-       byte >20,>21,>22,>23,>24,>25,>26,>27,>28,>29,>2a,>2b,>2c,>2d,>2e,>2f
-       byte >30,>31,>32,>33,>34,>35,>36,>37,>38,>39,>3a,>3b,>3c,>3d,>3e,>3f
-       byte >40,>41,>42,>43,>44,>45,>46,>47,>48,>49,>4a,>4b,>4c,>4d,>4e,>4f
-       byte >50,>51,>52,>53,>54,>55,>56,>57,>58,>59,>5a,>5b,>5c,>5d,>5e,>5f
-       byte >60,>61,>62,>63,>64,>65,>66,>67,>68,>69,>6a,>6b,>6c,>6d,>6e,>6f
-       byte >70,>71,>72,>73,>74,>75,>76,>77,>78,>79,>7a,>7b,>7c,>7d,>7e,>7f
-       byte >80,>81,>82,>83,>84,>85,>86,>87,>88,>89,>8a,>8b,>8c,>8d,>8e,>8f
-       byte >90,>91,>92,>93,>94,>95,>96,>97,>98,>99,>9a,>9b,>9c,>9d,>9e,>9f
-       byte >a0,>a1,>a2,>a3,>a4,>a5,>a6,>a7,>a8,>a9,>aa,>ab,>ac,>ad,>ae,>af
-       byte >b0,>b1,>b2,>b3,>b4,>b5,>b6,>b7,>b8,>b9,>ba,>bb,>bc,>bd,>be,>bf
-       byte >c0,>c1,>c2,>c3,>c4,>c5,>c6,>c7,>c8,>c9,>ca,>cb,>cc,>cd,>ce,>cf
-       byte >d0,>d1,>d2,>d3,>d4,>d5,>d6,>d7,>d8,>d9,>da,>db,>dc,>dd,>de,>df
-       byte >e0,>e1,>e2,>e3,>e4,>e5,>e6,>e7,>e8,>e9,>ea,>eb,>ec,>ed,>ee,>ef
-       byte >f0,>f1,>f2,>f3,>f4,>f5,>f6,>f7,>f8,>f9,>fa,>fb,>fc,>fd,>fe,>ff
-
-ti_colors:
-       byte >11,>41,>61,>d1,>c1,>71,>a1,>e1,>14,>44,>64,>d4,>c4,>74,>a4,>e4
-       byte >16,>46,>66,>d6,>c6,>76,>a6,>e6,>1d,>4d,>6d,>dd,>cd,>7d,>ad,>ed
-       byte >1c,>4c,>6c,>dc,>cc,>7c,>ac,>ec,>17,>47,>67,>d7,>c7,>77,>a7,>e7
-       byte >1a,>4a,>6a,>da,>ca,>7a,>aa,>ea,>1e,>4e,>6e,>de,>ce,>7e,>ae,>ee
-       byte >11,>51,>81,>d1,>21,>71,>b1,>f1,>15,>55,>85,>d5,>25,>75,>b5,>f5
-       byte >18,>58,>88,>d8,>28,>78,>b8,>f8,>1d,>5d,>8d,>dd,>2d,>7d,>bd,>fd
-       byte >12,>52,>82,>d2,>22,>72,>b2,>f2,>17,>57,>87,>d7,>27,>77,>b7,>f7
-       byte >1b,>5b,>8b,>db,>2b,>7b,>bb,>fb,>1f,>5f,>8f,>df,>2f,>7f,>bf,>ff
-       byte >11,>14,>16,>1d,>1c,>17,>1a,>1e,>41,>44,>46,>4d,>4c,>47,>4a,>4e
-       byte >61,>64,>66,>6d,>6c,>67,>6a,>6e,>d1,>d4,>d6,>dd,>dc,>d7,>da,>de
-       byte >c1,>c4,>c6,>cd,>cc,>c7,>ca,>ce,>71,>74,>76,>7d,>7c,>77,>7a,>7e
-       byte >a1,>a4,>a6,>ad,>ac,>a7,>aa,>ae,>e1,>e4,>e6,>ed,>ec,>e7,>ea,>ee
-       byte >11,>15,>18,>1d,>12,>17,>1b,>1f,>51,>55,>58,>5d,>52,>57,>5b,>5f
-       byte >81,>85,>88,>8d,>82,>87,>8b,>8f,>d1,>d5,>d8,>dd,>d2,>d7,>db,>df
-       byte >21,>25,>28,>2d,>22,>27,>2b,>2f,>71,>75,>78,>7d,>72,>77,>7b,>7f
-       byte >b1,>b5,>b8,>bd,>b2,>b7,>bb,>bf,>f1,>f5,>f8,>fd,>f2,>f7,>fb,>ff
