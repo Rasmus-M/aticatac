@@ -12,7 +12,9 @@
 
 * Routine at 6000
 start:                                 ; >6000
-       bl   @ti_setup_environment
+      limi 0
+      lwpi wrksp
+      bl   @ti_setup_environment
 ;       limi 0                          ; DI                ;
 ;       li   sp,menu_selection          ; LD SP,$5E00       ;
 ;_6004:                                 ; >6004
@@ -40,6 +42,15 @@ clear_menu_data:                       ; >7c1e
 main_menu:                             ; >7c29
        .call @clear_screen             ; CALL $80AA        ; clear display, attributes, and set black border
        .call @draw_menu_icons          ; CALL $A311        ; draw menu icons for controls and player acharacters
+       li   r0,>2000
+       li   r1,>ff00
+       li   r2,>1800
+!      movb r1,*r0+
+       dec  r2
+       jne  -!
+
+       bl   @upload_zx_screen
+loop:  jmp  loop
 menu_loop:                             ; >7c2f
        .call @draw_menu_text           ; CALL $7CAF        ; 
        movb @bytes+>f7,a               ; LD A,$F7          ; xxx54321
@@ -187,35 +198,6 @@ menu_attrs:                            ; >7cea
        byte >C5,>45,>45,>C5,>45,>45,>47
 menu_ycoords:                          ; >7cf1
        byte >10,>28,>40,>58,>70,>88,>A0
-
-* Message at 7cf8
-menu_options:                          ; >7cf8
-       text '1  KEYBOAR'
-       byte >C4
-       text '2  KEMPSTON JOYSTIC'
-       byte >CB
-       text '3  CURSOR   JOYSTIC'
-       byte >CB
-       text '4  KNIGH'
-       byte >D4
-       text '5  WIZAR'
-       byte >C4
-       text '6  SER'
-       byte >C6
-       text '0  START GAM'
-       byte >C5
-
-* Data block at 7d51
-copyright_msg:                         ; >7d51
-       byte >47
-       text '%1983 A.C.G. ALL RIGHTS RESERVE'
-       byte >C4
-
-* Data block at 7d72
-header_msg:                            ; >7d72
-       byte >47
-       text 'ATICATAC GAME SELECTIO'
-       byte >CE
 
 * Routine at 7d8a
 * 
@@ -549,48 +531,61 @@ loc_809f:                              ; >809f
 * 
 * Used by the routines at #R$7c19 and #R$7d9a.
 clear_screen:                          ; >80aa
-       bl   @ti_clear_screen
-;       .call @clear_attrs              ; CALL $80C2        ; clear attribute file
-;       .call @clear_display            ; CALL $80B4        ; clear display file
+       .proc
+       .call @clear_attrs             ; CALL $80C2         ; clear attribute file
+       .call @clear_display           ; CALL $80B4         ; clear display file
        sb   a,a                        ; XOR A             ; 
        bl   @ti_set_border_color
        ; OUT ($FE),A                   ; OUT ($FE),A       ; black border
-       .ret                            ; RET               ; 
+       .endproc                        ; RET               ;
 
 * clear display file
 * 
 * Used by the routine at #R$80aa.
 clear_display:                         ; >80b4
+       .proc
+
        li   hl,zx_screen               ; LD HL,$4000       ; 
-       movb @bytes+>58,b               ; LD B,$58          ; 
-* This entry point is used by the routine at #R$80cb.
-loc_80b9:                              ; >80b9
-       sb   @c,@c                      ; LD C,$00          ; 
-* This entry point is used by the routine at #R$80c2.
-loc_80bb:                              ; >80bb
-       movb @c,*hl                     ; LD (HL),C         ; 
-       inc  hl                         ; INC HL            ; 
-       movb h,a                        ; LD A,H            ; 
-       cb   a,b                        ; CP B              ; 
-       jne  loc_80bb                   ; JR NZ,$80BB       ; 
-       .ret                            ; RET               ; 
+;       movb @bytes+zx_attrs_msb,b      ; LD B,$58          ;
+       li   bc,>1800
+clear_display_1:
+       bl   @clear
+       .endproc
+
+;* This entry point is used by the routine at #R$80cb.
+;loc_80b9:                              ; >80b9
+;       sb   @c,@c                      ; LD C,$00          ;
+;* This entry point is used by the routine at #R$80c2.
+;loc_80bb:                              ; >80bb
+;       movb @c,*hl                     ; LD (HL),C         ;
+;       inc  hl                         ; INC HL            ;
+;       movb h,a                        ; LD A,H            ;
+;       cb   a,b                        ; CP B              ;
+;       jne  loc_80bb                   ; JR NZ,$80BB       ;
+;       .ret                            ; RET               ;
 
 * clear attribute file
 * 
 * Used by the routine at #R$80aa.
 clear_attrs:                           ; >80c2
+       .proc
        li   hl,zx_attrs                ; LD HL,$5800       ; 
-       movb @bytes+>5b,b               ; LD B,$5B          ; 
-       sb   @c,@c                      ; LD C,$00          ; 
-       jmp  loc_80bb                   ; JR $80BB          ; 
+;       movb @bytes+zx_attrs_msb+3,b    ; LD B,$5B          ;
+;       sb   @c,@c                      ; LD C,$00          ;
+;       jmp  loc_80bb                   ; JR $80BB          ;
+       li   bc,>300
+       jmp  clear_display_1
 
 * clear 5E10-5FFF
 * 
 * Used by the routine at #R$7d9a.
 clear_game_data:                       ; >80cb
-       li   hl,width_bytes             ; LD HL,$5E10       ; 
-       movb @bytes+>60,b               ; LD B,$60          ; clear up to address 6000
-       jmp  loc_80b9                   ; JR $80B9          ; 
+       .proc
+       li   hl,game_data               ; LD HL,$5E10       ;
+;       movb @bytes+>60,b               ; LD B,$60          ; clear up to address 6000
+;       jmp  loc_80b9                   ; JR $80B9          ;
+       li   bc,game_data_end-game_data
+       jmp  clear_display_1
 
 * wizard character handler
 h_wizard:                              ; >80d2
@@ -2352,12 +2347,6 @@ gameover_delay:                        ; >8c4f
        jne  gameover_delay             ;                   
        b    @main_menu                 ; JP $7C29          ; 
 
-* Data block at 8c59
-gameover_msg:                          ; >8c59
-       byte >47                                                      ; bright white
-       text 'GAME OVE'
-       byte >D2
-
 * food item handler
 h_food:                                ; >8c63
        .call @save_entity              ; CALL $9FFB        ; save entity position for undraw
@@ -2849,28 +2838,6 @@ loc_8f73:                              ; >8f73
        movb d,a                        ; LD A,D            ; delta y
        ab   @>04(ix),a                 ; ADD A,(IX+$04)    ; apply y movement
        movb a,@>04(ix)                 ; LD (IX+$04),A     ; 
-       .ret                            ; RET               ; 
-
-* return signed top nibble
-* 
-* Used by the routine at #R$8eef.
-get_signed_b7_4:                       ; >8f80
-       ; AND A                         ; AND A             ; positive?
-       ; JP P,$8F8F                    ; JP P,$8F8F        ; jump if so
-       neg a                           ; NEG               ; negate
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; high nibble to low nibble
-       andi a,>0f00                    ; AND $0F           ; keep low nibble
-       neg a                           ; NEG               ; re-negate
-       .ret                            ; RET               ; 
-loc_8f8f:                              ; >8f8f
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; high nibble to low nibble
-       andi a,>0f00                    ; AND $0F           ; keep low nibble
        .ret                            ; RET               ; 
 
 * decelerate player movement
@@ -3402,17 +3369,6 @@ set_door_type:                         ; >9260
        movb a,@l                       ; LD L,A            ; 
        .ex_af_af_                      ; EX AF,AF'         ; 
        movb a,*hl                      ; LD (HL),A         ; set linked door graphic
-       .ret                            ; RET               ; 
-
-* HL = HL + A
-* 
-* Used by the routines at #R$9222 and #R$a00e.
-add_hl_a:                              ; >926c
-       ab   @l,a                       ; ADD A,L           ; 
-       movb a,@l                       ; LD L,A            ; 
-       movb h,a                        ; LD A,H            ; 
-       ab   @zero,a                    ; ADC A,$00         ; 
-       movb a,h                        ; LD H,A            ; 
        .ret                            ; RET               ; 
 
 * check if player is carrying object E with colour D
@@ -4136,25 +4092,6 @@ game_stats:                            ; >9641
        movb one,b                      ; LD B,$01          ; 
        b    @print_bcd_bytes           ; JP $A1BF          ; print B BCD bytes at DE
 
-* Data block at 967f
-time_msg:                              ; >967f
-       byte >45                                                      ; bright cyan
-       text 'TIME       '
-       text '#  '
-       byte >A0
-
-* Data block at 968f
-score_msg:                             ; >968f
-       byte >45                                                      ; bright cyan
-       text 'SCORE         '
-       byte >A0
-
-* Data block at 969f
-percent_msg:                           ; >969f
-       byte >45                                                      ; bright cyan
-       text '>             '
-       byte >A0
-
 * mark room A as visited
 * 
 * Used by the routine at #R$9117.
@@ -4219,18 +4156,6 @@ game_complete:                         ; >96ec
        .call @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
        .call @game_stats               ; CALL $9641        ; show game statistics
        b    @loc_8c4a                  ; JP $8C4A          ; 
-
-* Data block at 9710
-congrat_msg:                           ; >9710
-       byte >47
-       text 'CONGRATULATION'
-       byte >D4
-
-* Data block at 9720
-escape_msg:                            ; >9720
-       byte >47
-       text 'YOU HAVE ESCAPE'
-       byte >C4
 
 * Routine at 9731
 * 
@@ -4749,83 +4674,6 @@ loc_9a78:                              ; >9a78
        inc  de                         ; INC DE            ; 
        jmp  loc_9a60                   ; JR $9A60          ; 
 
-* mirror bits in A
-* 
-* Used by the routines at #R$99e5 and #R$9aef.
-mirror_a:                              ; >9a92
-       .push bc                        ; PUSH BC           ; 
-       movb @bytes+>08,b               ; LD B,$08          ; 
-loc_9a95:                              ; >9a95
-       ; RLA                           ; RLA               ; 
-       ; RR C                          ; RR C              ; 
-       sb   one,b                      ; DJNZ $9A95        ; 
-       jne  loc_9a95                   ;                   
-       movb @c,a                       ; LD A,C            ; 
-       .pop bc                         ; POP BC            ; 
-       .ret                            ; RET               ; 
-
-* add B to DE
-* 
-* Used by the routines at #R$99e5, #R$9a0a, #R$9a50, #R$9aef, #R$9b14, #R$9d47,
-* #R$9d6f, #R$9da0, #R$9df8 and #R$9e21.
-add_de_b:                              ; >9a9d
-       movb b,a                        ; LD A,B            ; 
-       ab   @e,a                       ; ADD A,E           ; 
-       movb a,@e                       ; LD E,A            ; 
-       movb d,a                        ; LD A,D            ; 
-       ab   @zero,a                    ; ADC A,$00         ; 
-       movb a,d                        ; LD D,A            ; 
-       .ret                            ; RET               ; 
-
-* subtract B from DE
-* 
-* Used by the routines at #R$9acb, #R$9b14, #R$9b5d, #R$9dce, #R$9e21 and
-* #R$9e55.
-sbc_de_b:                              ; >9aa5
-       movb @e,a                       ; LD A,E            ; 
-       sb   b,a                        ; SUB B             ; 
-       movb a,@e                       ; LD E,A            ; 
-       movb d,a                        ; LD A,D            ; 
-       sb   @zero,a                    ; SBC A,$00         ; 
-       movb a,d                        ; LD D,A            ; 
-       .ret                            ; RET               ; 
-
-* HL = DE * A
-* 
-* Used by the routines at #R$8b8a and #R$9aba.
-mult_de_a:                             ; >9aad
-       li   hl,>0000                   ; LD HL,$0000       ; 
-       movb @bytes+>08,b               ; LD B,$08          ; 
-loc_9ab2:                              ; >9ab2
-       a    hl,hl                      ; ADD HL,HL         ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       jnc  loc_9ab7                   ; JR NC,$9AB7       ; TODO: check code. 
-       a    de,hl                      ; ADD HL,DE         ; 
-loc_9ab7:                              ; >9ab7
-       sb   one,b                      ; DJNZ $9AB2        ; 
-       jne  loc_9ab2                   ;                   
-       .ret                            ; RET               ; 
-
-* HL = DE + B * C
-* 
-* Used by the routines at #R$9acb, #R$9aef, #R$9b14, #R$9b5d, #R$9dce, #R$9df8,
-* #R$9e21 and #R$9e55.
-hl_de_b_c:                             ; >9aba
-       .push hl                        ; PUSH HL           ; 
-       .push de                        ; PUSH DE           ; 
-       movb b,a                        ; LD A,B            ; 
-       movb @c,@e                      ; LD E,C            ; 
-       sb   one,@e                     ; DEC E             ; convert 1-based to 0-based
-       sb   d,d                        ; LD D,$00          ; 
-       .push bc                        ; PUSH BC           ; 
-       .call @mult_de_a                ; CALL $9AAD        ; HL = DE * A
-       .pop bc                         ; POP BC            ; 
-       .pop de                         ; POP DE            ; 
-       a    de,hl                      ; ADD HL,DE         ; 
-       .ex_de_hl                       ; EX DE,HL          ; 
-       .pop hl                         ; POP HL            ; 
-       .ret                            ; RET               ; 
-
 * Routine at 9acb
 draw_disp_4:                           ; >9acb
        .pop bc                         ; POP BC            ; 
@@ -4999,37 +4847,6 @@ loc_9b88:                              ; >9b88
        inc  de                         ; INC DE            ; 
        jmp  loc_9b70                   ; JR $9B70          ; 
 
-* convert coords in HL to display address in HL
-* 
-* Used by the routines at #R$7d8a, #R$8b8a, #R$9607, #R$9641, #R$9995, #R$9c61,
-* #R$9f80, #R$9f9f, #R$a185, #R$a1b7, #R$a1f3 and #R$a219.
-xy_to_display:                         ; >9ba2
-       movb @l,a                       ; LD A,L            ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       andi a,>1f00                    ; AND $1F           ; 
-       movb a,@l                       ; LD L,A            ; 
-       movb h,a                        ; LD A,H            ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       andi a,>e000                    ; AND $E0           ; 
-       socb @l,a                       ; OR L              ; 
-       movb a,@l                       ; LD L,A            ; 
-       movb h,a                        ; LD A,H            ; 
-       andi a,>0700                    ; AND $07           ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       movb h,a                        ; LD A,H            ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       andi a,>1800                    ; AND $18           ; 
-       socb @bytes+>40,a               ; OR $40            ; 
-       movb a,h                        ; LD H,A            ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       socb h,a                        ; OR H              ; 
-       movb a,h                        ; LD H,A            ; 
-       .ret                            ; RET               ; 
 
 * Routine at 9bc1
 pixel_line_down:                       ; >9bc1
@@ -5049,32 +4866,6 @@ pixel_line_down:                       ; >9bc1
        movb h,a                        ; LD A,H            ; 
        sb   @bytes+>08,a               ; SUB $08           ; 
        movb a,h                        ; LD H,A            ; 
-       .ret                            ; RET               ; 
-
-* convert pixel coords in HL to attribute address
-* 
-* Used by the routines at #R$7d8a, #R$8c8c, #R$99af, #R$a00e, #R$a1f3 and
-* #R$a240.
-xy_to_attr:                            ; >9bd2
-       .push bc                        ; PUSH BC           ; 
-       movb @l,a                       ; LD A,L            ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       andi a,>1f00                    ; AND $1F           ; 
-       movb a,@l                       ; LD L,A            ; 
-       movb h,a                        ; LD A,H            ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       movb a,@c                       ; LD C,A            ; 
-       andi a,>e000                    ; AND $E0           ; 
-       socb @l,a                       ; OR L              ; 
-       movb a,@l                       ; LD L,A            ; 
-       movb @c,a                       ; LD A,C            ; 
-       andi a,>0300                    ; AND $03           ; 
-       socb @bytes+>58,a               ; OR $58            ; 
-       movb a,h                        ; LD H,A            ; 
-       .pop bc                         ; POP BC            ; 
        .ret                            ; RET               ; 
 
 * draw lines that make up outer room frame
@@ -5323,941 +5114,303 @@ get_blend_instr:                       ; >9d19
        .ret                            ;                   
 !
        cb   a,one                      ; CP $01            ; 
-       movb @bytes+>ae,a               ; LD A,$AE          ; 
+       movb @bytes+>ae,a               ; LD A,$AE          ; TODO
        jeq  !                          ; RET NZ            ; return
        .ret                            ;                   
 !
-       ab   @bytes+>08,a               ; ADD A,$08         ; 
+       ab   @bytes+>08,a               ; ADD A,$08         ; TODO
        .ret                            ; RET               ; return
 
 * Routine at 9d25
 draw_attr_0:                           ; >9d25
-       .pop bc                         ; POP BC            ; 
+       .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
 loc_9d29:                              ; >9d29
-       .push bc                        ; PUSH BC           ; 
-       .push hl                        ; PUSH HL           ; 
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
 loc_9d2b:                              ; >9d2b
        movb *de,a                      ; LD A,(DE)         ; attr byte
-       inc  de                         ; INC DE            ; 
+       inc  de                         ; INC DE            ;
        ; AND A                         ; AND A             ; skip attr?
        jeq  loc_9d38                   ; JR Z,$9D38        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?
        jne  loc_9d37                   ; JR NZ,$9D37       ; jump if not
-       movb @room_attr,a               ; LD A,($5E1A)      ; 
+       movb @room_attr,a               ; LD A,($5E1A)      ;
 loc_9d37:                              ; >9d37
        movb a,*hl                      ; LD (HL),A         ; set attr
 loc_9d38:                              ; >9d38
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $9D2B        ; 
-       jne  loc_9d2b                   ;                   
-       .pop hl                         ; POP HL            ; 
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $9D2B        ;
+       jne  loc_9d2b                   ;
+       .pop hl                         ; POP HL            ;
        li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
+       ; AND A                         ; AND A             ;
        s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_9d29                   ; JR NZ,$9D29       ; 
-       .ret                            ; RET               ; 
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9d29                   ; JR NZ,$9D29       ;
+       .ret                            ; RET               ;
 
 * Routine at 9d47
 draw_attr_1:                           ; >9d47
-       .pop bc                         ; POP BC            ; 
+       .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
-       dec  de                         ; DEC DE            ; 
+       dec  de                         ; DEC DE            ;
 loc_9d4c:                              ; >9d4c
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
-       .push bc                        ; PUSH BC           ; 
-       .push de                        ; PUSH DE           ; 
-       .push hl                        ; PUSH HL           ; 
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
 loc_9d52:                              ; >9d52
        movb *de,a                      ; LD A,(DE)         ; attr byte
-       dec  de                         ; DEC DE            ; 
+       dec  de                         ; DEC DE            ;
        ; AND A                         ; AND A             ; skip attr?
        jeq  loc_9d5f                   ; JR Z,$9D5F        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?
        jne  loc_9d5e                   ; JR NZ,$9D5E       ; jump if not
-       movb @room_attr,a               ; LD A,($5E1A)      ; 
+       movb @room_attr,a               ; LD A,($5E1A)      ;
 loc_9d5e:                              ; >9d5e
        movb a,*hl                      ; LD (HL),A         ; set attr
 loc_9d5f:                              ; >9d5f
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $9D52        ; 
-       jne  loc_9d52                   ;                   
-       .pop hl                         ; POP HL            ; 
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $9D52        ;
+       jne  loc_9d52                   ;
+       .pop hl                         ; POP HL            ;
        li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
+       ; AND A                         ; AND A             ;
        s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop de                         ; POP DE            ; 
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_9d4c                   ; JR NZ,$9D4C       ; 
-       .ret                            ; RET               ; 
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9d4c                   ; JR NZ,$9D4C       ;
+       .ret                            ; RET               ;
 
 * Routine at 9d6f
 draw_attr_2:                           ; >9d6f
-       .pop bc                         ; POP BC            ; 
+       .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
-       movb b,a                        ; LD A,B            ; 
-       .exx                            ; EXX               ; 
-       movb a,b                        ; LD B,A            ; 
-       .exx                            ; EXX               ; 
+       movb b,a                        ; LD A,B            ;
+       .exx                            ; EXX               ;
+       movb a,b                        ; LD B,A            ;
+       .exx                            ; EXX               ;
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
 loc_9d7a:                              ; >9d7a
-       dec  de                         ; DEC DE            ; 
-       .push bc                        ; PUSH BC           ; 
-       .push de                        ; PUSH DE           ; 
-       .push hl                        ; PUSH HL           ; 
+       dec  de                         ; DEC DE            ;
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
 loc_9d7e:                              ; >9d7e
        movb *de,a                      ; LD A,(DE)         ; attr byte
        ; AND A                         ; AND A             ; skip attr?
        jeq  loc_9d8a                   ; JR Z,$9D8A        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?
        jne  loc_9d89                   ; JR NZ,$9D89       ; jump if not
-       movb @room_attr,a               ; LD A,($5E1A)      ; 
+       movb @room_attr,a               ; LD A,($5E1A)      ;
 loc_9d89:                              ; >9d89
        movb a,*hl                      ; LD (HL),A         ; set attr
 loc_9d8a:                              ; >9d8a
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
-       ab   one,@l                     ; INC L             ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_9d7e                   ; JR NZ,$9D7E       ; 
-       .pop hl                         ; POP HL            ; 
+       ab   one,@l                     ; INC L             ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9d7e                   ; JR NZ,$9D7E       ;
+       .pop hl                         ; POP HL            ;
        li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
+       ; AND A                         ; AND A             ;
        s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop de                         ; POP DE            ; 
-       .pop bc                         ; POP BC            ; 
-       .exx                            ; EXX               ; 
-       sb   one,b                      ; DEC B             ; 
-       .exx                            ; EXX               ; 
-       jne  loc_9d7a                   ; JR NZ,$9D7A       ; 
-       .ret                            ; RET               ; 
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
+       .exx                            ; EXX               ;
+       sb   one,b                      ; DEC B             ;
+       .exx                            ; EXX               ;
+       jne  loc_9d7a                   ; JR NZ,$9D7A       ;
+       .ret                            ; RET               ;
 
 * Routine at 9da0
 draw_attr_3:                           ; >9da0
-       .pop bc                         ; POP BC            ; 
+       .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
-       movb b,a                        ; LD A,B            ; 
-       .exx                            ; EXX               ; 
-       movb a,b                        ; LD B,A            ; 
-       .exx                            ; EXX               ; 
+       movb b,a                        ; LD A,B            ;
+       .exx                            ; EXX               ;
+       movb a,b                        ; LD B,A            ;
+       .exx                            ; EXX               ;
 loc_9da8:                              ; >9da8
-       .push bc                        ; PUSH BC           ; 
-       .push de                        ; PUSH DE           ; 
-       .push hl                        ; PUSH HL           ; 
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
 loc_9dab:                              ; >9dab
-       movb *de,a                      ; LD A,(DE)         ; 
+       movb *de,a                      ; LD A,(DE)         ;
        ; AND A                         ; AND A             ; skip attr?
        jeq  loc_9db7                   ; JR Z,$9DB7        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?
        jne  loc_9db6                   ; JR NZ,$9DB6       ; jump if not
-       movb @room_attr,a               ; LD A,($5E1A)      ; 
+       movb @room_attr,a               ; LD A,($5E1A)      ;
 loc_9db6:                              ; >9db6
        movb a,*hl                      ; LD (HL),A         ; set attr
 loc_9db7:                              ; >9db7
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
-       ab   one,@l                     ; INC L             ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_9dab                   ; JR NZ,$9DAB       ; 
-       .pop hl                         ; POP HL            ; 
+       ab   one,@l                     ; INC L             ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9dab                   ; JR NZ,$9DAB       ;
+       .pop hl                         ; POP HL            ;
        li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
+       ; AND A                         ; AND A             ;
        s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop de                         ; POP DE            ; 
-       .pop bc                         ; POP BC            ; 
-       inc  de                         ; INC DE            ; 
-       .exx                            ; EXX               ; 
-       sb   one,b                      ; DEC B             ; 
-       .exx                            ; EXX               ; 
-       jne  loc_9da8                   ; JR NZ,$9DA8       ; 
-       .ret                            ; RET               ; 
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
+       inc  de                         ; INC DE            ;
+       .exx                            ; EXX               ;
+       sb   one,b                      ; DEC B             ;
+       .exx                            ; EXX               ;
+       jne  loc_9da8                   ; JR NZ,$9DA8       ;
+       .ret                            ; RET               ;
 
 * Routine at 9dce
 draw_attr_4:                           ; >9dce
-       .pop bc                         ; POP BC            ; 
+       .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
        .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
 loc_9dd5:                              ; >9dd5
-       .push bc                        ; PUSH BC           ; 
-       .push de                        ; PUSH DE           ; 
-       .push hl                        ; PUSH HL           ; 
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
 loc_9dd8:                              ; >9dd8
-       movb *de,a                      ; LD A,(DE)         ; 
-       inc  de                         ; INC DE            ; 
+       movb *de,a                      ; LD A,(DE)         ;
+       inc  de                         ; INC DE            ;
        ; AND A                         ; AND A             ; skip attr?
        jeq  loc_9de5                   ; JR Z,$9DE5        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?
        jne  loc_9de4                   ; JR NZ,$9DE4       ; jump if not
-       movb @room_attr,a               ; LD A,($5E1A)      ; 
+       movb @room_attr,a               ; LD A,($5E1A)      ;
 loc_9de4:                              ; >9de4
        movb a,*hl                      ; LD (HL),A         ; set attr
 loc_9de5:                              ; >9de5
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $9DD8        ; 
-       jne  loc_9dd8                   ;                   
-       .pop hl                         ; POP HL            ; 
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $9DD8        ;
+       jne  loc_9dd8                   ;
+       .pop hl                         ; POP HL            ;
        li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
+       ; AND A                         ; AND A             ;
        s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop de                         ; POP DE            ; 
-       .pop bc                         ; POP BC            ; 
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
        .call @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_9dd5                   ; JR NZ,$9DD5       ; 
-       .ret                            ; RET               ; 
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9dd5                   ; JR NZ,$9DD5       ;
+       .ret                            ; RET               ;
 
 * Routine at 9df8
 draw_attr_5:                           ; >9df8
-       .pop bc                         ; POP BC            ; 
+       .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
        .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
-       dec  de                         ; DEC DE            ; 
+       dec  de                         ; DEC DE            ;
 loc_9e03:                              ; >9e03
-       .push bc                        ; PUSH BC           ; 
-       .push hl                        ; PUSH HL           ; 
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
 loc_9e05:                              ; >9e05
-       movb *de,a                      ; LD A,(DE)         ; 
-       dec  de                         ; DEC DE            ; 
+       movb *de,a                      ; LD A,(DE)         ;
+       dec  de                         ; DEC DE            ;
        ; AND A                         ; AND A             ; skip attr?
        jeq  loc_9e12                   ; JR Z,$9E12        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?
        jne  loc_9e11                   ; JR NZ,$9E11       ; jump if not
-       movb @room_attr,a               ; LD A,($5E1A)      ; 
+       movb @room_attr,a               ; LD A,($5E1A)      ;
 loc_9e11:                              ; >9e11
        movb a,*hl                      ; LD (HL),A         ; set attr
 loc_9e12:                              ; >9e12
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $9E05        ; 
-       jne  loc_9e05                   ;                   
-       .pop hl                         ; POP HL            ; 
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $9E05        ;
+       jne  loc_9e05                   ;
+       .pop hl                         ; POP HL            ;
        li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
+       ; AND A                         ; AND A             ;
        s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_9e03                   ; JR NZ,$9E03       ; 
-       .ret                            ; RET               ; 
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9e03                   ; JR NZ,$9E03       ;
+       .ret                            ; RET               ;
 
 * Routine at 9e21
 draw_attr_6:                           ; >9e21
-       .pop bc                         ; POP BC            ; 
+       .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
-       movb b,a                        ; LD A,B            ; 
-       .exx                            ; EXX               ; 
-       movb a,b                        ; LD B,A            ; 
-       .exx                            ; EXX               ; 
+       movb b,a                        ; LD A,B            ;
+       .exx                            ; EXX               ;
+       movb a,b                        ; LD B,A            ;
+       .exx                            ; EXX               ;
        .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
 loc_9e2f:                              ; >9e2f
-       dec  de                         ; DEC DE            ; 
-       .push bc                        ; PUSH BC           ; 
-       .push de                        ; PUSH DE           ; 
-       .push hl                        ; PUSH HL           ; 
+       dec  de                         ; DEC DE            ;
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
 loc_9e33:                              ; >9e33
-       movb *de,a                      ; LD A,(DE)         ; 
+       movb *de,a                      ; LD A,(DE)         ;
        ; AND A                         ; AND A             ; skip attr?
        jeq  loc_9e3f                   ; JR Z,$9E3F        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?
        jne  loc_9e3e                   ; JR NZ,$9E3E       ; jump if not
-       movb @room_attr,a               ; LD A,($5E1A)      ; 
+       movb @room_attr,a               ; LD A,($5E1A)      ;
 loc_9e3e:                              ; >9e3e
        movb a,*hl                      ; LD (HL),A         ; set attr
 loc_9e3f:                              ; >9e3f
        .call @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
-       ab   one,@l                     ; INC L             ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_9e33                   ; JR NZ,$9E33       ; 
-       .pop hl                         ; POP HL            ; 
+       ab   one,@l                     ; INC L             ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9e33                   ; JR NZ,$9E33       ;
+       .pop hl                         ; POP HL            ;
        li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
+       ; AND A                         ; AND A             ;
        s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop de                         ; POP DE            ; 
-       .pop bc                         ; POP BC            ; 
-       .exx                            ; EXX               ; 
-       sb   one,b                      ; DEC B             ; 
-       .exx                            ; EXX               ; 
-       jne  loc_9e2f                   ; JR NZ,$9E2F       ; 
-       .ret                            ; RET               ; 
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
+       .exx                            ; EXX               ;
+       sb   one,b                      ; DEC B             ;
+       .exx                            ; EXX               ;
+       jne  loc_9e2f                   ; JR NZ,$9E2F       ;
+       .ret                            ; RET               ;
 
 * Routine at 9e55
 draw_attr_7:                           ; >9e55
-       .pop bc                         ; POP BC            ; 
+       .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
-       movb b,a                        ; LD A,B            ; 
-       .exx                            ; EXX               ; 
-       movb a,b                        ; LD B,A            ; 
-       .exx                            ; EXX               ; 
+       movb b,a                        ; LD A,B            ;
+       .exx                            ; EXX               ;
+       movb a,b                        ; LD B,A            ;
+       .exx                            ; EXX               ;
        .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
 loc_9e60:                              ; >9e60
-       .push bc                        ; PUSH BC           ; 
-       .push de                        ; PUSH DE           ; 
-       .push hl                        ; PUSH HL           ; 
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
 loc_9e63:                              ; >9e63
-       movb *de,a                      ; LD A,(DE)         ; 
+       movb *de,a                      ; LD A,(DE)         ;
        ; AND A                         ; AND A             ; skip attr?
        jeq  loc_9e6f                   ; JR Z,$9E6F        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?
        jne  loc_9e6e                   ; JR NZ,$9E6E       ; jump if not
-       movb @room_attr,a               ; LD A,($5E1A)      ; 
+       movb @room_attr,a               ; LD A,($5E1A)      ;
 loc_9e6e:                              ; >9e6e
        movb a,*hl                      ; LD (HL),A         ; set attr
 loc_9e6f:                              ; >9e6f
        .call @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
-       ab   one,@l                     ; INC L             ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_9e63                   ; JR NZ,$9E63       ; 
-       .pop hl                         ; POP HL            ; 
+       ab   one,@l                     ; INC L             ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9e63                   ; JR NZ,$9E63       ;
+       .pop hl                         ; POP HL            ;
        li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
+       ; AND A                         ; AND A             ;
        s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop de                         ; POP DE            ; 
-       .pop bc                         ; POP BC            ; 
-       inc  de                         ; INC DE            ; 
-       .exx                            ; EXX               ; 
-       sb   one,b                      ; DEC B             ; 
-       .exx                            ; EXX               ; 
-       jne  loc_9e60                   ; JR NZ,$9E60       ; 
-       .ret                            ; RET               ; 
-
-* return address of sprite A in DE
-* 
-* Used by the routine at #R$9f80.
-get_saved_sprite_addr:                 ; >9e86
-       movb @saved_graphic,a           ; LD A,($5E15)      ; 
-
-* return address of sprite A in DE
-* 
-* Used by the routines at #R$8cb7, #R$8d45, #R$8e26 and #R$9e96.
-get_sprite_addr:                       ; >9e89
-       sb   one,a                      ; DEC A             ; 
-       movb a,@l                       ; LD L,A            ; 
-       sb   h,h                        ; LD H,$00          ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       li   bc,sprite_table            ; LD BC,$A4BE       ; 
-       a    bc,hl                      ; ADD HL,BC         ; 
-       movb *hl,@e                     ; LD E,(HL)         ; 
-       inc  hl                         ; INC HL            ; 
-       movb *hl,d                      ; LD D,(HL)         ; 
-       .ret                            ; RET               ; 
-
-* return addr of entity sprite addr in DE
-* 
-* Used by the routine at #R$9f9f.
-get_sprite_addr_ix:                    ; >9e96
-       movb *ix,a                      ; LD A,(IX+$00)     ; 
-       jmp  get_sprite_addr            ; JR $9E89          ; return address of sprite A in DE
-
-* This entry point is used by the routines at #R$9f4a, #R$9f56 and #R$9fca.
-loc_9e9b:                              ; >9e9b
-       movb @c,a                       ; LD A,C            ; 
-       ; AND A                         ; AND A             ; 
-       jeq  loc_9eaf                   ; JR Z,$9EAF        ; 
-       sb   one,@c                     ; DEC C             ; 
-       .call @draw_sprite23            ; CALL $9EDC        ; 
-       .exx                            ; EXX               ; 
-       movb @c,a                       ; LD A,C            ; 
-       ; AND A                         ; AND A             ; 
-       jeq  loc_9eac                   ; JR Z,$9EAC        ; 
-loc_9ea8:                              ; >9ea8
-       sb   one,@c                     ; DEC C             ; 
-       .call @draw_sprite2             ; CALL $9F21        ; 
-loc_9eac:                              ; >9eac
-       .exx                            ; EXX               ; 
-       jmp  loc_9e9b                   ; JR $9E9B          ; 
-loc_9eaf:                              ; >9eaf
-       .exx                            ; EXX               ; 
-       movb @c,a                       ; LD A,C            ; 
-       ; AND A                         ; AND A             ; 
-       jne  loc_9ea8                   ; JR NZ,$9EA8       ; 
-* This entry point is used by the routine at #R$9fca.
-loc_9eb4:                              ; >9eb4
-       .exx                            ; EXX               ; 
-* This entry point is used by the routine at #R$9fca.
-loc_9eb5:                              ; >9eb5
-       movb @some_height,a             ; LD A,($5E18)      ; 
-       movb a,@c                       ; LD C,A            ; 
-       movb @some_width,a              ; LD A,($5E19)      ; 
-       socb @c,a                       ; OR C              ; width and height zero?
-       jne  !                          ; RET Z             ; return if so
-       .ret                            ;                   
-!
-       sb   a,a                        ; XOR A             ; 
-       movb a,@some_height             ; LD ($5E18),A      ; 
-       .exx                            ; EXX               ; 
-       movb @some_width,a              ; LD A,($5E19)      ; 
-       movb a,@c                       ; LD C,A            ; 
-       sb   a,a                        ; XOR A             ; 
-* This entry point is used by the routine at #R$9fca.
-loc_9ec8:                              ; >9ec8
-       movb a,@some_width              ; LD ($5E19),A      ; 
-       .exx                            ; EXX               ; 
-       jmp  loc_9e9b                   ; JR $9E9B          ; 
-
-* Routine at 9ece
-draw_unshifted:                        ; >9ece
-       .ex_de_hl                       ; EX DE,HL          ; 
-       .ex_sp_hl                      ; EX (SP),HL        ;
-       movb d,a                        ; LD A,D            ; 
-       ; XOR (HL)                      ; XOR (HL)          ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       ab   one,@l                     ; INC L             ; 
-       movb @e,a                       ; LD A,E            ; 
-       ; XOR (HL)                      ; XOR (HL)          ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       .pop de                         ; POP DE            ; 
-       sb   one,@l                     ; DEC L             ; 
-       b    @pixel_line_up             ; JP $9F03          ; move up 1 display line in HL
-
-* Routine at 9edc
-* 
-* Used by the routine at #R$9e96.
-draw_sprite23:                         ; >9edc
-       .ex_de_hl                       ; EX DE,HL          ; 
-       .push de                        ; PUSH DE           ; 
-       movb *hl,d                      ; LD D,(HL)         ; 
-       inc  hl                         ; INC HL            ; 
-       movb *hl,@e                     ; LD E,(HL)         ; 
-       inc  hl                         ; INC HL            ; 
-       .ex_de_hl                       ; EX DE,HL          ; 
-       sb   a,a                        ; XOR A             ; 
-jr_23:                                 ; >9ee4
-       jmp  jr_23                      ; JR $9EE4          ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       .ex_de_hl                       ; EX DE,HL          ; 
-       .ex_sp_hl                      ; EX (SP),HL        ;
-       ; XOR (HL)                      ; XOR (HL)          ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       ab   one,@l                     ; INC L             ; 
-* This entry point is used by the routine at #R$9f21.
-draw_2_bytes:                          ; >9ef9
-       movb d,a                        ; LD A,D            ; 
-       ; XOR (HL)                      ; XOR (HL)          ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       ab   one,@l                     ; INC L             ; 
-       movb @e,a                       ; LD A,E            ; 
-       ; XOR (HL)                      ; XOR (HL)          ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       .pop de                         ; POP DE            ; 
-       sb   one,@l                     ; DEC L             ; 
-       sb   one,@l                     ; DEC L             ; 
-* This entry point is used by the routines at #R$99c9, #R$99e5, #R$9a0a,
-* #R$9a50, #R$9acb, #R$9aef, #R$9b14, #R$9b5d, #R$9ece, #R$9f13 and #R$a185.
-pixel_line_up:                         ; >9f03
-       sb   one,h                      ; DEC H             ; move up 1 display line in HL
-       movb h,a                        ; LD A,H            ; 
-       inv  a                          ; CPL               ; 
-       andi a,>0700                    ; AND $07           ; 
-       jeq  !                          ; RET NZ            ; 
-       .ret                            ;                   
-!
-       movb @l,a                       ; LD A,L            ; 
-       sb   @bytes+>20,a               ; SUB $20           ; 
-       movb a,@l                       ; LD L,A            ; 
-       jnc  !                          ; RET C             ; TODO: check code. 
-       .ret                            ;                   
-!
-       movb h,a                        ; LD A,H            ; 
-       ab   @bytes+>08,a               ; ADD A,$08         ; 
-       movb a,h                        ; LD H,A            ; 
-       .ret                            ; RET               ; 
-
-* draw 2-byte unshifted graphic
-* 
-* Used by the routine at #R$9f21.
-draw_unshifted2:                       ; >9f13
-       .ex_de_hl                       ; EX DE,HL          ; 
-       .ex_sp_hl                      ; EX (SP),HL        ;
-       movb d,a                        ; LD A,D            ; 
-       ; XOR (HL)                      ; XOR (HL)          ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       ab   one,@l                     ; INC L             ; 
-       movb @e,a                       ; LD A,E            ; 
-       ; XOR (HL)                      ; XOR (HL)          ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       .pop de                         ; POP DE            ; 
-       sb   one,@l                     ; DEC L             ; 
-       b    @pixel_line_up             ; JP $9F03          ; move up 1 display line in HL
-
-* Routine at 9f21
-* 
-* Used by the routine at #R$9e96.
-draw_sprite2:                          ; >9f21
-       .ex_de_hl                       ; EX DE,HL          ; 
-       .push de                        ; PUSH DE           ; 
-       movb *hl,d                      ; LD D,(HL)         ; 
-       inc  hl                         ; INC HL            ; 
-       movb *hl,@e                     ; LD E,(HL)         ; 
-       inc  hl                         ; INC HL            ; 
-       .ex_de_hl                       ; EX DE,HL          ; 
-       sb   a,a                        ; XOR A             ; 
-jr_2:                                  ; >9f29
-       jmp  draw_unshifted2            ; JR $9F13          ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       ab   a,a                        ; ADC A,A           ; 
-       .ex_de_hl                       ; EX DE,HL          ; 
-       .ex_sp_hl                      ; EX (SP),HL        ;
-       ; XOR (HL)                      ; XOR (HL)          ; 
-       movb a,*hl                      ; LD (HL),A         ; first byte
-       ab   one,@l                     ; INC L             ; 
-       jmp  draw_2_bytes               ; JR $9EF9          ; 
-
-* Routine at 9f40
-draw2_entity:                          ; >9f40
-       .call @prepare_draw2_de         ; CALL $9FA2        ; 
-       jmp  loc_9f4d                   ; JR $9F4D          ; 
-
-* Routine at 9f45
-undraw_entity_de:                      ; >9f45
-       .call @prepare_draw23_de        ; CALL $9F83        ; 
-       jmp  loc_9f59                   ; JR $9F59          ; 
-
-* draw entity graphic (no attrs)
-* 
-* Used by the routines at #R$814b, #R$83ea, #R$871a, #R$8862, #R$8aff, #R$8cb7,
-* #R$9291, #R$9358, #R$9443, #R$95cc, #R$a14d, #R$a2ce and #R$a311.
-draw_entity:                           ; >9f4a
-       .call @prepare_draw2            ; CALL $9F9F        ; prepare for 2-byte drawing
-* This entry point is used by the routine at #R$9f40.
-loc_9f4d:                              ; >9f4d
-       .exx                            ; EXX               ; 
-       sb   a,a                        ; XOR A             ; 
-       movb a,@some_height             ; LD ($5E18),A      ; 
-       movb a,@c                       ; LD C,A            ; 
-       b    @loc_9e9b                  ; JP $9E9B          ; 
-
-* Routine at 9f56
-* 
-* Used by the routines at #R$81f0, #R$871a, #R$8c63, #R$9326 and #R$98c8.
-undraw_entity:                         ; >9f56
-       .call @prepare_draw23           ; CALL $9F80        ; prepare for 2-3 byte drawing
-* This entry point is used by the routine at #R$9f45.
-loc_9f59:                              ; >9f59
-       .exx                            ; EXX               ; 
-       sb   a,a                        ; XOR A             ; 
-       movb a,@c                       ; LD C,A            ; 
-       movb a,@some_width              ; LD ($5E19),A      ; 
-       movb @some_height,a             ; LD A,($5E18)      ; 
-       movb a,@height_lines            ; LD ($5E11),A      ; 
-       movb @l,a                       ; LD A,L            ; 
-       andi a,>0700                    ; AND $07           ; aligned to cell boundary?
-       movb @bytes+>02,a               ; LD A,$02          ; 2 bytes wide
-       jeq  loc_9f6d                   ; JR Z,$9F6D        ; jump if so
-       ab   one,a                      ; INC A             ; 3 bytes needed
-loc_9f6d:                              ; >9f6d
-       movb a,@width_bytes             ; LD ($5E10),A      ; 
-       .exx                            ; EXX               ; 
-       b    @loc_9e9b                  ; JP $9E9B          ; 
-       .push de                        ; PUSH DE           ; 
-       .call @prepare_draw23_de        ; CALL $9F83        ; 
-       .exx                            ; EXX               ; 
-       .pop de                         ; POP DE            ; 
-       .call @prepare_draw2_de         ; CALL $9FA2        ; 
-       .exx                            ; EXX               ; 
-       jmp  loc_9fd1                   ; JR $9FD1          ; 
-
-* prepare for 2-3 byte drawing
-* 
-* Used by the routines at #R$9f56 and #R$9fca.
-prepare_draw23:                        ; >9f80
-       .call @get_saved_sprite_addr             ; CALL $9E86        ; return address of sprite A in DE
-* This entry point is used by the routines at #R$9f45 and #R$9f56.
-prepare_draw23_de:                     ; >9f83
-       mov  @saved_x,hl                ; LD HL,($5E16)     ; 
-       movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
-       sb   one,a                      ; DEC A             ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. * 2 (bytes per
-       andi a,>0e00                    ; AND $0E           ; relative jump offset
-       cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
-       jne  loc_9f91                   ; JR NZ,$9F91       ; jump if not (use calculated offset)
-       movb @bytes+>e8,a               ; LD A,$E8          ; jr offset back to 'draw_unshifted'
-loc_9f91:                              ; >9f91
-       movb a,@jr_23+>0001             ; LD ($9EE5),A      ; set jr offset for data shifting
-       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       movb *de,a                      ; LD A,(DE)         ; 
-       movb a,@some_height             ; LD ($5E18),A      ; 
-* This entry point is used by the routine at #R$9f9f.
-loc_9f9b:                              ; >9f9b
-       sb   @c,@c                      ; LD C,$00          ; 
-       inc  de                         ; INC DE            ; 
-       .ret                            ; RET               ; 
-
-* prepare for 2-byte drawing
-* 
-* Used by the routines at #R$9f4a and #R$9fca.
-prepare_draw2:                         ; >9f9f
-       .call @get_sprite_addr_ix        ; CALL $9E96        ; return addr of entity sprite addr in DE
-* This entry point is used by the routines at #R$9f40 and #R$9f56.
-prepare_draw2_de:                      ; >9fa2
-       movb @>03(ix),@l                ; LD L,(IX+$03)     ; x
-       movb @>04(ix),h                 ; LD H,(IX+$04)     ; y
-       movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
-       sb   one,a                      ; DEC A             ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. * 2 (bytes per
-       andi a,>0e00                    ; AND $0E           ; relative jump offset
-       cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
-       jne  loc_9fb3                   ; JR NZ,$9FB3       ; jump if not (use calculated offset)
-       movb @bytes+>e8,a               ; LD A,$E8          ; r offset back to 'draw_unshifted'
-loc_9fb3:                              ; >9fb3
-       movb a,@jr_2+>0001              ; LD ($9F2A),A      ; set jr offset for data shifting
-       movb @bytes+>02,a               ; LD A,$02          ; 2 bytes wide
-       jeq  loc_9fbb                   ; JR Z,$9FBB        ; 
-       ab   one,a                      ; INC A             ; any shift requires 3 bytes
-loc_9fbb:                              ; >9fbb
-       movb a,@width_bytes             ; LD ($5E10),A      ; 
-       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       movb *de,a                      ; LD A,(DE)         ; 
-       movb a,@some_width              ; LD ($5E19),A      ; 
-       movb a,@height_lines            ; LD ($5E11),A      ; 
-       jmp  loc_9f9b                   ; JR $9F9B          ; 
-
-* draw entity to display (no attrs)
-* 
-* Used by the routine at #R$8e26.
-draw_entity_disp:                      ; >9fca
-       .call @prepare_draw2            ; CALL $9F9F        ; prepare for 2-byte drawing
-       .exx                            ; EXX               ; 
-       .call @prepare_draw23           ; CALL $9F80        ; prepare for 2-3 byte drawing
-* This entry point is used by the routine at #R$9f56.
-loc_9fd1:                              ; >9fd1
-       movb @saved_y,a                 ; LD A,($5E17)      ; 
-       sb   @>04(ix),a                 ; SUB (IX+$04)      ; 
-       jne  !                          ; JP Z,$9EB5        ; 
-       b    @loc_9eb5                  ;                   
-!
-       ; JP M,$9FEC                    ; JP M,$9FEC        ; 
-       movb a,@c                       ; LD C,A            ; 
-       movb @some_height,a             ; LD A,($5E18)      ; 
-       cb   a,@c                       ; CP C              ; 
-       jhe  !                          ; JP C,$9EB5        ; 
-       b    @loc_9eb5                  ;                   
-!
-       sb   @c,a                       ; SUB C             ; 
-       movb a,@some_height             ; LD ($5E18),A      ; 
-       b    @loc_9e9b                  ; JP $9E9B          ; 
-loc_9fec:                              ; >9fec
-       .exx                            ; EXX               ; 
-       neg a                           ; NEG               ; 
-       movb a,@c                       ; LD C,A            ; 
-       movb @some_width,a              ; LD A,($5E19)      ; 
-       cb   a,@c                       ; CP C              ; 
-       jhe  !                          ; JP C,$9EB4        ; 
-       b    @loc_9eb4                  ;                   
-!
-       sb   @c,a                       ; SUB C             ; 
-       b    @loc_9ec8                  ; JP $9EC8          ; 
-
-* save entity position for undraw
-* 
-* Used by the routines at #R$81db, #R$81f0, #R$82f1, #R$8301, #R$845f, #R$85f7,
-* #R$862e, #R$8672, #R$871a, #R$8787, #R$87a6, #R$8862, #R$8906, #R$8988,
-* #R$89ed, #R$8a2f, #R$8a80, #R$8aff, #R$8c63, #R$8d77, #R$92f5 and #R$988b.
-save_entity:                           ; >9ffb
-       movb @>03(ix),a                 ; LD A,(IX+$03)     ; 
-       movb a,@saved_x                 ; LD ($5E16),A      ; 
-       movb @>04(ix),a                 ; LD A,(IX+$04)     ; 
-       movb a,@saved_y                 ; LD ($5E17),A      ; 
-       movb *ix,a                      ; LD A,(IX+$00)     ; 
-       movb a,@saved_graphic           ; LD ($5E15),A      ; 
-       .ret                            ; RET               ; 
-
-* paint entity with its current attr colour
-* 
-* Used by the routines at #R$a14d and #R$a311.
-set_entity_attrs:                      ; >a00e
-       movb @>03(ix),a                 ; LD A,(IX+$03)     ; xpos
-       movb a,@saved_x                 ; LD ($5E16),A      ; 
-       movb @>04(ix),a                 ; LD A,(IX+$04)     ; ypos
-       movb a,@saved_y                 ; LD ($5E17),A      ; 
-* This entry point is used by the routines at #R$81f0, #R$871a, #R$8e26,
-* #R$92e2 and #R$9326.
-set_entity_attrs2:                     ; >a01a
-       movb @>03(ix),@l                ; LD L,(IX+$03)     ; xpos
-       movb @>04(ix),h                 ; LD H,(IX+$04)     ; ypos
-       movb @>05(ix),d                 ; LD D,(IX+$05)     ; entity attr
-       movb @room_attr,a               ; LD A,($5E1A)      ; 
-       movb a,@e                       ; LD E,A            ; 
-       movb @width_bytes,a             ; LD A,($5E10)      ; 
-       movb a,b                        ; LD B,A            ; 
-       movb @height_lines,a            ; LD A,($5E11)      ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       ab   one,a                      ; INC A             ; 
-       ; RRCA                          ; RRCA              ; 
-       andi a,>1f00                    ; AND $1F           ; 
-       ab   one,a                      ; INC A             ; 
-       movb a,@c                       ; LD C,A            ; attr height
-       .push bc                        ; PUSH BC           ; 
-       sb   b,b                        ; LD B,$00          ; 
-       movb @saved_x,a                 ; LD A,($5E16)      ; 
-       cb   a,@l                       ; CP L              ; same as previous xpos?
-       jeq  loc_a043                   ; JR Z,$A043        ; jump if so (no change)
-       joc  loc_a042                   ; JR C,$A042        ; TODO: check code. jump if less (moving left, add 1)
-       ab   one,b                      ; INC B             ; moving right (add 2)
-loc_a042:                              ; >a042
-       ab   one,b                      ; INC B             ; 
-loc_a043:                              ; >a043
-       movb @saved_y,a                 ; LD A,($5E17)      ; 
-       cb   a,h                        ; CP H              ; ypos unchanged?
-       movb b,a                        ; LD A,B            ; 
-       jeq  loc_a050                   ; JR Z,$A050        ; jump if so (no change)
-       joc  loc_a04e                   ; JR C,$A04E        ; TODO: check code. jump if less (moving up, add 4)
-       ab   @bytes+>04,a               ; ADD A,$04         ; moving down (add 8)
-loc_a04e:                              ; >a04e
-       ab   @bytes+>04,a               ; ADD A,$04         ; 
-loc_a050:                              ; >a050
-       movb a,b                        ; LD B,A            ; handler table index
-       .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
-       movb b,a                        ; LD A,B            ; 
-       .pop bc                         ; POP BC            ; 
-       .push hl                        ; PUSH HL           ; 
-       li   hl,attr_handlers           ; LD HL,$A064       ; 3x3 handlers (in 4x3 table) to cover attr for moving
-                                                           ; entity
-       sla  a,1                        ; SLA A             ; * 2 (bytes per entry)
-       .call @add_hl_a                 ; CALL $926C        ; HL = HL + A
-       movb *hl,a                      ; LD A,(HL)         ; handler LSB
-       inc  hl                         ; INC HL            ; 
-       movb *hl,h                      ; LD H,(HL)         ; handler MSB
-       movb a,@l                       ; LD L,A            ; 
-       b    *hl                        ; JP (HL)           ; TODO. 
-
-* Data block at a064
-attr_handlers:                         ; >a064
-       data attr_draw_c,attr_draw_r,attr_draw_l,h_creat_delay        ; 3x3 handlers (in 4x3 table) to cover attr
-                                                                     ; for moving entity
-       data attr_draw_d,attr_draw_dr,attrs_draw_dl,h_creat_delay     ; extra delay applied to inactive creatures
-       data attr_draw_u,attr_draw_ur,attr_draw_ul                    ; draw attrs for moving up
-
-* draw attrs for unchanged position
-attr_draw_c:                           ; >a07a
-       .pop hl                         ; POP HL            ; 
-* This entry point is used by the routine at #R$a0ec.
-loc_a07b:                              ; >a07b
-       .push bc                        ; PUSH BC           ; 
-       .push hl                        ; PUSH HL           ; 
-loc_a07d:                              ; >a07d
-       movb d,*hl                      ; LD (HL),D         ; entity attr
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $A07D        ; 
-       jne  loc_a07d                   ;                   
-       .pop hl                         ; POP HL            ; 
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
-       s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_a07b                   ; JR NZ,$A07B       ; 
-       .ret                            ; RET               ; 
-
-* draw attrs for moving right
-attr_draw_r:                           ; >a08d
-       .pop hl                         ; POP HL            ; 
-* This entry point is used by the routine at #R$a127.
-loc_a08e:                              ; >a08e
-       .push bc                        ; PUSH BC           ; 
-       .push hl                        ; PUSH HL           ; 
-       sb   one,@l                     ; DEC L             ; 
-       movb @e,*hl                     ; LD (HL),E         ; room attr
-       ab   one,@l                     ; INC L             ; 
-loc_a093:                              ; >a093
-       movb d,*hl                      ; LD (HL),D         ; entity attr
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $A093        ; 
-       jne  loc_a093                   ;                   
-       .pop hl                         ; POP HL            ; 
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
-       s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_a08e                   ; JR NZ,$A08E       ; 
-       .ret                            ; RET               ; 
-
-* draw attrs for moving left
-attr_draw_l:                           ; >a0a3
-       .pop hl                         ; POP HL            ; 
-* This entry point is used by the routine at #R$a0fe.
-loc_a0a4:                              ; >a0a4
-       .push bc                        ; PUSH BC           ; 
-       .push hl                        ; PUSH HL           ; 
-loc_a0a6:                              ; >a0a6
-       movb d,*hl                      ; LD (HL),D         ; entity attr
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $A0A6        ; 
-       jne  loc_a0a6                   ;                   
-       movb @e,*hl                     ; LD (HL),E         ; room attr
-       .pop hl                         ; POP HL            ; 
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
-       s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_a0a4                   ; JR NZ,$A0A4       ; 
-       .ret                            ; RET               ; 
-
-* draw attrs for moving down
-attr_draw_d:                           ; >a0b7
-       .pop hl                         ; POP HL            ; 
-loc_a0b8:                              ; >a0b8
-       .push bc                        ; PUSH BC           ; 
-       .push hl                        ; PUSH HL           ; 
-loc_a0ba:                              ; >a0ba
-       movb d,*hl                      ; LD (HL),D         ; entity attr
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $A0BA        ; 
-       jne  loc_a0ba                   ;                   
-       .pop hl                         ; POP HL            ; 
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
-       s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_a0b8                   ; JR NZ,$A0B8       ; 
-* This entry point is used by the routines at #R$a0d2 and #R$a110.
-cond_room_row:                         ; >a0c9
-       movb h,a                        ; LD A,H            ; 
-       cb   a,@bytes+>58               ; CP $58            ; out of screen top?
-       jhe  !                          ; RET C             ; return if so
-       .ret                            ;                   
-!
-loc_a0cd:                              ; >a0cd
-       equ  $
-       movb @e,*hl                     ; LD (HL),E         ; room attr
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $A0CD        ; 
-       jne  loc_a0cd                   ;                   
-       .ret                            ; RET               ; 
-
-* draw attrs for moving down-right
-attr_draw_dr:                          ; >a0d2
-       .pop hl                         ; POP HL            ; 
-loc_a0d3:                              ; >a0d3
-       .push bc                        ; PUSH BC           ; 
-       .push hl                        ; PUSH HL           ; 
-       sb   one,@l                     ; DEC L             ; 
-       movb @e,*hl                     ; LD (HL),E         ; room attr
-       ab   one,@l                     ; INC L             ; 
-loc_a0d8:                              ; >a0d8
-       movb d,*hl                      ; LD (HL),D         ; 
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $A0D8        ; 
-       jne  loc_a0d8                   ;                   
-       .pop hl                         ; POP HL            ; 
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
-       s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_a0d3                   ; JR NZ,$A0D3       ; 
-       sb   one,@l                     ; DEC L             ; 
-       movb @e,*hl                     ; LD (HL),E         ; 
-       ab   one,@l                     ; INC L             ; 
-       jmp  cond_room_row              ; JR $A0C9          ; 
-
-* draw attrs for moving up
-attr_draw_u:                           ; >a0ec
-       .pop hl                         ; POP HL            ; 
-       .push bc                        ; PUSH BC           ; 
-       .push hl                        ; PUSH HL           ; 
-       .push bc                        ; PUSH BC           ; 
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       a    bc,hl                      ; ADD HL,BC         ; down a row
-       .pop bc                         ; POP BC            ; 
-loc_a0f5:                              ; >a0f5
-       movb @e,*hl                     ; LD (HL),E         ; entity attr
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $A0F5        ; 
-       jne  loc_a0f5                   ;                   
-       .pop hl                         ; POP HL            ; 
-       .pop bc                         ; POP BC            ; 
-       b    @loc_a07b                  ; JP $A07B          ; 
-
-* draw attrs for moving up-left
-attr_draw_ul:                          ; >a0fe
-       .pop hl                         ; POP HL            ; 
-       .push bc                        ; PUSH BC           ; 
-       .push hl                        ; PUSH HL           ; 
-       .push bc                        ; PUSH BC           ; 
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       a    bc,hl                      ; ADD HL,BC         ; down a row
-       .pop bc                         ; POP BC            ; 
-       ab   one,b                      ; INC B             ; extra row
-loc_a108:                              ; >a108
-       movb @e,*hl                     ; LD (HL),E         ; 
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $A108        ; 
-       jne  loc_a108                   ;                   
-       .pop hl                         ; POP HL            ; 
-       .pop bc                         ; POP BC            ; 
-       b    @loc_a0a4                  ; JR $A0A4          ;
-
-* draw attrs for moving down-left
-attrs_draw_dl:                         ; >a110
-       .pop hl                         ; POP HL            ; 
-loc_a111:                              ; >a111
-       .push bc                        ; PUSH BC           ; 
-       .push hl                        ; PUSH HL           ; 
-loc_a113:                              ; >a113
-       movb d,*hl                      ; LD (HL),D         ; room attr
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $A113        ; 
-       jne  loc_a113                   ;                   
-       movb @e,*hl                     ; LD (HL),E         ; entity attr
-       .pop hl                         ; POP HL            ; 
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ; 
-       s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_a111                   ; JR NZ,$A111       ; 
-       ab   one,b                      ; INC B             ; 
-       b    @cond_room_row             ; JP $A0C9          ; 
-
-* draw attrs for moving up-right
-attr_draw_ur:                          ; >a127
-       .pop hl                         ; POP HL            ; 
-       .push bc                        ; PUSH BC           ; 
-       .push hl                        ; PUSH HL           ; 
-       .push bc                        ; PUSH BC           ; 
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       a    bc,hl                      ; ADD HL,BC         ; down a row
-       .pop bc                         ; POP BC            ; 
-       sb   one,@l                     ; DEC L             ; 
-       ab   one,b                      ; INC B             ; extra row
-loc_a132:                              ; >a132
-       movb @e,*hl                     ; LD (HL),E         ; entity attr
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $A132        ; 
-       jne  loc_a132                   ;                   
-       .pop hl                         ; POP HL            ; 
-       .pop bc                         ; POP BC            ; 
-       b    @loc_a08e                  ; JP $A08E          ; 
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
+       inc  de                         ; INC DE            ;
+       .exx                            ; EXX               ;
+       sb   one,b                      ; DEC B             ;
+       .exx                            ; EXX               ;
+       jne  loc_9e60                   ; JR NZ,$9E60       ;
+       .ret                            ; RET               ;
 
 * draw any items in player inventory
 * 
@@ -6311,24 +5464,6 @@ loc_a15e:                              ; >a15e
 * Data block at a17d
 entity_to_draw:                        ; >a17d
        byte >21,>00,>00,>28,>97,>47,>00,>00
-
-* Routine at a185
-* 
-* Used by the routines at #R$a14d and #R$a2ce.
-clear_sprite:                          ; >a185
-       movb @>03(ix),@l                ; LD L,(IX+$03)     ; 
-       movb @>04(ix),h                 ; LD H,(IX+$04)     ; 
-       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       movb @bytes+>14,b               ; LD B,$14          ; 20 pixels high
-loc_a190:                              ; >a190
-       sb   *hl,*hl                    ; LD (HL),$00       ; clear 2 bytes wide
-       ab   one,@l                     ; INC L             ; 
-       sb   *hl,*hl                    ; LD (HL),$00       ; 
-       sb   one,@l                     ; DEC L             ; 
-       .call @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
-       sb   one,b                      ; DJNZ $A190        ; 
-       jne  loc_a190                   ;                   
-       .ret                            ; RET               ; 
 
 * add BC to current score
 * 
@@ -6589,10 +5724,12 @@ loc_a30c:                              ; >a30c
        .pop ix                         ; POP IX            ; 
        .ret                            ; RET               ; 
 
-* draw menu icons for controls and player acharacters
+* draw menu icons for controls and player characters
 * 
 * Used by the routine at #R$7c19.
 draw_menu_icons:                       ; >a311
+       .proc
+       seto @sprite_graphics_rom_bank
        li   ix,entity_to_draw          ; LD IX,$A17D       ; 
        li   hl,menu_entities           ; LD HL,$A331       ; entities for icons in the menu position
        movb @bytes+>09,b               ; LD B,$09          ; 3*2 icons for controls, 3 player characters
@@ -6610,7 +5747,7 @@ draw_menu_icons_1:                     ; >a31a
        .pop bc                         ; POP BC            ; 
        sb   one,b                      ; DJNZ $A31A        ; 
        jne  draw_menu_icons_1                   ;
-       .ret                            ; RET               ; 
+       .endproc                        ; RET               ;
 
 * Data block at a331
 menu_entities:                         ; >a331
@@ -6660,283 +5797,3 @@ loc_a399:                              ; >a399
        a    hl,hl                      ; ADD HL,HL         ; 
        jmp  loc_a391                   ; JR $A391          ; 
 
-* HL = -DE
-* 
-* Used by the routine at #R$9c79.
-minus_de:                              ; >a39e
-       .push de                        ; PUSH DE           ; 
-       .ex_de_hl                       ; EX DE,HL          ; 
-       li   hl,>0000                   ; LD HL,$0000       ; 
-       ; AND A                         ; AND A             ; 
-       s    de,hl                      ; SBC HL,DE         ; 
-       .pop de                         ; POP DE            ; 
-       .ret                            ; RET               ; 
-
-* Routine at a3a8
-* 
-* Used by the routines at #R$9731, #R$a41b, #R$a427, #R$a438 and #R$a445.
-click:                                 ; >a3a8
-       movb one,@c                     ; LD C,$01          ; length 1 for a short click
-* This entry point is used by the routines at #R$a3c2, #R$a3c7, #R$a3e0,
-* #R$a3ef, #R$a408, #R$a445, #R$a48b and #R$a4b0.
-beep:                                  ; >a3aa
-       movb @bytes+>10,a               ; LD A,$10          ; freq B (low is higher), length C
-       ; OUT ($FE),A                   ; OUT ($FE),A       ; 
-       .push bc                        ; PUSH BC           ; 
-loc_a3af:                              ; >a3af
-       sb   one,b                      ; DJNZ $A3AF        ; 
-       jne  loc_a3af                   ;                   
-       .pop bc                         ; POP BC            ; 
-       .push bc                        ; PUSH BC           ; 
-       sb   a,a                        ; XOR A             ; 
-       ; OUT ($FE),A                   ; OUT ($FE),A       ; 
-loc_a3b6:                              ; >a3b6
-       sb   one,b                      ; DJNZ $A3B6        ; 
-       jne  loc_a3b6                   ;                   
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  beep                       ; JR NZ,$A3AA       ; freq B (low is higher), length C
-       .ret                            ; RET               ; 
-* This entry point is used by the routine at #R$9326.
-inventory_sound:                       ; >a3bd
-       li   bc,zx_screen+>0040         ; LD BC,$4040       ; 
-       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-
-* Routine at a3c2
-* 
-* Used by the routine at #R$9358.
-drop_sound:                            ; >a3c2
-       li   bc,>2080                   ; LD BC,$2080       ; long high beep
-       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-
-* play walk clicks if due
-* 
-* Used by the routines at #R$80d2, #R$8dc4 and #R$8e26.
-walk_sound:                            ; >a3c7
-       li   hl,walk_counter            ; LD HL,$5E2F       ; 
-       ab   one,*hl                    ; INC (HL)          ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-       movb a,r0                       ; BIT 1,A           ; low click time?
-       andi r0,>0200                   ;                   
-       jeq  walk_low                   ; JR Z,$A3D8        ; jump if so
-       andi a,>0100                    ; AND $01           ; click this frame?
-       jne  !                          ; RET Z             ; return if not
-       .ret                            ;                   
-!
-       li   bc,zx_screen+>0004         ; LD BC,$4004       ; high beep
-       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-walk_low:                              ; >a3d8
-       andi a,>0100                    ; AND $01           ; click this frame?
-       jne  !                          ; RET Z             ; return if not
-       .ret                            ;                   
-!
-       li   bc,>6004                   ; LD BC,$6004       ; low beep
-       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-
-* Routine at a3e0
-* 
-* Used by the routine at #R$8c8c.
-start_beep:                            ; >a3e0
-       li   bc,handler_table2+>0036    ; LD BC,$8060       ; long low beep
-       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-
-* play monster touched sound
-* 
-* Used by the routines at #R$85b2 and #R$988b.
-touching_sound:                        ; >a3e5
-       li   bc,byte_640d+>0003         ; LD BC,$6410       ; 
-* This entry point is used by the routines at #R$a403 and #R$a485.
-queue_sound:                           ; >a3e8
-       li   hl,sound                   ; LD HL,$EAA0       ; 
-       movb b,*hl                      ; LD (HL),B         ; blank graphic with required sound handler (64 or 65)
-       inc  hl                         ; INC HL            ; 
-       movb @c,*hl                     ; LD (HL),C         ; effect counter
-       .ret                            ; RET               ; 
-
-* play next note of sound effect
-h_sound_effect:                        ; >a3ef
-       sb   one,@>01(ix)               ; DEC (IX+$01)      ; hit sound counter
-       jeq  clear_sound                ; JR Z,$A3FE        ; 
-       movb @>01(ix),a                 ; LD A,(IX+$01)     ; also used for freq and length
-       movb a,@c                       ; LD C,A            ; 
-       li   r0,67*256                  ; XOR $43           ; 
-       xor  r0,a                       ;                   
-       movb a,b                        ; LD B,A            ; 
-       b    @beep                      ; JP $A3AA          ; freq B (low is higher), length C
-* This entry point is used by the routines at #R$a408 and #R$a48b.
-clear_sound:                           ; >a3fe
-       sb   *ix,*ix                    ; LD (IX+$00),$00   ; 
-       .ret                            ; RET               ; 
-
-* room entry sound effect
-* 
-* Used by the routine at #R$9117.
-entry_sound:                           ; >a403
-       li   bc,door_08_06_g+>000d      ; LD BC,$650A       ; 
-       jmp  queue_sound                ; JR $A3E8          ; 
-
-* play next note of sound effect
-h_sound_effect2:                       ; >a408
-       sb   one,@>01(ix)               ; DEC (IX+$01)      ; effect counter
-       jeq  clear_sound                ; JR Z,$A3FE        ; 
-       movb @>01(ix),a                 ; LD A,(IX+$01)     ; also used for freq and length
-       movb a,@c                       ; LD C,A            ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       inv  a                          ; CPL               ; 
-       li   r0,64*256                  ; XOR $40           ; 
-       xor  r0,a                       ;                   
-       movb a,b                        ; LD B,A            ; 
-       b    @beep                      ; JP $A3AA          ; freq B (low is higher), length C
-
-* play axe throw sound
-* 
-* Used by the routine at #R$8134.
-axe_sound:                             ; >a41b
-       movb @bytes+>0c,d               ; LD D,$0C          ; 
-loc_a41d:                              ; >a41d
-       movb d,a                        ; LD A,D            ; 
-       ; RRCA                          ; RRCA              ; 
-       movb a,b                        ; LD B,A            ; set freq
-       .call @click                    ; CALL $A3A8        ; 
-       sb   one,d                      ; DEC D             ; 
-       jne  loc_a41d                   ; JR NZ,$A41D       ; 
-       .ret                            ; RET               ; 
-
-* play sword throw sound
-* 
-* Used by the routine at #R$8283.
-sword_sound:                           ; >a427
-       movb @bytes+>10,d               ; LD D,$10          ; 
-loc_a429:                              ; >a429
-       movb d,a                        ; LD A,D            ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       li   r0,7*256                   ; XOR $07           ; 
-       xor  r0,a                       ;                   
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       movb a,b                        ; LD B,A            ; set freq
-       .call @click                    ; CALL $A3A8        ; 
-       sb   one,d                      ; DEC D             ; 
-       jne  loc_a429                   ; JR NZ,$A429       ; 
-       .ret                            ; RET               ; 
-
-* play fireball throw sound
-* 
-* Used by the routine at #R$814b.
-fireball_sound:                        ; >a438
-       movb @bytes+>08,d               ; LD D,$08          ; 
-loc_a43a:                              ; >a43a
-       movb d,a                        ; LD A,D            ; 
-       inv  a                          ; CPL               ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       movb a,b                        ; LD B,A            ; set freq
-       .call @click                    ; CALL $A3A8        ; 
-       sb   one,d                      ; DEC D             ; 
-       jne  loc_a43a                   ; JR NZ,$A43A       ; 
-       .ret                            ; RET               ; 
-
-* weapon disappearing sound
-* 
-* Used by the routine at #R$81f0.
-weapon_pop:                            ; >a445
-       movb @num_creatures,a           ; LD A,($5E25)      ; number of creatures processed this frame
-       ab   one,a                      ; INC A             ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. * 16
-       socb @bytes+>0f,a               ; OR $0F            ; + 15
-       andi a,>7f00                    ; AND $7F           ; 7-bit
-       movb a,d                        ; LD D,A            ; 
-loc_a452:                              ; >a452
-       movb d,a                        ; LD A,D            ; 
-       li   r0,32*256                  ; XOR $20           ; 
-       xor  r0,a                       ;                   
-       movb a,b                        ; LD B,A            ; 
-       .call @click                    ; CALL $A3A8        ; 
-       sb   one,d                      ; DEC D             ; 
-       jne  !                          ; RET Z             ; 
-       .ret                            ;                   
-!
-       sb   one,d                      ; DEC D             ; 
-       jne  !                          ; RET Z             ; 
-       .ret                            ;                   
-!
-       jmp  loc_a452                   ; JR $A452          ; 
-* This entry point is used by the routine at #R$8cb7.
-appear_sound:                          ; >a45f
-       movb @>06(ix),a                 ; LD A,(IX+$06)     ; player appearance sound
-       inv  a                          ; CPL               ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       andi a,>3f00                    ; AND $3F           ; 
-       socb @bytes+>40,a               ; OR $40            ; 
-       movb a,b                        ; LD B,A            ; 
-       movb @bytes+>10,@c              ; LD C,$10          ; 
-       b    @beep                      ; JP $A3AA          ; freq B (low is higher), length C
-* This entry point is used by the routines at #R$915f and #R$91bc.
-door_sound:                            ; >a46e
-       li   bc,>0830                   ; LD BC,$0830       ; 48 bytes * 8 bits to output
-       li   hl,>0000                   ; LD HL,$0000       ; ROM start
-loc_a474:                              ; >a474
-       movb *hl,@e                     ; LD E,(HL)         ; read ROM byte for white noise
-       inc  hl                         ; INC HL            ; 
-       .push bc                        ; PUSH BC           ; 
-loc_a477:                              ; >a477
-       ; RRC E                         ; RRC E             ; rotate to use &0eac bit of the byte
-       movb @e,a                       ; LD A,E            ; 
-       andi a,>1000                    ; AND $10           ; keep speaker bit
-       ; OUT ($FE),A                   ; OUT ($FE),A       ; click
-       sb   one,b                      ; DJNZ $A477        ; loop for &0eac bit in the byte
-       jne  loc_a477                   ;                   
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; done all bytes?
-       jne  loc_a474                   ; JR NZ,$A474       ; jump back if not
-       .ret                            ; RET               ; 
-
-* Routine at a485
-* 
-* Used by the routine at #R$8c63.
-eat_sound:                             ; >a485
-       li   bc,set_entity_attrs+>0002  ; LD BC,$A010       ; A0 is blank graphic with food-eaten handler (below)
-       b    @queue_sound               ; JP $A3E8          ; 
-
-* eaten food sound effect handler
-h_food_eaten:                          ; >a48b
-       sb   one,@>01(ix)               ; DEC (IX+$01)      ; 
-       ; JP M,$A3FE                    ; JP M,$A3FE        ; 
-       movb @>01(ix),@c                ; LD C,(IX+$01)     ; 
-       sb   b,b                        ; LD B,$00          ; 
-       li   hl,eat_tone_table          ; LD HL,$A4A0       ; 
-       a    bc,hl                      ; ADD HL,BC         ; 
-       movb *hl,b                      ; LD B,(HL)         ; 
-       movb @bytes+>08,@c              ; LD C,$08          ; duration
-       b    @beep                      ; JP $A3AA          ; freq B (low is higher), length C
-
-* Data block at a4a0
-eat_tone_table:                        ; >a4a0
-       byte >80,>90,>80,>90,>80,>90,>80,>90
-       byte >80,>70,>60,>50,>40,>30,>20,>10
-
-* weapon bounce sound
-* 
-* Used by the routine at #R$81f0.
-bounce_sound:                          ; >a4b0
-       movb @bytes+>40,d               ; LD D,$40          ; 
-       sb   one,d                      ; DEC D             ; 
-       jne  !                          ; RET Z             ; 
-       .ret                            ;                   
-!
-       movb d,a                        ; LD A,D            ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       ; RRCA                          ; RRCA              ; 
-       movb a,b                        ; LD B,A            ; 
-       movb @bytes+>04,@c              ; LD C,$04          ; 
-       b    @beep                      ; JP $A3AA          ; freq B (low is higher), length C
-
-* instruction moved from printer buffer (5B80) in original code
-jp_hl:                                 ; >d505
-       nop                             ; NOP               ; 

@@ -1,0 +1,65 @@
+* Message at 7cf8
+menu_options:                          ; >7cf8
+       text '1  KEYBOAR'
+       byte >C4
+       text '2  KEMPSTON JOYSTIC'
+       byte >CB
+       text '3  CURSOR   JOYSTIC'
+       byte >CB
+       text '4  KNIGH'
+       byte >D4
+       text '5  WIZAR'
+       byte >C4
+       text '6  SER'
+       byte >C6
+       text '0  START GAM'
+       byte >C5
+
+* Data block at 7d51
+copyright_msg:                         ; >7d51
+       byte >47
+       text '%1983 A.C.G. ALL RIGHTS RESERVE'
+       byte >C4
+
+* Data block at 7d72
+header_msg:                            ; >7d72
+       byte >47
+       text 'ATICATAC GAME SELECTIO'
+       byte >CE
+
+* Data block at 8c59
+gameover_msg:                          ; >8c59
+       byte >47                                                      ; bright white
+       text 'GAME OVE'
+       byte >D2
+
+* Data block at 967f
+time_msg:                              ; >967f
+       byte >45                                                      ; bright cyan
+       text 'TIME       '
+       text '#  '
+       byte >A0
+
+* Data block at 968f
+score_msg:                             ; >968f
+       byte >45                                                      ; bright cyan
+       text 'SCORE         '
+       byte >A0
+
+* Data block at 969f
+percent_msg:                           ; >969f
+       byte >45                                                      ; bright cyan
+       text '>             '
+       byte >A0
+
+* Data block at 9710
+congrat_msg:                           ; >9710
+       byte >47
+       text 'CONGRATULATION'
+       byte >D4
+
+* Data block at 9720
+escape_msg:                            ; >9720
+       byte >47
+       text 'YOU HAVE ESCAPE'
+       byte >C4

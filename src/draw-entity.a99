@@ -1,0 +1,461 @@
+*********************************************************************
+*
+* return address of sprite @saved_graphic in DE
+*
+* Used by the routine at #R$9f80.
+*
+get_saved_sprite_addr:                 ; >9e86
+       movb @saved_graphic,a           ; LD A,($5E15)      ;
+*
+* return address of sprite A in DE
+*
+* Used by the routines at #R$8cb7, #R$8d45, #R$8e26 and #R$9e96.
+*
+get_sprite_addr:                       ; >9e89
+       sb   one,a                      ; DEC A             ;
+       sb   h,h
+       movb a,@l                       ; LD L,A            ;
+;      sb   h,h                        ; LD H,$00          ;
+;      a    hl,hl                      ; ADD HL,HL         ;
+;      li   bc,sprite_table            ; LD BC,$A4BE       ;
+;      a    bc,hl                      ; ADD HL,BC         ;
+;      movb *hl,@e                     ; LD E,(HL)         ;
+;      inc  hl                         ; INC HL            ;
+;      movb *hl,d                      ; LD D,(HL)         ;
+       sla  hl,1
+       mov @sprite_table(hl),de
+       .ret                            ; RET               ;
+*
+* return addr of entity sprite addr in DE
+*
+* Used by the routine at #R$9f9f.
+get_sprite_addr_ix:                    ; >9e96
+       movb *ix,a                      ; LD A,(IX+$00)     ;
+       jmp  get_sprite_addr            ; JR $9E89          ; return address of sprite A in DE
+*// get_sprite_addr
+
+*********************************************************************
+*
+* This entry point is used by the routines at #R$9f4a, #R$9f56 and #R$9fca.
+* Branch target
+*
+* c contains something about the height
+*
+draw_sprite:                           ; >9e9b
+       movb @c,a                       ; LD A,C            ;
+       ; AND A                         ; AND A             ;
+       jeq  _draw_sprite_3             ; JR Z,$9EAF        ;
+       sb   one,@c                     ; DEC C             ;
+       .call @draw_sprite23            ; CALL $9EDC        ;
+       .exx                            ; EXX               ;
+       movb @c,a                       ; LD A,C            ;
+       ; AND A                         ; AND A             ;
+       jeq  _draw_sprite_2             ; JR Z,$9EAC        ;
+_draw_sprite_1:                        ; >9ea8
+       sb   one,@c                     ; DEC C             ;
+       .call @draw_sprite2             ; CALL $9F21        ;
+_draw_sprite_2:                        ; >9eac
+       .exx                            ; EXX               ;
+       jmp  draw_sprite                ; JR $9E9B          ;
+_draw_sprite_3:                        ; >9eaf
+       .exx                            ; EXX               ;
+       movb @c,a                       ; LD A,C            ;
+       ; AND A                         ; AND A             ;
+       jne  _draw_sprite_1             ; JR NZ,$9EA8       ;
+* This entry point is used by the routine at #R$9fca.
+entry_from_draw_entity_disp_1:         ; >9eb4
+       .exx                            ; EXX               ;
+* This entry point is used by the routine at #R$9fca.
+entry_from_draw_entity_disp_2:         ; >9eb5
+       movb @some_height,a             ; LD A,($5E18)      ;
+       movb a,@c                       ; LD C,A            ;
+       movb @some_width,a              ; LD A,($5E19)      ;
+       socb @c,a                       ; OR C              ; width and height zero?
+       jne  !                          ; RET Z             ; return if so
+       .ret                            ;
+!
+       sb   a,a                        ; XOR A             ;
+       movb a,@some_height             ; LD ($5E18),A      ;
+       .exx                            ; EXX               ;
+       movb @some_width,a              ; LD A,($5E19)      ;
+       movb a,@c                       ; LD C,A            ;
+       sb   a,a                        ; XOR A             ;
+* This entry point is used by the routine at #R$9fca.
+entry_from_draw_entity_disp_3:         ; >9ec8
+       movb a,@some_width              ; LD ($5E19),A      ;
+       .exx                            ; EXX               ;
+       jmp  draw_sprite                ; JR $9E9B          ;
+*// draw_sprite_2_or_23
+
+*********************************************************************
+*
+* Routine at 9ece
+draw_unshifted:                        ; >9ece
+       .ex_de_hl                       ; EX DE,HL          ;
+       .ex_sp_hl                       ; EX (SP),HL        ;
+       movb d,a                        ; LD A,D            ;
+       ; XOR (HL)                      ; XOR (HL)          ;
+       movb *hl,r0
+       xor  r0,a
+       movb a,*hl                      ; LD (HL),A         ;
+       ab   one,@l                     ; INC L             ;
+       movb @e,a                       ; LD A,E            ;
+       ; XOR (HL)                      ; XOR (HL)          ;
+       movb *hl,r0
+       xor  r0,a
+       movb a,*hl                      ; LD (HL),A         ;
+       .pop de                         ; POP DE            ;
+       sb   one,@l                     ; DEC L             ;
+       b    @pixel_line_up             ; JP $9F03          ; move up 1 display line in HL
+
+*********************************************************************
+*
+* Routine at 9edc
+*
+* Used by the routine at #R$9e96.
+*
+* de: screen address
+*
+draw_sprite23:                         ; >9edc
+       .proc
+       .ex_de_hl                       ; EX DE,HL          ;
+       .push de                        ; PUSH DE           ;
+       movb *hl,d                      ; LD D,(HL)         ;
+       inc  hl                         ; INC HL            ;
+       movb *hl,@e                     ; LD E,(HL)         ;
+       inc  hl                         ; INC HL            ;
+       .ex_de_hl                       ; EX DE,HL          ;
+       sb   a,a                        ; XOR A             ;
+jr_23:                                 ; >9ee4
+       jmp  jr_23                      ; JR $9EE4          ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       .ex_de_hl                       ; EX DE,HL          ;
+       .ex_sp_hl                       ; EX (SP),HL        ;
+       ; XOR (HL)                      ; XOR (HL)          ;
+       movb *hl,r0
+       xor  r0,a
+       movb a,*hl                      ; LD (HL),A         ;
+       ab   one,@l                     ; INC L             ;
+       jmp  !
+* This entry point is used by the routine at #R$9f21.
+* Branch target
+draw_2_bytes:                          ; >9ef9
+       movb d,a                        ; LD A,D            ;
+       ; XOR (HL)                      ; XOR (HL)          ;
+       movb *hl,r0
+       xor  r0,a
+       movb a,*hl                      ; LD (HL),A         ;
+       ab   one,@l                     ; INC L             ;
+       movb @e,a                       ; LD A,E            ;
+       ; XOR (HL)                      ; XOR (HL)          ;
+       movb *hl,r0
+       xor  r0,a
+       movb a,*hl                      ; LD (HL),A         ;
+       .pop de                         ; POP DE            ;
+       sb   one,@l                     ; DEC L             ;
+       sb   one,@l                     ; DEC L             ;
+
+*********************************************************************
+* This entry point is used by the routines at #R$99c9, #R$99e5, #R$9a0a,
+* #R$9a50, #R$9acb, #R$9aef, #R$9b14, #R$9b5d, #R$9ece, #R$9f13 and #R$a185.
+* Branch target
+pixel_line_up:                         ; >9f03
+       sb   one,h                      ; DEC H             ; move up 1 display line in HL
+       movb h,a                        ; LD A,H            ;
+       inv  a                          ; CPL               ;
+       andi a,>0700                    ; AND $07           ;
+       jeq  !                          ; RET NZ            ;
+       .ret                            ;
+!
+       movb @l,a                       ; LD A,L            ;
+       sb   @bytes+>20,a               ; SUB $20           ;
+       movb a,@l                       ; LD L,A            ;
+       jnc  !                          ; RET C             ; TODO: check code.
+       .ret                            ;
+!
+       movb h,a                        ; LD A,H            ;
+       ab   @bytes+>08,a               ; ADD A,$08         ;
+       movb a,h                        ; LD H,A            ;
+       .ret                            ; RET               ;
+
+*********************************************************************
+* draw 2-byte unshifted graphic
+*
+* Used by the routine at #R$9f21.
+draw_unshifted2:                       ; >9f13
+       .ex_de_hl                       ; EX DE,HL          ;
+       .ex_sp_hl                       ; EX (SP),HL        ;
+       movb d,a                        ; LD A,D            ;
+       ; XOR (HL)                      ; XOR (HL)          ;
+       movb *hl,r0
+       xor  r0,a
+       movb a,*hl                      ; LD (HL),A         ;
+       ab   one,@l                     ; INC L             ;
+       movb @e,a                       ; LD A,E            ;
+       ; XOR (HL)                      ; XOR (HL)          ;
+       movb *hl,r0
+       xor  r0,a
+       movb a,*hl                      ; LD (HL),A         ;
+       .pop de                         ; POP DE            ;
+       sb   one,@l                     ; DEC L             ;
+       b    @pixel_line_up             ; JP $9F03          ; move up 1 display line in HL
+
+*********************************************************************
+*
+* Routine at 9f21
+*
+* Used by the routine at #R$9e96.
+*
+* de: screen address
+*
+draw_sprite2:                          ; >9f21
+       .proc
+       .ex_de_hl                       ; EX DE,HL          ; Now hl is the screen address
+       .push de                        ; PUSH DE           ;
+       movb *hl,d                      ; LD D,(HL)         ;
+       inc  hl                         ; INC HL            ;
+       movb *hl,@e                     ; LD E,(HL)         ;
+       inc  hl                         ; INC HL            ;
+       .ex_de_hl                       ; EX DE,HL          ;
+       sb   a,a                        ; XOR A             ;
+jr_2:                                  ; >9f29
+       jmp  draw_unshifted2            ; JR $9F13          ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       ab   a,a                        ; ADC A,A           ;
+       .ex_de_hl                       ; EX DE,HL          ;
+       .ex_sp_hl                       ; EX (SP),HL        ;
+       ; XOR (HL)                      ; XOR (HL)          ;
+       movb *hl,r0
+       xor  r0,a
+       movb a,*hl                      ; LD (HL),A         ; first byte
+       ab   one,@l                     ; INC L             ;
+       jmp  draw_2_bytes               ; JR $9EF9          ;
+
+* Routine at 9f40
+draw2_entity:                          ; >9f40
+       .call @prepare_draw2_de         ; CALL $9FA2        ;
+       jmp  loc_9f4d                   ; JR $9F4D          ;
+
+* Routine at 9f45
+undraw_entity_de:                      ; >9f45
+       .call @prepare_draw23_de        ; CALL $9F83        ;
+       jmp  loc_9f59                   ; JR $9F59          ;
+
+*********************************************************************
+*
+* draw entity graphic (no attrs)
+*
+* Used by the routines at #R$814b, #R$83ea, #R$871a, #R$8862, #R$8aff, #R$8cb7,
+* #R$9291, #R$9358, #R$9443, #R$95cc, #R$a14d, #R$a2ce and #R$a311.
+draw_entity:                           ; >9f4a
+       .proc
+       .call @prepare_draw2            ; CALL $9F9F        ; prepare for 2-byte drawing
+       jmp  !
+* This entry point is used by the routine at #R$9f40.
+loc_9f4d:                              ; >9f4d
+       .proc
+!      .exx                            ; EXX               ;
+       sb   a,a                        ; XOR A             ;
+       movb a,@some_height             ; LD ($5E18),A      ;
+       movb a,@c                       ; LD C,A            ;
+       b    @draw_sprite               ; JP $9E9B          ;
+
+*********************************************************************
+*
+* Routine at 9f56
+*
+* Used by the routines at #R$81f0, #R$871a, #R$8c63, #R$9326 and #R$98c8.
+undraw_entity:                         ; >9f56
+       .call @prepare_draw23           ; CALL $9F80        ; prepare for 2-3 byte drawing
+* This entry point is used by the routine at #R$9f45.
+loc_9f59:                              ; >9f59
+       .exx                            ; EXX               ;
+       sb   a,a                        ; XOR A             ;
+       movb a,@c                       ; LD C,A            ;
+       movb a,@some_width              ; LD ($5E19),A      ;
+       movb @some_height,a             ; LD A,($5E18)      ;
+       movb a,@height_lines            ; LD ($5E11),A      ;
+       movb @l,a                       ; LD A,L            ;
+       andi a,>0700                    ; AND $07           ; aligned to cell boundary?
+       movb @bytes+>02,a               ; LD A,$02          ; 2 bytes wide
+       jeq  loc_9f6d                   ; JR Z,$9F6D        ; jump if so
+       ab   one,a                      ; INC A             ; 3 bytes needed
+loc_9f6d:                              ; >9f6d
+       movb a,@width_bytes             ; LD ($5E10),A      ;
+       .exx                            ; EXX               ;
+       b    @draw_sprite               ; JP $9E9B          ;
+       .push de                        ; PUSH DE           ;
+       .call @prepare_draw23_de        ; CALL $9F83        ;
+       .exx                            ; EXX               ;
+       .pop de                         ; POP DE            ;
+       .call @prepare_draw2_de         ; CALL $9FA2        ;
+       .exx                            ; EXX               ;
+       jmp  loc_9fd1                   ; JR $9FD1          ;
+
+*********************************************************************
+*
+* prepare for 2-3 byte drawing
+*
+* Used by the routines at #R$9f56 and #R$9fca.
+prepare_draw23:                        ; >9f80
+       .proc
+       .call @get_saved_sprite_addr    ; CALL $9E86        ; return address of sprite A in DE
+       jmp  !
+* This entry point is used by the routines at #R$9f45 and #R$9f56.
+prepare_draw23_de:                     ; >9f83
+       .proc
+!      mov  @saved_x,hl                ; LD HL,($5E16)     ;
+       movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
+       sb   one,a                      ; DEC A             ;
+       sla  a,1                        ; RLCA              ; TODO: check code. * 2 (bytes per
+       andi a,>0e00                    ; AND $0E           ; relative jump offset
+       cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
+       jne  loc_9f91                   ; JR NZ,$9F91       ; jump if not (use calculated offset)
+       movb @bytes+>e8,a               ; LD A,$E8          ; jr offset back to 'draw_unshifted'
+loc_9f91:                              ; >9f91
+       movb a,@jr_23+2                 ; LD ($9EE5),A      ; TODO set jr offset for data shifting
+       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       movb *de,a                      ; LD A,(DE)         ;
+       movb a,@some_height             ; LD ($5E18),A      ;
+* This entry point is used by the routine at #R$9f9f.
+loc_9f9b:                              ; >9f9b
+       sb   @c,@c                      ; LD C,$00          ;
+       inc  de                         ; INC DE            ;
+       .endproc                        ; RET               ;
+
+*********************************************************************
+*
+* prepare for 2-byte drawing
+*
+* Used by the routines at #R$9f4a and #R$9fca.
+prepare_draw2:                         ; >9f9f
+       .proc
+       .call @get_sprite_addr_ix        ; CALL $9E96        ; return addr of entity sprite addr in DE
+       jmp  !
+* This entry point is used by the routines at #R$9f40 and #R$9f56.
+prepare_draw2_de:                      ; >9fa2
+       .proc
+!      movb @>03(ix),@l                ; LD L,(IX+$03)     ; x
+       movb @>04(ix),h                 ; LD H,(IX+$04)     ; y
+       movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
+       sb   one,a                      ; DEC A             ;
+       sla  a,2                        ; RLCA              ; TODO: check code. * 2 (bytes per
+       andi a,>1e00                    ; AND $0E           ; relative jump offset
+       cb   a,@bytes+>1e               ; CP $0E            ; originally unshifted?
+       jne  loc_9fb3                   ; JR NZ,$9FB3       ; jump if not (use calculated offset)
+       movb @bytes+>e8,a               ; LD A,$E8          ; r offset back to 'draw_unshifted'
+loc_9fb3:                              ; >9fb3
+       movb a,@jr_2+2                  ; LD ($9F2A),A      ; TODO set jr offset for data shifting
+       movb @bytes+>02,a               ; LD A,$02          ; 2 bytes wide
+       jeq  loc_9fbb                   ; JR Z,$9FBB        ;
+       ab   one,a                      ; INC A             ; any shift requires 3 bytes
+loc_9fbb:                              ; >9fbb
+       movb a,@width_bytes             ; LD ($5E10),A      ;
+       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       movb *de,a                      ; LD A,(DE)         ;
+       movb a,@some_width              ; LD ($5E19),A      ;
+       movb a,@height_lines            ; LD ($5E11),A      ;
+;      jmp  loc_9f9b                   ; JR $9F9B          ;
+       sb   @c,@c                      ; LD C,$00          ;
+       inc  de                         ; INC DE            ;
+       .endproc                            ; RET               ;
+
+*********************************************************************
+*
+* draw entity to display (no attrs)
+*
+* Used by the routine at #R$8e26.
+draw_entity_disp:                      ; >9fca
+       .call @prepare_draw2            ; CALL $9F9F        ; prepare for 2-byte drawing
+       .exx                            ; EXX               ;
+       .call @prepare_draw23           ; CALL $9F80        ; prepare for 2-3 byte drawing
+* This entry point is used by the routine at #R$9f56.
+loc_9fd1:                              ; >9fd1
+       movb @saved_y,a                 ; LD A,($5E17)      ;
+       sb   @>04(ix),a                 ; SUB (IX+$04)      ;
+       jne  !                          ; JP Z,$9EB5        ;
+       b    @entry_from_draw_entity_disp_2                 ;
+!
+       ; JP M,$9FEC                    ; JP M,$9FEC        ;
+       movb a,@c                       ; LD C,A            ;
+       movb @some_height,a             ; LD A,($5E18)      ;
+       cb   a,@c                       ; CP C              ;
+       jhe  !                          ; JP C,$9EB5        ;
+       b    @entry_from_draw_entity_disp_2                 ;
+!
+       sb   @c,a                       ; SUB C             ;
+       movb a,@some_height             ; LD ($5E18),A      ;
+       b    @draw_sprite               ; JP $9E9B          ;
+loc_9fec:                              ; >9fec
+       .exx                            ; EXX               ;
+       neg a                           ; NEG               ;
+       movb a,@c                       ; LD C,A            ;
+       movb @some_width,a              ; LD A,($5E19)      ;
+       cb   a,@c                       ; CP C              ;
+       jhe  !                          ; JP C,$9EB4        ;
+       b    @entry_from_draw_entity_disp_1                  ;
+!
+       sb   @c,a                       ; SUB C             ;
+       b    @entry_from_draw_entity_disp_3                 ; JP $9EC8          ;
+
+*********************************************************************
+*
+* save entity position for undraw
+*
+* Used by the routines at #R$81db, #R$81f0, #R$82f1, #R$8301, #R$845f, #R$85f7,
+* #R$862e, #R$8672, #R$871a, #R$8787, #R$87a6, #R$8862, #R$8906, #R$8988,
+* #R$89ed, #R$8a2f, #R$8a80, #R$8aff, #R$8c63, #R$8d77, #R$92f5 and #R$988b.
+save_entity:                           ; >9ffb
+       movb @>03(ix),a                 ; LD A,(IX+$03)     ;
+       movb a,@saved_x                 ; LD ($5E16),A      ;
+       movb @>04(ix),a                 ; LD A,(IX+$04)     ;
+       movb a,@saved_y                 ; LD ($5E17),A      ;
+       movb *ix,a                      ; LD A,(IX+$00)     ;
+       movb a,@saved_graphic           ; LD ($5E15),A      ;
+       .ret                            ; RET               ;
+
+*********************************************************************
+*
+* Routine at a185
+*
+* Used by the routines at #R$a14d and #R$a2ce.
+clear_sprite:                          ; >a185
+       .proc
+       movb @>03(ix),@l                ; LD L,(IX+$03)     ;
+       movb @>04(ix),h                 ; LD H,(IX+$04)     ;
+       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       movb @bytes+>14,b               ; LD B,$14          ; 20 pixels high
+loc_a190:                              ; >a190
+       sb   *hl,*hl                    ; LD (HL),$00       ; clear 2 bytes wide
+       ab   one,@l                     ; INC L             ;
+       sb   *hl,*hl                    ; LD (HL),$00       ;
+       sb   one,@l                     ; DEC L             ;
+       .call @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
+       sb   one,b                      ; DJNZ $A190        ;
+       jne  loc_a190                   ;
+       .endproc                        ; RET               ;

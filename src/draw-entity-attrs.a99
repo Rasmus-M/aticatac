@@ -1,0 +1,279 @@
+* paint entity with its current attr colour
+*
+* Used by the routines at #R$a14d and #R$a311.
+set_entity_attrs:                      ; >a00e
+       .proc
+       movb @>03(ix),a                 ; LD A,(IX+$03)     ; xpos
+       movb a,@saved_x                 ; LD ($5E16),A      ;
+       movb @>04(ix),a                 ; LD A,(IX+$04)     ; ypos
+       movb a,@saved_y                 ; LD ($5E17),A      ;
+       jmp  !
+* This entry point is used by the routines at #R$81f0, #R$871a, #R$8e26,
+* #R$92e2 and #R$9326.
+set_entity_attrs2:                     ; >a01a
+       .proc
+!      movb @>03(ix),@l                ; LD L,(IX+$03)     ; xpos
+       movb @>04(ix),h                 ; LD H,(IX+$04)     ; ypos
+       movb @>05(ix),d                 ; LD D,(IX+$05)     ; entity attr
+       movb @room_attr,a               ; LD A,($5E1A)      ;
+       movb a,@e                       ; LD E,A            ;
+       movb @width_bytes,a             ; LD A,($5E10)      ;
+       movb a,b                        ; LD B,A            ;
+       movb @height_lines,a            ; LD A,($5E11)      ;
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ;
+       srl  a,2
+       ab   one,a                      ; INC A             ;
+       ; RRCA                          ; RRCA              ;
+       srl  a,1
+       andi a,>1f00                    ; AND $1F           ;
+       ab   one,a                      ; INC A             ;
+       movb a,@c                       ; LD C,A            ; attr height
+       .push bc                        ; PUSH BC           ;
+       sb   b,b                        ; LD B,$00          ;
+       movb @saved_x,a                 ; LD A,($5E16)      ;
+       cb   a,@l                       ; CP L              ; same as previous xpos?
+       jeq  loc_a043                   ; JR Z,$A043        ; jump if so (no change)
+       jl   loc_a042                   ; JR C,$A042        ; jump if less (moving left, add 1)
+       ab   one,b                      ; INC B             ; moving right (add 2)
+loc_a042:                              ; >a042
+       ab   one,b                      ; INC B             ;
+loc_a043:                              ; >a043
+       movb @saved_y,a                 ; LD A,($5E17)      ;
+       cb   a,h                        ; CP H              ; ypos unchanged?
+       movb b,a                        ; LD A,B            ;
+       jeq  loc_a050                   ; JR Z,$A050        ; jump if so (no change)
+       joc  loc_a04e                   ; JR C,$A04E        ; TODO: check code. jump if less (moving up, add 4)
+       ab   @bytes+>04,a               ; ADD A,$04         ; moving down (add 8)
+loc_a04e:                              ; >a04e
+       ab   @bytes+>04,a               ; ADD A,$04         ;
+loc_a050:                              ; >a050
+       movb a,b                        ; LD B,A            ; handler table index
+       .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       movb b,a                        ; LD A,B            ;
+       .pop bc                         ; POP BC            ;
+       .push hl                        ; PUSH HL           ;
+       li   hl,attr_handlers           ; LD HL,$A064       ; 3x3 handlers (in 4x3 table) to cover attr for moving
+                                                           ; entity
+       sla  a,1                        ; SLA A             ; * 2 (bytes per entry)
+       .call @add_hl_a                 ; CALL $926C        ; HL = HL + A
+;      movb *hl,a                      ; LD A,(HL)         ; handler LSB
+;      inc  hl                         ; INC HL            ;
+;      movb *hl,h                      ; LD H,(HL)         ; handler MSB
+;      movb a,@l                       ; LD L,A            ;
+       mov  *hl,hl
+       bl   *hl                        ; JP (HL)           ;
+       .endproc
+
+* Data block at a064
+attr_handlers:                         ; >a064
+       data attr_draw_c,attr_draw_r,attr_draw_l,h_creat_delay        ; 3x3 handlers (in 4x3 table) to cover attr
+                                                                     ; for moving entity
+       data attr_draw_d,attr_draw_dr,attrs_draw_dl,h_creat_delay     ; extra delay applied to inactive creatures
+       data attr_draw_u,attr_draw_ur,attr_draw_ul                    ; draw attrs for moving up
+
+* draw attrs for unchanged position
+attr_draw_c:                           ; >a07a
+       .pop hl                         ; POP HL            ;
+* This entry point is used by the routine at #R$a0ec.
+loc_a07b:                              ; >a07b
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
+loc_a07d:                              ; >a07d
+       movb d,*hl                      ; LD (HL),D         ; entity attr
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $A07D        ;
+       jne  loc_a07d                   ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_a07b                   ; JR NZ,$A07B       ;
+       .ret                            ; RET               ;
+
+* draw attrs for moving right
+attr_draw_r:                           ; >a08d
+       .pop hl                         ; POP HL            ;
+* This entry point is used by the routine at #R$a127.
+loc_a08e:                              ; >a08e
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
+       sb   one,@l                     ; DEC L             ;
+       movb @e,*hl                     ; LD (HL),E         ; room attr
+       ab   one,@l                     ; INC L             ;
+loc_a093:                              ; >a093
+       movb d,*hl                      ; LD (HL),D         ; entity attr
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $A093        ;
+       jne  loc_a093                   ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_a08e                   ; JR NZ,$A08E       ;
+       .ret                            ; RET               ;
+
+* draw attrs for moving left
+attr_draw_l:                           ; >a0a3
+       .pop hl                         ; POP HL            ;
+* This entry point is used by the routine at #R$a0fe.
+loc_a0a4:                              ; >a0a4
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
+loc_a0a6:                              ; >a0a6
+       movb d,*hl                      ; LD (HL),D         ; entity attr
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $A0A6        ;
+       jne  loc_a0a6                   ;
+       movb @e,*hl                     ; LD (HL),E         ; room attr
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_a0a4                   ; JR NZ,$A0A4       ;
+       .ret                            ; RET               ;
+
+* draw attrs for moving down
+attr_draw_d:                           ; >a0b7
+       .pop hl                         ; POP HL            ;
+loc_a0b8:                              ; >a0b8
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
+loc_a0ba:                              ; >a0ba
+       movb d,*hl                      ; LD (HL),D         ; entity attr
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $A0BA        ;
+       jne  loc_a0ba                   ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_a0b8                   ; JR NZ,$A0B8       ;
+* This entry point is used by the routines at #R$a0d2 and #R$a110.
+cond_room_row:                         ; >a0c9
+       movb h,a                        ; LD A,H            ;
+       cb   a,@bytes+>58               ; CP $58            ; out of screen top?
+       jhe  !                          ; RET C             ; return if so
+       .ret                            ;
+!
+loc_a0cd:                              ; >a0cd
+       equ  $
+       movb @e,*hl                     ; LD (HL),E         ; room attr
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $A0CD        ;
+       jne  loc_a0cd                   ;
+       .ret                            ; RET               ;
+
+* draw attrs for moving down-right
+attr_draw_dr:                          ; >a0d2
+       .pop hl                         ; POP HL            ;
+loc_a0d3:                              ; >a0d3
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
+       sb   one,@l                     ; DEC L             ;
+       movb @e,*hl                     ; LD (HL),E         ; room attr
+       ab   one,@l                     ; INC L             ;
+loc_a0d8:                              ; >a0d8
+       movb d,*hl                      ; LD (HL),D         ;
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $A0D8        ;
+       jne  loc_a0d8                   ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_a0d3                   ; JR NZ,$A0D3       ;
+       sb   one,@l                     ; DEC L             ;
+       movb @e,*hl                     ; LD (HL),E         ;
+       ab   one,@l                     ; INC L             ;
+       jmp  cond_room_row              ; JR $A0C9          ;
+
+* draw attrs for moving up
+attr_draw_u:                           ; >a0ec
+       .pop hl                         ; POP HL            ;
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
+       .push bc                        ; PUSH BC           ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       a    bc,hl                      ; ADD HL,BC         ; down a row
+       .pop bc                         ; POP BC            ;
+loc_a0f5:                              ; >a0f5
+       movb @e,*hl                     ; LD (HL),E         ; entity attr
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $A0F5        ;
+       jne  loc_a0f5                   ;
+       .pop hl                         ; POP HL            ;
+       .pop bc                         ; POP BC            ;
+       b    @loc_a07b                  ; JP $A07B          ;
+
+* draw attrs for moving up-left
+attr_draw_ul:                          ; >a0fe
+       .pop hl                         ; POP HL            ;
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
+       .push bc                        ; PUSH BC           ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       a    bc,hl                      ; ADD HL,BC         ; down a row
+       .pop bc                         ; POP BC            ;
+       ab   one,b                      ; INC B             ; extra row
+loc_a108:                              ; >a108
+       movb @e,*hl                     ; LD (HL),E         ;
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $A108        ;
+       jne  loc_a108                   ;
+       .pop hl                         ; POP HL            ;
+       .pop bc                         ; POP BC            ;
+       b    @loc_a0a4                  ; JR $A0A4          ;
+
+* draw attrs for moving down-left
+attrs_draw_dl:                         ; >a110
+       .pop hl                         ; POP HL            ;
+loc_a111:                              ; >a111
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
+loc_a113:                              ; >a113
+       movb d,*hl                      ; LD (HL),D         ; room attr
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $A113        ;
+       jne  loc_a113                   ;
+       movb @e,*hl                     ; LD (HL),E         ; entity attr
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_a111                   ; JR NZ,$A111       ;
+       ab   one,b                      ; INC B             ;
+       b    @cond_room_row             ; JP $A0C9          ;
+
+* draw attrs for moving up-right
+attr_draw_ur:                          ; >a127
+       .pop hl                         ; POP HL            ;
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
+       .push bc                        ; PUSH BC           ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       a    bc,hl                      ; ADD HL,BC         ; down a row
+       .pop bc                         ; POP BC            ;
+       sb   one,@l                     ; DEC L             ;
+       ab   one,b                      ; INC B             ; extra row
+loc_a132:                              ; >a132
+       movb @e,*hl                     ; LD (HL),E         ; entity attr
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $A132        ;
+       jne  loc_a132                   ;
+       .pop hl                         ; POP HL            ;
+       .pop bc                         ; POP BC            ;
+       b    @loc_a08e                  ; JP $A08E          ;
+

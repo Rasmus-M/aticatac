@@ -1,0 +1,229 @@
+*********************************************************************
+*
+* convert coords in HL to display address in HL
+*
+* Used by the routines at #R$7d8a, #R$8b8a, #R$9607, #R$9641, #R$9995, #R$9c61,
+* #R$9f80, #R$9f9f, #R$a185, #R$a1b7, #R$a1f3 and #R$a219.
+xy_to_display:                         ; >9ba2
+       movb @l,a                       ; LD A,L            ;
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ;
+       andi a,>1f00                    ; AND $1F           ;
+       movb a,@l                       ; LD L,A            ;
+       movb h,a                        ; LD A,H            ;
+       sla  a,1                        ; RLCA              ; TODO: check code.
+       sla  a,1                        ; RLCA              ; TODO: check code.
+       andi a,>e000                    ; AND $E0           ;
+       socb @l,a                       ; OR L              ;
+       movb a,@l                       ; LD L,A            ;
+       movb h,a                        ; LD A,H            ;
+       andi a,>0700                    ; AND $07           ;
+       .ex_af_af_                      ; EX AF,AF'         ;
+       movb h,a                        ; LD A,H            ;
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ;
+       andi a,>1800                    ; AND $18           ;
+       socb @bytes+>40,a               ; OR $40            ;
+       movb a,h                        ; LD H,A            ;
+       .ex_af_af_                      ; EX AF,AF'         ;
+       socb h,a                        ; OR H              ;
+       movb a,h                        ; LD H,A            ;
+       .ret                            ; RET               ;
+
+*********************************************************************
+*
+* convert pixel coords in HL to attribute address
+*
+* Used by the routines at #R$7d8a, #R$8c8c, #R$99af, #R$a00e, #R$a1f3 and
+* #R$a240.
+xy_to_attr:                            ; >9bd2
+;      .push bc                        ; PUSH BC           ;
+;      movb @l,a                       ; LD A,L            ;
+;      ; RRCA                          ; RRCA              ;
+;      ; RRCA                          ; RRCA              ;
+;      ; RRCA                          ; RRCA              ;
+;      andi a,>1f00                    ; AND $1F           ;
+;      movb a,@l                       ; LD L,A            ;
+;      movb h,a                        ; LD A,H            ;
+;      sla  a,1                        ; RLCA              ;
+;      sla  a,1                        ; RLCA              ;
+;      movb a,@c                       ; LD C,A            ;
+;      andi a,>e000                    ; AND $E0           ;
+;      socb @l,a                       ; OR L              ;
+;      movb a,@l                       ; LD L,A            ;
+;      movb @c,a                       ; LD A,C            ;
+;      andi a,>0300                    ; AND $03           ;
+;      socb @bytes+zx_attrs_msb,a      ; OR $58            ;
+;      movb a,h                        ; LD H,A            ;
+;      .pop bc                         ; POP BC            ;
+       mov  hl,r0
+       andi r0,>00ff
+       srl  r0,3
+       srl  hl,6
+       andi hl,>ffe0
+       a    r0,hl
+       ai   hl,zx_attrs
+       .ret                            ; RET               ;
+
+*********************************************************************
+*
+* mirror bits in A
+*
+* Used by the routines at #R$99e5 and #R$9aef.
+mirror_a:                              ; >9a92
+       .push bc                        ; PUSH BC           ;
+       movb @bytes+>08,b               ; LD B,$08          ;
+loc_9a95:                              ; >9a95
+       ; RLA                           ; TODO RLA               ;
+       ; RR C                          ; TODO RR C              ;
+       sb   one,b                      ; DJNZ $9A95        ;
+       jne  loc_9a95                   ;
+       movb @c,a                       ; LD A,C            ;
+       .pop bc                         ; POP BC            ;
+       .ret                            ; RET               ;
+
+*********************************************************************
+*
+* add B to DE
+*
+* Used by the routines at #R$99e5, #R$9a0a, #R$9a50, #R$9aef, #R$9b14, #R$9d47,
+* #R$9d6f, #R$9da0, #R$9df8 and #R$9e21.
+add_de_b:                              ; >9a9d
+;       movb b,a                        ; LD A,B            ;
+;       ab   @e,a                       ; ADD A,E           ;
+;       movb a,@e                       ; LD E,A            ;
+;       movb d,a                        ; LD A,D            ;
+;       ab   @zero,a                    ; ADC A,$00         ;
+;       movb a,d                        ; LD D,A            ;
+       mov  bc,r0
+       srl  r0,0
+       a    r0,de
+       .ret                            ; RET               ;
+
+*********************************************************************
+*
+* subtract B from DE
+*
+* Used by the routines at #R$9acb, #R$9b14, #R$9b5d, #R$9dce, #R$9e21 and
+* #R$9e55.
+sbc_de_b:                              ; >9aa5
+;       movb @e,a                       ; LD A,E            ;
+;       sb   b,a                        ; SUB B             ;
+;       movb a,@e                       ; LD E,A            ;
+;       movb d,a                        ; LD A,D            ;
+;       sb   @zero,a                    ; SBC A,$00         ;
+;       movb a,d                        ; LD D,A            ;
+       mov  bc,r0
+       srl  r0,0
+       s    r0,de
+       .ret                            ; RET               ;
+
+*********************************************************************
+*
+* HL = DE * A
+*
+* Used by the routines at #R$8b8a and #R$9aba.
+mult_de_a:                             ; >9aad
+;       li   hl,>0000                   ; LD HL,$0000       ;
+;       movb @bytes+>08,b               ; LD B,$08          ;
+;loc_9ab2:                              ; >9ab2
+;       a    hl,hl                      ; ADD HL,HL         ;
+;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       jnc  loc_9ab7                   ; JR NC,$9AB7       ; TODO: check code.
+;       a    de,hl                      ; ADD HL,DE         ;
+;loc_9ab7:                              ; >9ab7
+;       sb   one,b                      ; DJNZ $9AB2        ;
+;       jne  loc_9ab2                   ;
+       mov  a,r0
+       srl  r0,8
+       mpy  de,r0
+       mov  r1,hl
+       .ret                            ; RET               ;
+
+*********************************************************************
+*
+* HL = DE + B * C
+*
+* Used by the routines at #R$9acb, #R$9aef, #R$9b14, #R$9b5d, #R$9dce, #R$9df8,
+* #R$9e21 and #R$9e55.
+hl_de_b_c:                             ; >9aba
+;       .push hl                        ; PUSH HL           ;
+;       .push de                        ; PUSH DE           ;
+;       movb b,a                        ; LD A,B            ;
+;       movb @c,@e                      ; LD E,C            ;
+;       sb   one,@e                     ; DEC E             ; convert 1-based to 0-based
+;       sb   d,d                        ; LD D,$00          ;
+;       .push bc                        ; PUSH BC           ;
+;       .call @mult_de_a                ; CALL $9AAD        ; HL = DE * A
+;       .pop bc                         ; POP BC            ;
+;       .pop de                         ; POP DE            ;
+;       a    de,hl                      ; ADD HL,DE         ;
+;       .ex_de_hl                       ; EX DE,HL          ;
+;       .pop hl                         ; POP HL            ;
+       mov  bc,r0
+       srl  r0,8                       ; b
+       mov  bc,r1
+       andi r1,>00ff                   ; c
+       mpy  r1,r0                      ; b * c
+       a    de,r1                      ; de + b * c
+       mov  r1,hl
+       .ret                            ; RET               ;
+
+*********************************************************************
+*
+* HL = -DE
+*
+* Used by the routine at #R$9c79.
+minus_de:                              ; >a39e
+;       .push de                        ; PUSH DE           ;
+;       .ex_de_hl                       ; EX DE,HL          ;
+;       li   hl,>0000                   ; LD HL,$0000       ;
+;       ; AND A                         ; AND A             ;
+;       s    de,hl                      ; SBC HL,DE         ;
+;       .pop de                         ; POP DE            ;
+       mov  de,hl
+       neg  hl
+       .ret                            ; RET               ;
+
+*********************************************************************
+*
+* HL = HL + A
+*
+* Used by the routines at #R$9222 and #R$a00e.
+add_hl_a:                              ; >926c
+;       ab   @l,a                       ; ADD A,L           ;
+;       movb a,@l                       ; LD L,A            ;
+;       movb h,a                        ; LD A,H            ;
+;       ab   @zero,a                    ; ADC A,$00         ;
+;       movb a,h                        ; LD H,A            ;
+       mov  a,r0
+       srl  r0,8
+       a    r0,hl
+       .ret                            ; RET               ;
+
+*********************************************************************
+*
+* return signed top nibble
+*
+* Used by the routine at #R$8eef.
+get_signed_b7_4:                       ; >8f80
+       ; AND A                         ; AND A             ; positive?
+       ; JP P,$8F8F                    ; JP P,$8F8F        ; jump if so
+       neg a                           ; NEG               ; negate
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ; high nibble to low nibble
+       andi a,>0f00                    ; AND $0F           ; keep low nibble
+       neg a                           ; NEG               ; re-negate
+       .ret                            ; RET               ;
+loc_8f8f:                              ; >8f8f
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ; high nibble to low nibble
+       andi a,>0f00                    ; AND $0F           ; keep low nibble
+       .ret                            ; RET               ;
+

@@ -11,6 +11,9 @@ rand8:                                 ; >5e05
        data >0000                                                    ; only low 8 bits are
                                                                      ; meaningfully random
        bss 9
+
+game_data:
+       equ  $
 width_bytes:                           ; >5e10
        byte >02
 height_lines:                          ; >5e11
@@ -94,6 +97,9 @@ visited_percent:                       ; >5e54
        byte >80
 food_ptr:                              ; >5e55
        data >0000
+
+game_data_end:
+       equ  $
 
 * Initial game state data
 player_init:                           ; >600d

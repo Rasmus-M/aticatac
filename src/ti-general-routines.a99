@@ -866,3 +866,14 @@ exx_routine:
        mov  de_,de
        mov  r0,de_
        rt
+
+*********************************************************************
+*
+* CPU space clear
+*
+clear:
+       sb  *de,*de+
+       dec  bc
+       jne  clear
+       rt
+*// clear
