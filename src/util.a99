@@ -4,32 +4,50 @@
 *
 * Used by the routines at #R$7d8a, #R$8b8a, #R$9607, #R$9641, #R$9995, #R$9c61,
 * #R$9f80, #R$9f9f, #R$a185, #R$a1b7, #R$a1f3 and #R$a219.
+*
+* h: y = ssrrrlll
+* l: x = cccccxxx
+* Before: ssrrrlllcccccxxx
+* After:  xxxsslllrrrccccc
+*
 xy_to_display:                         ; >9ba2
-       movb @l,a                       ; LD A,L            ;
-       ; RRCA                          ; RRCA              ;
-       ; RRCA                          ; RRCA              ;
-       ; RRCA                          ; RRCA              ;
-       andi a,>1f00                    ; AND $1F           ;
-       movb a,@l                       ; LD L,A            ;
-       movb h,a                        ; LD A,H            ;
-       sla  a,1                        ; RLCA              ; TODO: check code.
-       sla  a,1                        ; RLCA              ; TODO: check code.
-       andi a,>e000                    ; AND $E0           ;
-       socb @l,a                       ; OR L              ;
-       movb a,@l                       ; LD L,A            ;
-       movb h,a                        ; LD A,H            ;
-       andi a,>0700                    ; AND $07           ;
-       .ex_af_af_                      ; EX AF,AF'         ;
-       movb h,a                        ; LD A,H            ;
-       ; RRCA                          ; RRCA              ;
-       ; RRCA                          ; RRCA              ;
-       ; RRCA                          ; RRCA              ;
-       andi a,>1800                    ; AND $18           ;
-       socb @bytes+>40,a               ; OR $40            ;
-       movb a,h                        ; LD H,A            ;
-       .ex_af_af_                      ; EX AF,AF'         ;
-       socb h,a                        ; OR H              ;
-       movb a,h                        ; LD H,A            ;
+;       movb @l,a                       ; LD A,L            ;
+;       ; RRCA                          ; RRCA              ;
+;       ; RRCA                          ; RRCA              ;
+;       ; RRCA                          ; RRCA              ;
+;       srl  a,3
+;       andi a,>1f00                    ; AND $1F           ;
+;       movb a,@l                       ; LD L,A            ;
+;       movb h,a                        ; LD A,H            ;
+;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       andi a,>e000                    ; AND $E0           ;
+;       socb @l,a                       ; OR L              ;
+;       movb a,@l                       ; LD L,A            ;
+;       movb h,a                        ; LD A,H            ;
+;       andi a,>0700                    ; AND $07           ;
+;       .ex_af_af_                      ; EX AF,AF'         ;
+;       movb h,a                        ; LD A,H            ;
+;       ; RRCA                          ; RRCA              ;
+;       ; RRCA                          ; RRCA              ;
+;       ; RRCA                          ; RRCA              ;
+;       srl  a,3
+;       andi a,>1800                    ; AND $18           ;
+;       socb @bytes+zx_screen_msb,a     ; OR $40            ;
+;       movb a,h                        ; LD H,A            ;
+;       .ex_af_af_                      ; EX AF,AF'         ;
+;       socb h,a                        ; OR H              ;
+;       movb a,h                        ; LD H,A            ;
+       mov  hl,r0                      ; ssrrrlllcccccxxx
+       srl  r0,3                       ; 000ssrrrlllccccc
+       mov  r0,r1                      ; 000ssrrrlllccccc
+       andi r0,>181f                   ; 000ss000000ccccc
+       srl  r1,3                       ; 000000ssrrrlllcc
+       andi r1,>00e0                   ; 00000000rrr00000
+       andi hl,>0700                   ; 00000lll00000000
+       soc  r0,hl                      ; 000sslll000ccccc
+       soc  r1,hl                      ; 000sslllrrrccccc
+       ai   hl,zx_screen               ; 001sslllrrrccccc
        .ret                            ; RET               ;
 
 *********************************************************************
@@ -38,6 +56,10 @@ xy_to_display:                         ; >9ba2
 *
 * Used by the routines at #R$7d8a, #R$8c8c, #R$99af, #R$a00e, #R$a1f3 and
 * #R$a240.
+*
+* h: y
+* l: x
+*
 xy_to_attr:                            ; >9bd2
 ;      .push bc                        ; PUSH BC           ;
 ;      movb @l,a                       ; LD A,L            ;
@@ -59,11 +81,11 @@ xy_to_attr:                            ; >9bd2
 ;      movb a,h                        ; LD H,A            ;
 ;      .pop bc                         ; POP BC            ;
        mov  hl,r0
-       andi r0,>00ff
-       srl  r0,3
-       srl  hl,6
-       andi hl,>ffe0
-       a    r0,hl
+       andi r0,>00ff                   ; x
+       srl  r0,3                       ; x / 8
+       srl  hl,6                       ; y / 8 * 32
+       andi hl,>ffe0                   ; % 32
+       a    r0,hl                      ; + x offset
        ai   hl,zx_attrs
        .ret                            ; RET               ;
 

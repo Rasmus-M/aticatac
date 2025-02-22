@@ -39,8 +39,6 @@ get_sprite_addr_ix:                    ; >9e96
 * This entry point is used by the routines at #R$9f4a, #R$9f56 and #R$9fca.
 * Branch target
 *
-* c contains something about the height?
-*
 draw_sprite:                           ; >9e9b
        movb @c,a                       ; LD A,C            ;
        ; AND A                         ; AND A             ;
@@ -198,9 +196,12 @@ pixel_line_up_end:
 * draw 2-byte unshifted graphic
 *
 * Used by the routine at #R$9f21.
-draw_unshifted2:                       ; >9f13
-       .ex_de_hl                       ; EX DE,HL          ;
-       .ex_sp_hl                       ; EX (SP),HL        ;
+*
+* hl=data bytes, de=data addr, screen address on stack
+*
+draw_unshifted_2:                      ; >9f13
+       .ex_de_hl                       ; EX DE,HL          ; hl=data addr, de=data bytes
+       .ex_sp_hl                       ; EX (SP),HL        ; hl=screen addr, stack=data addr
        movb d,a                        ; LD A,D            ;
        ; XOR (HL)                      ; XOR (HL)          ;
        movb *hl,r0
@@ -222,21 +223,22 @@ draw_unshifted2:                       ; >9f13
 *
 * Used by the routine at #R$9e96.
 *
-* de: screen address
+* de: sprite data address
+* hl: screen address
 *
 draw_sprite2:                          ; >9f21
        .proc
-       .ex_de_hl                       ; EX DE,HL          ; Now hl is the screen address
-       .push de                        ; PUSH DE           ;
-       movb *hl,d                      ; LD D,(HL)         ;
-       inc  hl                         ; INC HL            ;
-       movb *hl,@e                     ; LD E,(HL)         ;
-       inc  hl                         ; INC HL            ;
-       .ex_de_hl                       ; EX DE,HL          ;
+       .ex_de_hl                       ; EX DE,HL          ; Now de=screen addr and hl=data addr
+       .push de                        ; PUSH DE           ; Push screen address
+       movb *hl+,d                     ; LD D,(HL)         ; Get data byte
+;      inc  hl                         ; INC HL            ;
+       movb *hl+,@e                    ; LD E,(HL)         ; Get data byte
+;      inc  hl                         ; INC HL            ;
+       .ex_de_hl                       ; EX DE,HL          ; Now hl=data bytes and de=data addr
        sb   a,a                        ; XOR A             ;
 jr_2:                                  ; >9f29
-       jmp  !                          ; JR $9F13          ; Self-modified
-!      a    hl,hl                      ; ADD HL,HL         ;
+       jmp  !                          ; JR $9F13          ; Self-modified, can jump to draw_unshifted_2
+!      a    hl,hl                      ; ADD HL,HL         ; or into the instructions below
        ab   a,a                        ; ADC A,A           ;
        a    hl,hl                      ; ADD HL,HL         ;
        ab   a,a                        ; ADC A,A           ;
@@ -262,7 +264,7 @@ jr_2:                                  ; >9f29
 * Routine at 9f40
 draw2_entity:                          ; >9f40
        .call @prepare_draw2_de         ; CALL $9FA2        ;
-       jmp  draw_entity_de                   ; JR $9F4D          ;
+       jmp  draw_entity_de             ; JR $9F4D          ;
 
 * Routine at 9f45
 undraw_entity_de:                      ; >9f45
@@ -275,14 +277,14 @@ undraw_entity_de:                      ; >9f45
 *
 * Used by the routines at #R$814b, #R$83ea, #R$871a, #R$8862, #R$8aff, #R$8cb7,
 * #R$9291, #R$9358, #R$9443, #R$95cc, #R$a14d, #R$a2ce and #R$a311.
+*
+* ix: entity
+*
 draw_entity:                           ; >9f4a
        .proc
        .call @prepare_draw2            ; CALL $9F9F        ; prepare for 2-byte drawing
-       jmp  draw_entity_de_branch_target
 * This entry point is used by the routine at #R$9f40.
-draw_entity_de:                              ; >9f4d
-       .proc
-draw_entity_de_branch_target:
+draw_entity_de:                        ; >9f4d
        .exx                            ; EXX               ;
        sb   a,a                        ; XOR A             ;
        movb a,@some_height             ; LD ($5E18),A      ;
@@ -338,13 +340,13 @@ prepare_draw23_de:                     ; >9f83
 !      mov  @saved_x,hl                ; LD HL,($5E16)     ;
        movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
        sb   one,a                      ; DEC A             ;
-       sla  a,2                        ; RLCA              ; TODO: check code. * 2 (bytes per
+       sla  a,1                        ; RLCA              ; * 2 (bytes per
        andi a,>0e00                    ; AND $0E           ; relative jump offset
        cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
        jne  loc_9f91                   ; JR NZ,$9F91       ; jump if not (use calculated offset)
-       movb @bytes+>e8,a               ; LD A,$E8          ; jr offset back to 'draw_unshifted'
+       li   a,(draw_unshifted-jr_23-2)/2*256               ; LD A,$E8 jr offset back to 'draw_unshifted'
 loc_9f91:                              ; >9f91
-       movb a,@jr_23+2                 ; LD ($9EE5),A      ; TODO set jr offset for data shifting
+       movb a,@jr_23+1                 ; LD ($9EE5),A      ; set jr offset for data shifting
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        movb *de,a                      ; LD A,(DE)         ;
        movb a,@some_height             ; LD ($5E18),A      ;
@@ -366,30 +368,32 @@ prepare_draw2:                         ; >9f9f
 * This entry point is used by the routines at #R$9f40 and #R$9f56.
 prepare_draw2_de:                      ; >9fa2
        .proc
-!      movb @>03(ix),@l                ; LD L,(IX+$03)     ; x
-       movb @>04(ix),h                 ; LD H,(IX+$04)     ; y
+!      movb @entity_x(ix),@l           ; LD L,(IX+$03)     ; x
+       movb @entity_y(ix),h            ; LD H,(IX+$04)     ; y
        movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
        sb   one,a                      ; DEC A             ;
-       sla  a,2                        ; RLCA              ; TODO: check code. * 2 (bytes per
-       andi a,>1e00                    ; AND $0E           ; relative jump offset
-       cb   a,@bytes+>1e               ; CP $0E            ; originally unshifted?
+       sla  a,1                        ; RLCA              ; * 2 (bytes per
+       andi a,>0e00                    ; AND $0E           ; relative jump offset
+       movb a,r0
+       cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
        jne  loc_9fb3                   ; JR NZ,$9FB3       ; jump if not (use calculated offset)
-       movb @bytes+>e8,a               ; LD A,$E8          ; r offset back to 'draw_unshifted'
+       li   a,(draw_unshifted_2-jr_2-2)/2*256              ; LD A,$E8 jr offset back to 'draw_unshifted_2'
 loc_9fb3:                              ; >9fb3
-       movb a,@jr_2+2                  ; LD ($9F2A),A      ; TODO set jr offset for data shifting
+       movb a,@jr_2+1                  ; LD ($9F2A),A      ; set jr offset for data shifting
        movb @bytes+>02,a               ; LD A,$02          ; 2 bytes wide
+       cb   r0,@bytes+>0e
        jeq  loc_9fbb                   ; JR Z,$9FBB        ;
        ab   one,a                      ; INC A             ; any shift requires 3 bytes
 loc_9fbb:                              ; >9fbb
        movb a,@width_bytes             ; LD ($5E10),A      ;
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       movb *de,a                      ; LD A,(DE)         ;
+       movb *de,a                      ; LD A,(DE)         ; Get height
        movb a,@some_width              ; LD ($5E19),A      ;
        movb a,@height_lines            ; LD ($5E11),A      ;
-;      jmp  loc_9f9b                   ; JR $9F9B          ;
+;      jmp  loc_9f9b                   ; JR $9F9B          ; Too ugly
        sb   @c,@c                      ; LD C,$00          ;
        inc  de                         ; INC DE            ;
-       .endproc                            ; RET               ;
+       .endproc                        ; RET               ;
 
 *********************************************************************
 *

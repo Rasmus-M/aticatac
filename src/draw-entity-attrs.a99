@@ -3,22 +3,22 @@
 * Used by the routines at #R$a14d and #R$a311.
 set_entity_attrs:                      ; >a00e
        .proc
-       movb @>03(ix),a                 ; LD A,(IX+$03)     ; xpos
-       movb a,@saved_x                 ; LD ($5E16),A      ;
-       movb @>04(ix),a                 ; LD A,(IX+$04)     ; ypos
-       movb a,@saved_y                 ; LD ($5E17),A      ;
+       movb @entity_x(ix),@saved_x     ; LD A,(IX+$03)     ; xpos
+;      movb a,@saved_x                 ; LD ($5E16),A      ;
+       movb @entity_y(ix),@saved_y     ; LD A,(IX+$04)     ; ypos
+;      movb a,@saved_y                 ; LD ($5E17),A      ;
        jmp  !
 * This entry point is used by the routines at #R$81f0, #R$871a, #R$8e26,
 * #R$92e2 and #R$9326.
 set_entity_attrs2:                     ; >a01a
        .proc
-!      movb @>03(ix),@l                ; LD L,(IX+$03)     ; xpos
-       movb @>04(ix),h                 ; LD H,(IX+$04)     ; ypos
-       movb @>05(ix),d                 ; LD D,(IX+$05)     ; entity attr
-       movb @room_attr,a               ; LD A,($5E1A)      ;
-       movb a,@e                       ; LD E,A            ;
-       movb @width_bytes,a             ; LD A,($5E10)      ;
-       movb a,b                        ; LD B,A            ;
+!      movb @entity_x(ix),@l           ; LD L,(IX+$03)     ; xpos
+       movb @entity_y(ix),h            ; LD H,(IX+$04)     ; ypos
+       movb @entity_flags(ix),d        ; LD D,(IX+$05)     ; entity attr
+       movb @room_attr,@e              ; LD A,($5E1A)      ;
+;      movb a,@e                       ; LD E,A            ;
+       movb @width_bytes,b             ; LD A,($5E10)      ;
+;      movb a,b                        ; LD B,A            ;
        movb @height_lines,a            ; LD A,($5E11)      ;
        ; RRCA                          ; RRCA              ;
        ; RRCA                          ; RRCA              ;

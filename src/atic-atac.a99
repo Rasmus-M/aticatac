@@ -42,13 +42,6 @@ clear_menu_data:                       ; >7c1e
 main_menu:                             ; >7c29
        .call @clear_screen             ; CALL $80AA        ; clear display, attributes, and set black border
        .call @draw_menu_icons          ; CALL $A311        ; draw menu icons for controls and player acharacters
-       li   r0,>2000
-       li   r1,>ff00
-       li   r2,>1800
-!      movb r1,*r0+
-       dec  r2
-       jne  -!
-
        bl   @upload_zx_screen
 loop:  jmp  loop
 menu_loop:                             ; >7c2f

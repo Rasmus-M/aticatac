@@ -133,4 +133,21 @@ loading_screen_rom_bank:
        equ  >600e
 
 
+entity_graphic:
+       equ  0
+entity_screen:
+       equ  1
+entity_unknown:
+       equ  2
+entity_x:
+       equ  3
+entity_y:
+       equ  4
+entity_flags:
+       equ  5
+entity_door_timing:
+       equ  6
+entity_unknown_2:
+       equ  7
+
        copy "sound-defs.a99"
