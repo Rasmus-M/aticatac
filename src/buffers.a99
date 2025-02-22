@@ -1,5 +1,7 @@
 * Note: data below must be aligned to 16-byte boundary
 
+       bss  16-($%%16)
+
 * Data block at ea90
 player:                                ; >ea90
        byte >00
@@ -273,6 +275,8 @@ frankenstein:                          ; >eec0
 hunchback:                             ; >eed0
        byte >00,>00,>00,>00,>00,>00,>00,>00
        byte >00,>00,>00,>00,>00,>00,>00,>00
+
+* Here the player_init data ends
 
 * Data block at eee0
 linked_items:                          ; >eee0
@@ -825,3 +829,8 @@ _eee8:                                 ; >eee8
        byte >00,>3C,>40,>3C,>02,>42,>3C,>00
        byte >00,>FE,>10,>10,>10,>10,>10,>00
        byte >00,>42,>42,>42,>42,>42,>3C,>00
+
+player_end:
+       equ  $
+player_size:
+       equ  player_end-player

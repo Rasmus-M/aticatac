@@ -1,3 +1,5 @@
+       aorg  >6040 + background_graphics_size
+
 * Data block at b03a
 panel_chars:                           ; >b03a
        byte >00,>00,>00,>00,>00,>00,>00,>00                          ; &0000

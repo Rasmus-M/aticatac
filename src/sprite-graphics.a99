@@ -1,3 +1,6 @@
+       aorg >6000
+       bss  >40
+
 * Data block at a4be
 sprite_table:                          ; >a4be
        data g_knight_left1,g_knight_left2,g_knight_left3,g_knight_left2 ; &00
@@ -2791,3 +2794,6 @@ g_hunchback3:                          ; >d435
        byte >1E,>F8
        byte >05,>F0
        byte >03,>E0
+
+sprite_graphics_size:
+       equ  $ - sprite_table

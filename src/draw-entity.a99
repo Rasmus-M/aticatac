@@ -39,7 +39,7 @@ get_sprite_addr_ix:                    ; >9e96
 * This entry point is used by the routines at #R$9f4a, #R$9f56 and #R$9fca.
 * Branch target
 *
-* c contains something about the height
+* c contains something about the height?
 *
 draw_sprite:                           ; >9e9b
        movb @c,a                       ; LD A,C            ;
@@ -57,7 +57,7 @@ _draw_sprite_1:                        ; >9ea8
 _draw_sprite_2:                        ; >9eac
        .exx                            ; EXX               ;
        jmp  draw_sprite                ; JR $9E9B          ;
-_draw_sprite_3:                        ; >9eaf
+_draw_sprite_3:                        ; >9eaf             ; c is 0
        .exx                            ; EXX               ;
        movb @c,a                       ; LD A,C            ;
        ; AND A                         ; AND A             ;
@@ -72,7 +72,7 @@ entry_from_draw_entity_disp_2:         ; >9eb5
        movb @some_width,a              ; LD A,($5E19)      ;
        socb @c,a                       ; OR C              ; width and height zero?
        jne  !                          ; RET Z             ; return if so
-       .ret                            ;
+       .endproc                            ;
 !
        sb   a,a                        ; XOR A             ;
        movb a,@some_height             ; LD ($5E18),A      ;
@@ -106,7 +106,7 @@ draw_unshifted:                        ; >9ece
        movb a,*hl                      ; LD (HL),A         ;
        .pop de                         ; POP DE            ;
        sb   one,@l                     ; DEC L             ;
-       b    @pixel_line_up             ; JP $9F03          ; move up 1 display line in HL
+       b    @pixel_line_up_branch_target ; JP $9F03          ; move up 1 display line in HL
 
 *********************************************************************
 *
@@ -127,8 +127,8 @@ draw_sprite23:                         ; >9edc
        .ex_de_hl                       ; EX DE,HL          ;
        sb   a,a                        ; XOR A             ;
 jr_23:                                 ; >9ee4
-       jmp  jr_23                      ; JR $9EE4          ;
-       a    hl,hl                      ; ADD HL,HL         ;
+       jmp  !                          ; JR $9EE4          ; Self-modified
+!      a    hl,hl                      ; ADD HL,HL         ;
        ab   a,a                        ; ADC A,A           ;
        a    hl,hl                      ; ADD HL,HL         ;
        ab   a,a                        ; ADC A,A           ;
@@ -149,7 +149,6 @@ jr_23:                                 ; >9ee4
        xor  r0,a
        movb a,*hl                      ; LD (HL),A         ;
        ab   one,@l                     ; INC L             ;
-       jmp  !
 * This entry point is used by the routine at #R$9f21.
 * Branch target
 draw_2_bytes:                          ; >9ef9
@@ -167,29 +166,33 @@ draw_2_bytes:                          ; >9ef9
        .pop de                         ; POP DE            ;
        sb   one,@l                     ; DEC L             ;
        sb   one,@l                     ; DEC L             ;
+       jmp  pixel_line_up_branch_target
 
 *********************************************************************
 * This entry point is used by the routines at #R$99c9, #R$99e5, #R$9a0a,
 * #R$9a50, #R$9acb, #R$9aef, #R$9b14, #R$9b5d, #R$9ece, #R$9f13 and #R$a185.
 * Branch target
 pixel_line_up:                         ; >9f03
-       sb   one,h                      ; DEC H             ; move up 1 display line in HL
+       .proc
+       jmp  !
+pixel_line_up_branch_target:
+       equ  $
+!      sb   one,h                      ; DEC H             ; move up 1 display line in HL
        movb h,a                        ; LD A,H            ;
        inv  a                          ; CPL               ;
        andi a,>0700                    ; AND $07           ;
-       jeq  !                          ; RET NZ            ;
-       .ret                            ;
-!
+       jne  pixel_line_up_end          ; RET NZ            ;
        movb @l,a                       ; LD A,L            ;
+       movb a,r0
        sb   @bytes+>20,a               ; SUB $20           ;
        movb a,@l                       ; LD L,A            ;
-       jnc  !                          ; RET C             ; TODO: check code.
-       .ret                            ;
-!
+       cb   r0,@bytes+>20
+       jl   pixel_line_up_end          ; RET C             ; TODO: check code.
        movb h,a                        ; LD A,H            ;
        ab   @bytes+>08,a               ; ADD A,$08         ;
        movb a,h                        ; LD H,A            ;
-       .ret                            ; RET               ;
+pixel_line_up_end:
+       .endproc                        ; RET               ;
 
 *********************************************************************
 * draw 2-byte unshifted graphic
@@ -211,7 +214,7 @@ draw_unshifted2:                       ; >9f13
        movb a,*hl                      ; LD (HL),A         ;
        .pop de                         ; POP DE            ;
        sb   one,@l                     ; DEC L             ;
-       b    @pixel_line_up             ; JP $9F03          ; move up 1 display line in HL
+       b    @pixel_line_up_branch_target ; JP $9F03          ; move up 1 display line in HL
 
 *********************************************************************
 *
@@ -232,8 +235,8 @@ draw_sprite2:                          ; >9f21
        .ex_de_hl                       ; EX DE,HL          ;
        sb   a,a                        ; XOR A             ;
 jr_2:                                  ; >9f29
-       jmp  draw_unshifted2            ; JR $9F13          ;
-       a    hl,hl                      ; ADD HL,HL         ;
+       jmp  !                          ; JR $9F13          ; Self-modified
+!      a    hl,hl                      ; ADD HL,HL         ;
        ab   a,a                        ; ADC A,A           ;
        a    hl,hl                      ; ADD HL,HL         ;
        ab   a,a                        ; ADC A,A           ;
@@ -259,7 +262,7 @@ jr_2:                                  ; >9f29
 * Routine at 9f40
 draw2_entity:                          ; >9f40
        .call @prepare_draw2_de         ; CALL $9FA2        ;
-       jmp  loc_9f4d                   ; JR $9F4D          ;
+       jmp  draw_entity_de                   ; JR $9F4D          ;
 
 * Routine at 9f45
 undraw_entity_de:                      ; >9f45
@@ -275,15 +278,18 @@ undraw_entity_de:                      ; >9f45
 draw_entity:                           ; >9f4a
        .proc
        .call @prepare_draw2            ; CALL $9F9F        ; prepare for 2-byte drawing
-       jmp  !
+       jmp  draw_entity_de_branch_target
 * This entry point is used by the routine at #R$9f40.
-loc_9f4d:                              ; >9f4d
+draw_entity_de:                              ; >9f4d
        .proc
-!      .exx                            ; EXX               ;
+draw_entity_de_branch_target:
+       .exx                            ; EXX               ;
        sb   a,a                        ; XOR A             ;
        movb a,@some_height             ; LD ($5E18),A      ;
        movb a,@c                       ; LD C,A            ;
        b    @draw_sprite               ; JP $9E9B          ;
+*      Expecting draw_sprite to ret
+*// draw_entity
 
 *********************************************************************
 *
@@ -332,7 +338,7 @@ prepare_draw23_de:                     ; >9f83
 !      mov  @saved_x,hl                ; LD HL,($5E16)     ;
        movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
        sb   one,a                      ; DEC A             ;
-       sla  a,1                        ; RLCA              ; TODO: check code. * 2 (bytes per
+       sla  a,2                        ; RLCA              ; TODO: check code. * 2 (bytes per
        andi a,>0e00                    ; AND $0E           ; relative jump offset
        cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
        jne  loc_9f91                   ; JR NZ,$9F91       ; jump if not (use calculated offset)

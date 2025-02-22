@@ -5,7 +5,8 @@
 
        b    @start
 
-       copy "data.a99"
+       copy "ti-general-routines.a99"
+       copy "ti-tables.a99"
 
 lower_memory_max:
        equ  $

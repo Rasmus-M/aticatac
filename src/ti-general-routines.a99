@@ -3,7 +3,7 @@
 * Setup environment
 *
 ti_setup_environment:
-       mov  @rndsd,@rnd_seed
+;      mov  @rndsd,@rnd_seed
        li   one,>0100
        li   r0,>fffe
        mov  r0,@b255
@@ -11,7 +11,7 @@ ti_setup_environment:
        li   sp,stack
        .proc
        bl   @init_bits
-       bl   @copy_to_pad
+;      bl   @copy_to_pad
        bl   @graphics_mode
        .endproc
 *// ti_setup_environment
@@ -32,11 +32,11 @@ init_bits_1:
        rt
 *// init_bits
 
-*********************************************************************
-*
-* Copy routines to pad
-*
-copy_to_pad:
+;*********************************************************************
+;*
+;* Copy routines to pad
+;*
+;copy_to_pad:
 ;       li   r0,draw_display_buffer_start
 ;       li   r1,draw_display_buffer_pad
 ;       li   r2,draw_display_buffer_end-draw_display_buffer_start
@@ -44,8 +44,8 @@ copy_to_pad:
 ;       mov  *r0+,*r1+
 ;       dect r2
 ;       jne  copy_to_pad_1
-       rt
-*// copy_to_pad
+;       rt
+;*// copy_to_pad
 
 *********************************************************************
 *
@@ -165,62 +165,62 @@ ti_display_on:
        rt
 *// ti_display_on
 
-*********************************************************************************
-*
-* Clear screen
-*
-ti_clear_screen:
-       .proc
-       bl   @ti_display_off
-;       bl   @module_player
-       li   r1,vdpwd
-       li   r0,pattern_table
-       bl   @vwad
-       bl   @ti_clear_screen_part
-       bl   @ti_clear_screen_part
-       bl   @ti_clear_screen_part
-       li   r0,color_table
-       bl   @vwad
-       bl   @ti_clear_screen_part
-       bl   @ti_clear_screen_part
-       bl   @ti_clear_screen_part
-       bl   @ti_display_on
-       .endproc
-*// ti_clear_screen
+;*********************************************************************************
+;*
+;* Clear screen
+;*
+;ti_clear_screen:
+;       .proc
+;       bl   @ti_display_off
+;;       bl   @module_player
+;       li   r1,vdpwd
+;       li   r0,pattern_table
+;       bl   @vwad
+;       bl   @ti_clear_screen_part
+;       bl   @ti_clear_screen_part
+;       bl   @ti_clear_screen_part
+;       li   r0,color_table
+;       bl   @vwad
+;       bl   @ti_clear_screen_part
+;       bl   @ti_clear_screen_part
+;       bl   @ti_clear_screen_part
+;       bl   @ti_display_on
+;       .endproc
+;*// ti_clear_screen
+;
+;ti_clear_screen_part:
+;       .proc
+;       li   r2,>800
+;ti_clear_screen_part_1:
+;       clr  *r1
+;       dec  r2
+;       jne  ti_clear_screen_part_1
+;;       bl   @module_player
+;       .endproc
 
-ti_clear_screen_part:
-       .proc
-       li   r2,>800
-ti_clear_screen_part_1:
-       clr  *r1
-       dec  r2
-       jne  ti_clear_screen_part_1
-;       bl   @module_player
-       .endproc
-
-*********************************************************************************
-*
-* Set color of whole screen
-*
-* a: zx attribute
-*
-ti_set_screen_color:
-       .proc
-       movb @ti_colors(a),r1
-       li   r0,color_table+(3*256)
-       li   r2,5*256
-       bl   @vsmw
-;       bl   @module_player
-       li   r0,color_table+(8*256)
-       li   r2,5*256
-       bl   @vsmw
-;       bl   @module_player
-       li   r0,color_table+(13*256)
-       li   r2,5*256
-       bl   @vsmw
-;       bl   @module_player
-       .endproc
-*// ti_set_screen_color
+;*********************************************************************************
+;*
+;* Set color of whole screen
+;*
+;* a: zx attribute
+;*
+;ti_set_screen_color:
+;       .proc
+;       movb @ti_colors(a),r1
+;       li   r0,color_table+(3*256)
+;       li   r2,5*256
+;       bl   @vsmw
+;;       bl   @module_player
+;       li   r0,color_table+(8*256)
+;       li   r2,5*256
+;       bl   @vsmw
+;;       bl   @module_player
+;       li   r0,color_table+(13*256)
+;       li   r2,5*256
+;       bl   @vsmw
+;;       bl   @module_player
+;       .endproc
+;*// ti_set_screen_color
 
 *********************************************************************************
 *
@@ -620,29 +620,29 @@ vsmw_1:
 ;       rt
 ;*// vsbr
 
-*********************************************************************
-*
-* VDP Multiple Byte Read
-*
-* R0: Starting read address in VDP RAM
-* R1: Starting write address in CPU RAM
-* R2: Number of bytes to read from VDP RAM
-*
-* Modifies R0-R2
-*
-vmbr:
-       swpb r0
-       movb  r0,@vdpwa                 ; Send low byte of VDP RAM read address
-       swpb r0
-       andi r0,>3fff                   ; Set read/write bits 14 and 15 to read (00)
-       movb r0,@vdpwa                  ; Send high byte of VDP RAM read address
-       li   r0,vdprd
-vmbr_1:
-       movb *r0,*r1+                   ; Read byte from VDP RAM
-       dec  r2                         ; Byte counter
-       jne  vmbr_1                     ; Check if finished
-       rt
-*// vmbr
+;*********************************************************************
+;*
+;* VDP Multiple Byte Read
+;*
+;* R0: Starting read address in VDP RAM
+;* R1: Starting write address in CPU RAM
+;* R2: Number of bytes to read from VDP RAM
+;*
+;* Modifies R0-R2
+;*
+;vmbr:
+;       swpb r0
+;       movb  r0,@vdpwa                 ; Send low byte of VDP RAM read address
+;       swpb r0
+;       andi r0,>3fff                   ; Set read/write bits 14 and 15 to read (00)
+;       movb r0,@vdpwa                  ; Send high byte of VDP RAM read address
+;       li   r0,vdprd
+;vmbr_1:
+;       movb *r0,*r1+                   ; Read byte from VDP RAM
+;       dec  r2                         ; Byte counter
+;       jne  vmbr_1                     ; Check if finished
+;       rt
+;*// vmbr
 
 *********************************************************************
 *
@@ -747,63 +747,63 @@ ti_quit:
        blwp @>0000
 *// ti_check_quit
 
-*********************************************************************
-*
-* Scan keyboard
-*
-ti_keyscan:
-       .proc
-       lwpi gplws
-       movb @zero,@kscan_device
-       bl   @kscan
-       lwpi wrksp
-       movb @kscan_status,a
-       andi a,>2000
-       jeq  !
-       movb @kscan_key,a
-!      .endproc
-*// ti_keyscan
+;*********************************************************************
+;*
+;* Scan keyboard
+;*
+;ti_keyscan:
+;       .proc
+;       lwpi gplws
+;       movb @zero,@kscan_device
+;       bl   @kscan
+;       lwpi wrksp
+;       movb @kscan_status,a
+;       andi a,>2000
+;       jeq  !
+;       movb @kscan_key,a
+;!      .endproc
+;*// ti_keyscan
 
-*********************************************************************
-*
-* Generate a pseudo random number within the given limit
-*
-* a: Maximum number (0 - 255) exclusive
-*
-* On return a contains the number [0; a[
-*
-ti_rnd_range:
-       .proc                           ; Push return address onto the stack
-       bl   @ti_rnd                    ; Generate a random number in r0
-       andi r0,>00ff                 ; Clear MSB: [0-255]
-       mov  af,r1                    ; range in MSB
-       srl  r1,8                     ; range in LSB
-       mpy  r1,r0                  ; range * [0-255]
-       srl  r1,8                     ; (range * [0-255]) / 256
-       mov  r1,a                     ; Copy result back
-       swpb a                          ; to MSB
-       .endproc                        ; Pop return address off the stack
-*// ti_rnd_range
+;*********************************************************************
+;*
+;* Generate a pseudo random number within the given limit
+;*
+;* a: Maximum number (0 - 255) exclusive
+;*
+;* On return a contains the number [0; a[
+;*
+;ti_rnd_range:
+;       .proc                           ; Push return address onto the stack
+;       bl   @ti_rnd                    ; Generate a random number in r0
+;       andi r0,>00ff                 ; Clear MSB: [0-255]
+;       mov  af,r1                    ; range in MSB
+;       srl  r1,8                     ; range in LSB
+;       mpy  r1,r0                  ; range * [0-255]
+;       srl  r1,8                     ; (range * [0-255]) / 256
+;       mov  r1,a                     ; Copy result back
+;       swpb a                          ; to MSB
+;       .endproc                        ; Pop return address off the stack
+;*// ti_rnd_range
 
-*********************************************************************
-*
-* Generate a pseudo random number
-*
-* On return r0 contains the number, which is also stored at @rnd_seed
-*
-* r1 and r2 are modified
-*
-ti_rnd:
-       li   r1,28643                 ; A prime number to multiply by
-       mpy  @rnd_seed,r1             ; Multiply by last random number
-       ai   r2,31873                 ; Add a prime number
-       src  r2,7                     ; Mix up the number to break odd/even pattern
-       mov  r2,@rnd_seed             ; Save this number for next time
-       mov  r2,r0
-       rt
-rnd_seed:
-       data 0
-*// ti_rnd
+;*********************************************************************
+;*
+;* Generate a pseudo random number
+;*
+;* On return r0 contains the number, which is also stored at @rnd_seed
+;*
+;* r1 and r2 are modified
+;*
+;ti_rnd:
+;       li   r1,28643                 ; A prime number to multiply by
+;       mpy  @rnd_seed,r1             ; Multiply by last random number
+;       ai   r2,31873                 ; Add a prime number
+;       src  r2,7                     ; Mix up the number to break odd/even pattern
+;       mov  r2,@rnd_seed             ; Save this number for next time
+;       mov  r2,r0
+;       rt
+;rnd_seed:
+;       data 0
+;*// ti_rnd
 
 *********************************************************************
 *
@@ -820,18 +820,18 @@ ti_vsync_1:
        .endproc
 *// ti_vsync
 
-*********************************************************************
-*
-* Wait for r0 frames
-*
-ti_delay:
-       .proc
-ti_delay_1:
-       bl   @ti_vsync
-       dec  r0
-       jne  ti_delay_1
-       .endproc
-*// ti_delay
+;*********************************************************************
+;*
+;* Wait for r0 frames
+;*
+;ti_delay:
+;       .proc
+;ti_delay_1:
+;       bl   @ti_vsync
+;       dec  r0
+;       jne  ti_delay_1
+;       .endproc
+;*// ti_delay
 
 *********************************************************************
 *
@@ -866,6 +866,26 @@ exx_routine:
        mov  de_,de
        mov  r0,de_
        rt
+*// exx_routine
+
+*********************************************************************
+*
+* DAA
+*
+daa_routine:
+       mov  a,r0
+       andi r0,>0f00
+       cb   r0,@bytes+>09
+       jle  !
+       ab   @bytes+>06,a
+!      mov  a,r0
+       andi r0,>f000
+       srl  r0,4
+       cb   r0,@bytes+>b09
+       jle  !
+       ab   @bytes+>60,a
+!      rt
+*// daa_routine
 
 *********************************************************************
 *

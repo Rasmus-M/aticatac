@@ -42,7 +42,7 @@ bits:
 stack:
        equ  bits+8
 b255:
-       equ  stack+>20
+       equ  stack+>30
 b254:
        equ  b255+1
 frame:
@@ -118,7 +118,7 @@ zx_buffer:
 zx_sys_var:
        equ  >5c00
 zx_frames:
-       equ  >5C78
+       equ  >5C78                      ; TODO
 
 **
 * ROM bank select addresses

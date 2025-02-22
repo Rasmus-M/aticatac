@@ -1,17 +1,12 @@
        bank 0
-       aorg >6000
-       bss  >40
        copy "background-graphics.a99"
        copy "side-panel.a99"
 
        bank 1
-       aorg >6000
-       bss  >40
        copy "sprite-graphics.a99"
+       copy "player-init.a99"
 
        bank 2
-       aorg >6000
-       bss  >40
        copy "room-data.a99"
 
        bank 3

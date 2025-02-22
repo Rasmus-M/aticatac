@@ -87,16 +87,17 @@
        .endm
 
        .defm daa
-       mov  a,r0
-       andi r0,>0f00
-       cb   r0,@bytes+>09
-       jle  !
-       ab   @bytes+>06,a
-!      mov  a,r0
-       andi r0,>f000
-       srl  r0,4
-       cb   r0,@bytes+>b09
-       jle  !
-       ab   @bytes+>60,a
-!
+       bl   @daa_routine
+;       mov  a,r0
+;       andi r0,>0f00
+;       cb   r0,@bytes+>09
+;       jle  !
+;       ab   @bytes+>06,a
+;!      mov  a,r0
+;       andi r0,>f000
+;       srl  r0,4
+;       cb   r0,@bytes+>b09
+;       jle  !
+;       ab   @bytes+>60,a
+;!
        .endm

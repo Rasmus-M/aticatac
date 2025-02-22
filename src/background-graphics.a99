@@ -1,3 +1,6 @@
+       aorg >6000
+       bss  >40
+
 * Data block at a600
 gfx_data:                              ; >a600
        data g_cave_door_frame
@@ -997,3 +1000,6 @@ a_barrel_stack:                        ; >d4ef
        byte >43,>43,>43,>43,>43
        byte >43,>43,>43,>43,>43
        byte >43,>43,>43,>43,>43
+
+background_graphics_size:
+       equ  $-gfx_data

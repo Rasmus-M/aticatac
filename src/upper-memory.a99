@@ -6,8 +6,7 @@
        copy "sound-fx.a99"
        copy "util.a99"
        copy "text.a99"
-       copy "ti-general-routines.a99"
-       copy "ti-tables.a99"
+       copy "data.a99"
        copy "buffers.a99"
 
 upper_memory_max:

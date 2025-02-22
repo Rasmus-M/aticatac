@@ -2424,4 +2424,6 @@ points_cav_wide:                       ; >bed0
        byte >BB,>2E
        byte >BB,>39
 
+room_data_size:
+       equ  $ - door_07_00
 

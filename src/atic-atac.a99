@@ -2502,10 +2502,12 @@ loc_8d5b:                              ; >8d5b
 * 
 * Used by the routine at #R$7d9a.
 reset_game_state:                      ; >8d61
+       seto @sprite_graphics_rom_bank
        li   hl,player_init             ; LD HL,$600D       ; initial game state
        li   de,player                  ; LD DE,$EA90       ; working game state
-       li   bc,>1570                   ; LD BC,$1570       ; 0x10000-player, rather than real init data size!
-       .ldir                           ; LDIR              ; 
+       li   bc,player_init_size        ; LD BC,$1570       ; 0x10000-player, rather than real init data size!
+       .ldir                           ; LDIR              ;
+;      TODO: Clear area from player+player_init_size to player_end
        .ret                            ; RET               ; 
 
 * reduce auto-walk counter
@@ -3780,7 +3782,8 @@ loc_94ab:                              ; >94ab
 * 
 * Used by the routine at #R$7d9a.
 place_key_pieces:                      ; >94b6
-       movb @zx_frames,a               ; LD A,($5C78)      ; 
+;      TODO: Do this on the game data in RAM instead
+       movb @zx_frames,a               ; LD A,($5C78)      ;
        movb a,@c                       ; LD C,A            ; 
        movb @counter_low,a             ; LD A,($5E12)      ; 
        ab   @c,a                       ; ADD A,C           ; 
@@ -4333,6 +4336,7 @@ mushroom_death:                        ; >98c8
 * 
 * Used by the routine at #R$7d9a.
 set_key_positions:                     ; >98d2
+;      TODO: Do this on the game data in RAM instead
        movb @zx_frames,a               ; LD A,($5C78)      ; 
        li   hl,green_key_rooms         ; LD HL,$990C       ; 
        .call @get_key_room             ; CALL $9904        ; 
