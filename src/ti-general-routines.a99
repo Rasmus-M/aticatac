@@ -892,8 +892,10 @@ daa_routine:
 * CPU space clear
 *
 clear:
-       sb  *de,*de+
+       clr  r0
+clear_1:
+       movb r0,*hl+
        dec  bc
-       jne  clear
+       jne  clear_1
        rt
 *// clear

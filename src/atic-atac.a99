@@ -42,10 +42,15 @@ clear_menu_data:                       ; >7c1e
 main_menu:                             ; >7c29
        .call @clear_screen             ; CALL $80AA        ; clear display, attributes, and set black border
        .call @draw_menu_icons          ; CALL $A311        ; draw menu icons for controls and player acharacters
-       bl   @upload_zx_screen
-loop:  jmp  loop
 menu_loop:                             ; >7c2f
        .call @draw_menu_text           ; CALL $7CAF        ; 
+
+       bl   @upload_zx_screen
+!      li   r0,KEY_0
+       bl   @ti_check_key
+       jeq  -!
+       b    @start_game
+
        movb @bytes+>f7,a               ; LD A,$F7          ; xxx54321
        ; OUT ($FD),A                   ; OUT ($FD),A       ; 
        ; IN A,($FE)                    ; IN A,($FE)        ; 
@@ -153,7 +158,8 @@ set_flash_on:                          ; >7cab
 * 
 * Used by the routine at #R$7c19.
 draw_menu_text:                        ; >7caf
-       li   hl,charset_base                   ; LD HL,$BE4C       ;
+       .proc
+       li   hl,charset_base            ; LD HL,$BE4C       ;
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
        li   de,menu_attrs              ; LD DE,$7CEA       ; 
        .exx                            ; EXX               ; 
@@ -162,13 +168,13 @@ draw_menu_text:                        ; >7caf
        movb @bytes+>07,b               ; LD B,$07          ; 7 lines
 loc_7cc1:                              ; >7cc1
        .exx                            ; EXX               ; 
-       movb *de,a                      ; LD A,(DE)         ; text attribute colour
+       movb *de+,a                     ; LD A,(DE)         ; text attribute colour
        movb a,@text_attr               ; LD ($5E22),A      ; 
-       inc  de                         ; INC DE            ; 
+;      inc  de                         ; INC DE            ;
        .exx                            ; EXX               ; 
        .push bc                        ; PUSH BC           ; 
-       movb *hl,a                      ; LD A,(HL)         ; next text character
-       inc  hl                         ; INC HL            ; 
+       movb *hl+,a                     ; LD A,(HL)         ; next text character
+;      inc  hl                         ; INC HL            ;
        .push hl                        ; PUSH HL           ; 
        movb a,h                        ; LD H,A            ; 
        movb @bytes+>58,@l              ; LD L,$58          ; x coord for text
@@ -179,12 +185,12 @@ loc_7cc1:                              ; >7cc1
        inc  de                         ; INC DE            ; 
        sb   one,b                      ; DJNZ $7CC1        ; 
        jne  loc_7cc1                   ;                   
-       li   hl,g_wizard_down3+>0028    ; LD HL,$B800       ; copyright at 0,184
+       li   hl,>b800                   ; LD HL,$B800       ; copyright at 0,184
        li   de,copyright_msg           ; LD DE,$7D51       ; 
        .call @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
        li   hl,>0020                   ; LD HL,$0020       ; header at 32,0
        li   de,header_msg              ; LD DE,$7D72       ; 
-       b    @colour_text               ; JP $A1F3          ; show a line of text, first byte is attr
+       b    @colour_text_jump_target   ; JP $A1F3          ; show a line of text, first byte is attr
 
 * Data block at 7cea
 menu_attrs:                            ; >7cea
@@ -196,6 +202,7 @@ menu_ycoords:                          ; >7cf1
 * 
 * Used by the routine at #R$7caf.
 print_text:                            ; >7d8a
+       .proc
        .push hl                        ; PUSH HL           ; 
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        movb @text_attr,a               ; LD A,($5E22)      ; 
@@ -217,6 +224,11 @@ start_game:                            ; >7d9a
        .call @clear_screen             ; CALL $80AA        ; clear display, attributes, and set black border
        .call @draw_side_panel          ; CALL $A219        ; draw side panel background scroll
        .call @draw_lives               ; CALL $A2CE        ; draw lives sprites in side panel
+
+       .call @draw_panel_attrs
+       bl   @upload_zx_screen
+stop:  jmp  stop
+
        .call @place_key_pieces         ; CALL $94B6        ; set locations of ACG key pieces
        .call @set_key_positions        ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy
        .call @reset_game_state         ; CALL $8D61        ; copy initial game state to working state area
@@ -505,20 +517,22 @@ clear_play_area:                       ; >8093
 * 
 * Used by the routines at #R$9bea and #R$a240.
 fill_bc_hl_a:                          ; >809a
-       .push bc                        ; PUSH BC           ; 
+       .proc
+!:
+       .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ; 
        li   de,>0020                   ; LD DE,$0020       ; line stride is 32 bytes
 loc_809f:                              ; >809f
-       movb a,*hl                      ; LD (HL),A         ; 
-       inc  hl                         ; INC HL            ; 
+       movb a,*hl+                     ; LD (HL),A         ;
+;      inc  hl                         ; INC HL            ;
        sb   one,b                      ; DJNZ $809F        ; 
        jne  loc_809f                   ;                   
        .pop hl                         ; POP HL            ; 
        a    de,hl                      ; ADD HL,DE         ; 
        .pop bc                         ; POP BC            ; 
        sb   one,@c                     ; DEC C             ; 
-       jne  fill_bc_hl_a               ; JR NZ,$809A       ; fill C rows of B columns of value A at address HL
-       .ret                            ; RET               ; 
+       jne  -!                         ; JR NZ,$809A       ; fill C rows of B columns of value A at address HL
+       .endproc                        ; RET               ;
 
 * clear display, attributes, and set black border
 * 
@@ -537,9 +551,8 @@ clear_screen:                          ; >80aa
 * Used by the routine at #R$80aa.
 clear_display:                         ; >80b4
        .proc
-
        li   hl,zx_screen               ; LD HL,$4000       ; 
-;       movb @bytes+zx_attrs_msb,b      ; LD B,$58          ;
+;      movb @bytes+zx_attrs_msb,b      ; LD B,$58          ;
        li   bc,>1800
 clear_display_1:
        bl   @clear
@@ -3153,8 +3166,9 @@ change_room:                           ; >9117
        ; RRCA                          ; RRCA              ; 
        ; RRCA                          ; RRCA              ; 
        ; RRCA                          ; RRCA              ; * 2 (effectively)
+       srl  a,3
        andi a,>1e00                    ; AND $1E           ; 
-       neg a                           ; NEG               ; invert
+       neg  a                          ; NEG               ; invert
        ab   @>04(ix),a                 ; ADD A,(IX+$04)    ; add y
        movb a,@player_y                ; LD ($EA94),A      ; set player y to exit
        .call @set_entry_walk           ; CALL $986A        ; auto-walk into the room
@@ -5519,40 +5533,53 @@ print_bcd_digit:                       ; >a1c9
 * print a single character
 * 
 * Used by the routines at #R$a1b7, #R$a1c9, #R$a1f3 and #R$a219.
+*
+* a: character to print
+* hl: screen address
+*
 print_char:                            ; >a1d3
-       .push bc                        ; PUSH BC           ; 
+       seto @background_graphics_rom_bank
+       .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ; 
-       .push hl                        ; PUSH HL           ; 
-       movb a,@l                       ; LD L,A            ; 
-       sb   h,h                        ; LD H,$00          ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       mov  @charset_addr,de           ; LD DE,($5E01)     ; 
-       a    de,hl                      ; ADD HL,DE         ; 
-       .ex_de_hl                       ; EX DE,HL          ; 
-       .pop hl                         ; POP HL            ; 
+;      .push hl                        ; PUSH HL           ;
+       movb a,@e                       ; LD L,A            ;
+       sb   d,d                        ; LD H,$00          ;
+;      a    hl,hl                      ; ADD HL,HL         ;
+;      a    hl,hl                      ; ADD HL,HL         ;
+;      a    hl,hl                      ; ADD HL,HL         ;
+       sla  de,3
+       a    @charset_addr,de           ; LD DE,($5E01)     ;
+;      a    de,hl                      ; ADD HL,DE         ;
+;      .ex_de_hl                       ; EX DE,HL          ;
+;      .pop hl                         ; POP HL            ;
        movb @bytes+>08,b               ; LD B,$08          ; 8 lines in character cell
 loc_a1e5:                              ; >a1e5
-       movb *de,a                      ; LD A,(DE)         ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       inc  de                         ; INC DE            ; next source byte
+       movb *de+,*hl                   ; LD A,(DE)         ;
+;      movb a,*hl                      ; LD (HL),A         ;
+;      inc  de                         ; INC DE            ; next source byte
        ab   one,h                      ; INC H             ; next pixel line
        sb   one,b                      ; DJNZ $A1E5        ; 
        jne  loc_a1e5                   ;                   
        .pop de                         ; POP DE            ; 
        .pop bc                         ; POP BC            ; 
-       movb h,a                        ; LD A,H            ; 
-       sb   @bytes+>08,a               ; SUB $08           ; back to start address
-       movb a,h                        ; LD H,A            ; 
+;      movb h,a                        ; LD A,H            ;
+       sb   @bytes+>08,h               ; SUB $08           ; back to start address
+;      movb a,h                        ; LD H,A            ;
        ab   one,@l                     ; INC L             ; next position to the right
        .ret                            ; RET               ; 
 
 * show a line of text, first byte is attr
 * 
 * Used by the routines at #R$7caf, #R$8c35, #R$9641 and #R$96c9.
+*
+* hl: y,x coordinates
+* de: text to print, prefixed by attribute
+*
 colour_text:                           ; >a1f3
-       .push hl                        ; PUSH HL           ; 
+       .proc
+       jmp  !
+colour_text_jump_target:
+!      .push hl                        ; PUSH HL           ;
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        movb *de,a                      ; LD A,(DE)         ; text attr colour
        .ex_af_af_                      ; EX AF,AF'         ; 
@@ -5581,13 +5608,15 @@ loc_a210:                              ; >a210
        .exx                            ; EXX               ; 
        .ex_af_af_                      ; EX AF,AF'         ; 
        movb a,*hl                      ; LD (HL),A         ; set attr
-       .ret                            ; RET               ; 
+       .endproc                        ; RET               ;
 
 * draw side panel background scroll
 * 
 * Used by the routine at #R$7d9a.
 draw_side_panel:                       ; >a219
-       li   hl,panel_chars             ; LD HL,$B03A       ; 
+       .proc
+       seto @background_graphics_rom_bank
+       li   hl,panel_chars             ; LD HL,$B03A       ;
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
        li   hl,>00c0                   ; LD HL,$00C0       ; 
        li   de,panel_data              ; LD DE,$B32A       ; 
@@ -5597,8 +5626,8 @@ loc_a228:                              ; >a228
        .push hl                        ; PUSH HL           ; 
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
 loc_a22d:                              ; >a22d
-       movb *de,a                      ; LD A,(DE)         ; 
-       inc  de                         ; INC DE            ; 
+       movb *de+,a                     ; LD A,(DE)         ;
+;      inc  de                         ; INC DE            ;
        .call @print_char               ; CALL $A1D3        ; print a single character
        sb   one,b                      ; DJNZ $A22D        ; 
        jne  loc_a22d                   ;                   
@@ -5608,14 +5637,16 @@ loc_a22d:                              ; >a22d
        movb a,h                        ; LD H,A            ; 
        .pop bc                         ; POP BC            ; 
        sb   one,@c                     ; DEC C             ; 
-       jne  loc_a228                   ; JR NZ,$A228       ; 
+       jne  loc_a228                   ; JR NZ,$A228       ;
+       .endproc                        ; TODO
        b    @loc_a1ae                  ; JP $A1AE          ; 
 
 * draw side-panel colours, which follow room colour
 * 
 * Used by the routine at #R$9117.
 draw_panel_attrs:                      ; >a240
-       li   hl,>00c0                   ; LD HL,$00C0       ; 
+       .proc
+       li   hl,>00c0                   ; LD HL,$00C0       ;
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        li   bc,>0818                   ; LD BC,$0818       ; 8x24
        movb @room_attr,a               ; LD A,($5E1A)      ; 
@@ -5641,7 +5672,7 @@ loc_a259:                              ; >a259
        .pop bc                         ; POP BC            ; 
        sb   one,@c                     ; DEC C             ; 
        jne  loc_a257                   ; JR NZ,$A257       ; 
-       li   hl,loc_909b+>002d          ; LD HL,$90C8       ; 
+       li   hl,>90c8                   ; LD HL,$90C8       ;
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        movb @room_attr,a               ; LD A,($5E1A)      ; 
        li   bc,>0303                   ; LD BC,$0303       ; 3x3 (rosette body)
@@ -5651,21 +5682,21 @@ loc_a259:                              ; >a259
        a    de,hl                      ; ADD HL,DE         ; 
        li   bc,>0202                   ; LD BC,$0202       ; 2x2 (rosette tail)
        .call @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
-       li   hl,mushroom_death+>0008    ; LD HL,$98D0       ; 
+       li   hl,>98d0                   ; LD HL,$98D0       ;
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        .pop de                         ; POP DE            ; 
        movb @e,*hl                     ; LD (HL),E         ; rosette centre
-       li   hl,loc_7dc8                ; LD HL,$7DC8       ; 
+       li   hl,>7dc8                   ; LD HL,$7DC8       ;
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        li   bc,>0603                   ; LD BC,$0603       ; 6x3
        movb @bytes+>47,a               ; LD A,$47          ; bright white (lives)
        .call @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
-       li   hl,food_ptr+>0173          ; LD HL,$5FC8       ; 
+       li   hl,>5fc8                   ; LD HL,$5FC8       ;
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        li   bc,>0604                   ; LD BC,$0604       ; 6x4
        movb @bytes+>46,a               ; LD A,$46          ; bright yellow (chicken)
        .call @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
-       li   hl,zx_screen+>08c8         ; LD HL,$48C8       ; 
+       li   hl,>48C8                   ; LD HL,$48C8       ;
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        li   bc,>0601                   ; LD BC,$0601       ; 6x1
        movb @bytes+>45,a               ; LD A,$45          ; bright cyan (score caption)
@@ -5680,25 +5711,28 @@ loc_a259:                              ; >a259
        .call @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
        li   bc,>0601                   ; LD BC,$0601       ; 
        movb @bytes+>47,a               ; LD A,$47          ; bright white (time)
-       b    @fill_bc_hl_a              ; JP $809A          ; fill C rows of B columns of value A at address HL
+       .call @fill_bc_hl_a             ; JP $809A          ; fill C rows of B columns of value A at address HL
+       .endproc
 
 * draw lives sprites in side panel
 * 
 * Used by the routines at #R$7d9a and #R$9443.
 draw_lives:                            ; >a2ce
+       seto @sprite_graphics_rom_bank
+       .proc
        .push ix                        ; PUSH IX           ; 
        li   ix,entity_to_draw          ; LD IX,$A17D       ; 
        movb @menu_selection,a          ; LD A,($5E00)      ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
+       sla  a,1                        ; RLCA              ;
        andi a,>3000                    ; AND $30           ; extract character type from menu
        socb one,a                      ; OR $01            ; offset to first graphic
        movb a,*ix                      ; LD (IX+$00),A     ; character type
        movb @bytes+>47,@>05(ix)        ; LD (IX+$05),$47   ; bright white
-       li   hl,h_serf+>0004            ; LD HL,$8DC8       ; coords of lives in side panel
+       li   hl,>8dc8                   ; LD HL,$8DC8       ; coords of lives in side panel
        movb @l,@>03(ix)                ; LD (IX+$03),L     ; 
        movb h,@>04(ix)                 ; LD (IX+$04),H     ; 
-       movb @lives,a                   ; LD A,($5E21)      ; 
-       movb a,@c                       ; LD C,A            ; number of lives to show
+       movb @lives,@c                  ; LD A,($5E21)      ;
+;       movb a,@c                      ; LD C,A            ; number of lives to show
        movb @bytes+>03,b               ; LD B,$03          ; up to 3 lives to draw
 loc_a2f2:                              ; >a2f2
        .push bc                        ; PUSH BC           ; 
@@ -5708,18 +5742,20 @@ loc_a2f2:                              ; >a2f2
        jeq  loc_a2fd                   ; JR Z,$A2FD        ; jump if not
        .call @draw_entity              ; CALL $9F4A        ; draw player character
 loc_a2fd:                              ; >a2fd
-       movb @>03(ix),a                 ; LD A,(IX+$03)     ; 
-       ab   @bytes+>10,a               ; ADD A,$10         ; offset to next life position
-       movb a,@>03(ix)                 ; LD (IX+$03),A     ; 
-       .pop bc                         ; POP BC            ; 
-       sb   one,@c                     ; DEC C             ; 
-       ; JP P,$A30C                    ; JP P,$A30C        ; 
-       sb   @c,@c                      ; LD C,$00          ; min lives is zero
+;      movb @>03(ix),a                 ; LD A,(IX+$03)     ;
+       ab   @bytes+>10,@>03(ix)        ; ADD A,$10         ; offset to next life position
+;      movb a,@>03(ix)                 ; LD (IX+$03),A     ;
+       .pop bc                         ; POP BC            ;
+       cb   @c,@zero
+       jeq  loc_a30c
+       sb   one,@c                     ; DEC C             ;
+;       jlt  loc_a30c                   ; JP P,$A30C        ;
+;       sb   @c,@c                      ; LD C,$00          ; min lives is zero
 loc_a30c:                              ; >a30c
        sb   one,b                      ; DJNZ $A2F2        ; draw remaining slots
        jne  loc_a2f2                   ;                   
        .pop ix                         ; POP IX            ; 
-       .ret                            ; RET               ; 
+       .endproc                        ; RET               ;
 
 * draw menu icons for controls and player characters
 * 

@@ -213,9 +213,9 @@ draw_unshifted_2:                      ; >9f13
        movb *hl,r0
        xor  r0,a
        movb a,*hl                      ; LD (HL),A         ;
-       .pop de                         ; POP DE            ;
+       .pop de                         ; POP DE            ; de=data addr
        sb   one,@l                     ; DEC L             ;
-       b    @pixel_line_up_branch_target ; JP $9F03          ; move up 1 display line in HL
+       b    @pixel_line_up_branch_target ; JP $9F03        ; move up 1 display line in HL
 
 *********************************************************************
 *
