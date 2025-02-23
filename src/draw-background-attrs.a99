@@ -1,0 +1,278 @@
+* B=attr, C=graphic, E=xpos, D=ypos
+*
+* Used by the routine at #R$91fe.
+draw_bgrnd_attrs:                      ; >9980
+       li   hl,attr_funcs              ; LD HL,$9985       ;
+       b    @jump_table_b              ; JR $9965          ;
+
+* Data block at 9985
+attr_funcs:                            ; >9985
+       data draw_attr_0
+       data draw_attr_1
+       data draw_attr_2
+       data draw_attr_3
+       data draw_attr_4
+       data draw_attr_5
+       data draw_attr_6
+       data draw_attr_7
+
+* Routine at 9d47
+draw_attr_1:                           ; >9d47
+       .pop bc                         ; POP BC            ;
+       .call @get_gfx_attrs            ; CALL $99AF        ; IN
+       dec  de                         ; DEC DE            ;
+loc_9d4c:                              ; >9d4c
+       .call @add_de_b                 ; CALL $9A9D        ; add B to DE
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
+loc_9d52:                              ; >9d52
+       movb *de,a                      ; LD A,(DE)         ; attr byte
+       dec  de                         ; DEC DE            ;
+       ; AND A                         ; AND A             ; skip attr?
+       jeq  loc_9d5f                   ; JR Z,$9D5F        ; jump if so
+       cb   a,@b255                    ; CP $FF            ; use room attr?
+       jne  loc_9d5e                   ; JR NZ,$9D5E       ; jump if not
+       movb @room_attr,a               ; LD A,($5E1A)      ;
+loc_9d5e:                              ; >9d5e
+       movb a,*hl                      ; LD (HL),A         ; set attr
+loc_9d5f:                              ; >9d5f
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $9D52        ;
+       jne  loc_9d52                   ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9d4c                   ; JR NZ,$9D4C       ;
+       .ret                            ; RET               ;
+
+* Routine at 9d6f
+draw_attr_2:                           ; >9d6f
+       .pop bc                         ; POP BC            ;
+       .call @get_gfx_attrs            ; CALL $99AF        ; IN
+       movb b,a                        ; LD A,B            ;
+       .exx                            ; EXX               ;
+       movb a,b                        ; LD B,A            ;
+       .exx                            ; EXX               ;
+       .call @add_de_b                 ; CALL $9A9D        ; add B to DE
+loc_9d7a:                              ; >9d7a
+       dec  de                         ; DEC DE            ;
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
+loc_9d7e:                              ; >9d7e
+       movb *de,a                      ; LD A,(DE)         ; attr byte
+       ; AND A                         ; AND A             ; skip attr?
+       jeq  loc_9d8a                   ; JR Z,$9D8A        ; jump if so
+       cb   a,@b255                    ; CP $FF            ; use room attr?
+       jne  loc_9d89                   ; JR NZ,$9D89       ; jump if not
+       movb @room_attr,a               ; LD A,($5E1A)      ;
+loc_9d89:                              ; >9d89
+       movb a,*hl                      ; LD (HL),A         ; set attr
+loc_9d8a:                              ; >9d8a
+       .call @add_de_b                 ; CALL $9A9D        ; add B to DE
+       ab   one,@l                     ; INC L             ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9d7e                   ; JR NZ,$9D7E       ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
+       .exx                            ; EXX               ;
+       sb   one,b                      ; DEC B             ;
+       .exx                            ; EXX               ;
+       jne  loc_9d7a                   ; JR NZ,$9D7A       ;
+       .ret                            ; RET               ;
+
+* Routine at 9da0
+draw_attr_3:                           ; >9da0
+       .pop bc                         ; POP BC            ;
+       .call @get_gfx_attrs            ; CALL $99AF        ; IN
+       movb b,a                        ; LD A,B            ;
+       .exx                            ; EXX               ;
+       movb a,b                        ; LD B,A            ;
+       .exx                            ; EXX               ;
+loc_9da8:                              ; >9da8
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
+loc_9dab:                              ; >9dab
+       movb *de,a                      ; LD A,(DE)         ;
+       ; AND A                         ; AND A             ; skip attr?
+       jeq  loc_9db7                   ; JR Z,$9DB7        ; jump if so
+       cb   a,@b255                    ; CP $FF            ; use room attr?
+       jne  loc_9db6                   ; JR NZ,$9DB6       ; jump if not
+       movb @room_attr,a               ; LD A,($5E1A)      ;
+loc_9db6:                              ; >9db6
+       movb a,*hl                      ; LD (HL),A         ; set attr
+loc_9db7:                              ; >9db7
+       .call @add_de_b                 ; CALL $9A9D        ; add B to DE
+       ab   one,@l                     ; INC L             ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9dab                   ; JR NZ,$9DAB       ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
+       inc  de                         ; INC DE            ;
+       .exx                            ; EXX               ;
+       sb   one,b                      ; DEC B             ;
+       .exx                            ; EXX               ;
+       jne  loc_9da8                   ; JR NZ,$9DA8       ;
+       .ret                            ; RET               ;
+
+* Routine at 9dce
+draw_attr_4:                           ; >9dce
+       .pop bc                         ; POP BC            ;
+       .call @get_gfx_attrs            ; CALL $99AF        ; IN
+       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+loc_9dd5:                              ; >9dd5
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
+loc_9dd8:                              ; >9dd8
+       movb *de,a                      ; LD A,(DE)         ;
+       inc  de                         ; INC DE            ;
+       ; AND A                         ; AND A             ; skip attr?
+       jeq  loc_9de5                   ; JR Z,$9DE5        ; jump if so
+       cb   a,@b255                    ; CP $FF            ; use room attr?
+       jne  loc_9de4                   ; JR NZ,$9DE4       ; jump if not
+       movb @room_attr,a               ; LD A,($5E1A)      ;
+loc_9de4:                              ; >9de4
+       movb a,*hl                      ; LD (HL),A         ; set attr
+loc_9de5:                              ; >9de5
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $9DD8        ;
+       jne  loc_9dd8                   ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
+       .call @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9dd5                   ; JR NZ,$9DD5       ;
+       .ret                            ; RET               ;
+
+* Routine at 9df8
+draw_attr_5:                           ; >9df8
+       .pop bc                         ; POP BC            ;
+       .call @get_gfx_attrs            ; CALL $99AF        ; IN
+       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+       .call @add_de_b                 ; CALL $9A9D        ; add B to DE
+       dec  de                         ; DEC DE            ;
+loc_9e03:                              ; >9e03
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
+loc_9e05:                              ; >9e05
+       movb *de,a                      ; LD A,(DE)         ;
+       dec  de                         ; DEC DE            ;
+       ; AND A                         ; AND A             ; skip attr?
+       jeq  loc_9e12                   ; JR Z,$9E12        ; jump if so
+       cb   a,@b255                    ; CP $FF            ; use room attr?
+       jne  loc_9e11                   ; JR NZ,$9E11       ; jump if not
+       movb @room_attr,a               ; LD A,($5E1A)      ;
+loc_9e11:                              ; >9e11
+       movb a,*hl                      ; LD (HL),A         ; set attr
+loc_9e12:                              ; >9e12
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $9E05        ;
+       jne  loc_9e05                   ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9e03                   ; JR NZ,$9E03       ;
+       .ret                            ; RET               ;
+
+* Routine at 9e21
+draw_attr_6:                           ; >9e21
+       .pop bc                         ; POP BC            ;
+       .call @get_gfx_attrs            ; CALL $99AF        ; IN
+       movb b,a                        ; LD A,B            ;
+       .exx                            ; EXX               ;
+       movb a,b                        ; LD B,A            ;
+       .exx                            ; EXX               ;
+       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+       .call @add_de_b                 ; CALL $9A9D        ; add B to DE
+loc_9e2f:                              ; >9e2f
+       dec  de                         ; DEC DE            ;
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
+loc_9e33:                              ; >9e33
+       movb *de,a                      ; LD A,(DE)         ;
+       ; AND A                         ; AND A             ; skip attr?
+       jeq  loc_9e3f                   ; JR Z,$9E3F        ; jump if so
+       cb   a,@b255                    ; CP $FF            ; use room attr?
+       jne  loc_9e3e                   ; JR NZ,$9E3E       ; jump if not
+       movb @room_attr,a               ; LD A,($5E1A)      ;
+loc_9e3e:                              ; >9e3e
+       movb a,*hl                      ; LD (HL),A         ; set attr
+loc_9e3f:                              ; >9e3f
+       .call @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
+       ab   one,@l                     ; INC L             ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9e33                   ; JR NZ,$9E33       ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
+       .exx                            ; EXX               ;
+       sb   one,b                      ; DEC B             ;
+       .exx                            ; EXX               ;
+       jne  loc_9e2f                   ; JR NZ,$9E2F       ;
+       .ret                            ; RET               ;
+
+* Routine at 9e55
+draw_attr_7:                           ; >9e55
+       .pop bc                         ; POP BC            ;
+       .call @get_gfx_attrs            ; CALL $99AF        ; IN
+       movb b,a                        ; LD A,B            ;
+       .exx                            ; EXX               ;
+       movb a,b                        ; LD B,A            ;
+       .exx                            ; EXX               ;
+       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+loc_9e60:                              ; >9e60
+       .push bc                        ; PUSH BC           ;
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
+loc_9e63:                              ; >9e63
+       movb *de,a                      ; LD A,(DE)         ;
+       ; AND A                         ; AND A             ; skip attr?
+       jeq  loc_9e6f                   ; JR Z,$9E6F        ; jump if so
+       cb   a,@b255                    ; CP $FF            ; use room attr?
+       jne  loc_9e6e                   ; JR NZ,$9E6E       ; jump if not
+       movb @room_attr,a               ; LD A,($5E1A)      ;
+loc_9e6e:                              ; >9e6e
+       movb a,*hl                      ; LD (HL),A         ; set attr
+loc_9e6f:                              ; >9e6f
+       .call @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
+       ab   one,@l                     ; INC L             ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9e63                   ; JR NZ,$9E63       ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop de                         ; POP DE            ;
+       .pop bc                         ; POP BC            ;
+       inc  de                         ; INC DE            ;
+       .exx                            ; EXX               ;
+       sb   one,b                      ; DEC B             ;
+       .exx                            ; EXX               ;
+       jne  loc_9e60                   ; JR NZ,$9E60       ;
+       .ret                            ; RET               ;

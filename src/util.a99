@@ -90,28 +90,61 @@ xy_to_attr:                            ; >9bd2
        .ret                            ; RET               ;
 
 *********************************************************************
+*
 * This entry point is used by the routines at #R$99c9, #R$99e5, #R$9a0a,
 * #R$9a50, #R$9acb, #R$9aef, #R$9b14, #R$9b5d, #R$9ece, #R$9f13 and #R$a185.
-* Branch target
+*
+* hl: xxxsslllrrrccccc
+*
 pixel_line_up:                         ; >9f03
        .proc
 pixel_line_up_branch_target:
-       sb   one,h                      ; DEC H             ; move up 1 display line in HL
-       movb h,a                        ; LD A,H            ;
-       inv  a                          ; CPL               ;
-       andi a,>0700                    ; AND $07           ;
-       jne  pixel_line_up_end          ; RET NZ            ;
-       movb @l,a                       ; LD A,L            ;
-       movb a,r0
-       sb   @bytes+>20,a               ; SUB $20           ;
-       movb a,@l                       ; LD L,A            ;
-       cb   r0,@bytes+>20
-       jl   pixel_line_up_end          ; RET C             ; TODO: check code.
-       movb h,a                        ; LD A,H            ;
-       ab   @bytes+>08,a               ; ADD A,$08         ;
-       movb a,h                        ; LD H,A            ;
+;       sb   one,h                      ; DEC H             ; move up 1 display line in HL
+;       movb h,a                        ; LD A,H            ;
+;       inv  a                          ; CPL               ;
+;       andi a,>0700                    ; AND $07           ;
+;       jne  pixel_line_up_end          ; RET NZ            ;
+;       movb @l,a                       ; LD A,L            ;
+;       movb a,r0
+;       sb   @bytes+>20,a               ; SUB $20           ;
+;       movb a,@l                       ; LD L,A            ;
+;       cb   r0,@bytes+>20
+;       jl   pixel_line_up_end          ; RET C             ; TODO: check code.
+;       movb h,a                        ; LD A,H            ;
+;       ab   @bytes+>08,a               ; ADD A,$08         ;
+;       movb a,h                        ; LD H,A            ;
+       li   r0,>0700                   ; Are all l bits 0?
+       czc  r0,hl
+       jeq  !
+       sb   one,h                      ; If no, subtract one from the l bits
+       jmp  pixel_line_up_end
+!      ai   hl,->0020                  ; If yes, subtract one from the r bits
+       soc  r0,hl                      ; and set the l bits to 0
 pixel_line_up_end:
        .endproc                        ; RET               ;
+
+*********************************************************************
+*
+* Routine at 9bc1
+*
+;pixel_line_down:                       ; >9bc1
+;       ab   one,h                      ; INC H             ;
+;       movb h,a                        ; LD A,H            ;
+;       andi a,>0700                    ; AND $07           ;
+;       jeq  !                          ; RET NZ            ;
+;       .ret                            ;
+;!
+;       movb @l,a                       ; LD A,L            ;
+;       ab   @bytes+>20,a               ; ADD A,$20         ;
+;       movb a,@l                       ; LD L,A            ;
+;       andi a,>e000                    ; AND $E0           ;
+;       jne  !                          ; RET Z             ;
+;       .ret                            ;
+;!
+;       movb h,a                        ; LD A,H            ;
+;       sb   @bytes+>08,a               ; SUB $08           ;
+;       movb a,h                        ; LD H,A            ;
+;       .ret                            ; RET               ;
 
 *********************************************************************
 *
@@ -119,15 +152,24 @@ pixel_line_up_end:
 *
 * Used by the routines at #R$99e5 and #R$9aef.
 mirror_a:                              ; >9a92
-       .push bc                        ; PUSH BC           ;
-       movb @bytes+>08,b               ; LD B,$08          ;
-loc_9a95:                              ; >9a95
-       ; RLA                           ; TODO RLA               ;
-       ; RR C                          ; TODO RR C              ;
-       sb   one,b                      ; DJNZ $9A95        ;
-       jne  loc_9a95                   ;
-       movb @c,a                       ; LD A,C            ;
-       .pop bc                         ; POP BC            ;
+;       .push bc                        ; PUSH BC           ;
+;       movb @bytes+>08,b               ; LD B,$08          ;
+;loc_9a95:                              ; >9a95
+;       ; RLA                           ; TODO RLA               ;
+;       ; RR C                          ; TODO RR C              ;
+;       sb   one,b                      ; DJNZ $9A95        ;
+;       jne  loc_9a95                   ;
+;       movb @c,a                       ; LD A,C            ;
+;       .pop bc                         ; POP BC            ;
+       movb a,r0
+       li   r1,>8000                   ; Bit to set
+       li   r2,8                       ; Counter
+!      srl  af,1                       ; Shift a zero into result
+       sla  r0,1                       ; Shift msb to carry
+       jnc  !                          ; Skip if it was a zero
+       soc  r1,af                      ; Set bit in result
+!      dec  r2
+       jne  -!!
        .ret                            ; RET               ;
 
 *********************************************************************
@@ -144,7 +186,7 @@ add_de_b:                              ; >9a9d
 ;       ab   @zero,a                    ; ADC A,$00         ;
 ;       movb a,d                        ; LD D,A            ;
        mov  bc,r0
-       srl  r0,0
+       srl  r0,8
        a    r0,de
        .ret                            ; RET               ;
 
@@ -255,21 +297,64 @@ add_hl_a:                              ; >926c
 *
 * Used by the routine at #R$8eef.
 get_signed_b7_4:                       ; >8f80
-       ; AND A                         ; AND A             ; positive?
-       ; JP P,$8F8F                    ; JP P,$8F8F        ; jump if so
-       neg a                           ; NEG               ; negate
-       ; RRCA                          ; RRCA              ;
-       ; RRCA                          ; RRCA              ;
-       ; RRCA                          ; RRCA              ;
-       ; RRCA                          ; RRCA              ; high nibble to low nibble
-       andi a,>0f00                    ; AND $0F           ; keep low nibble
-       neg a                           ; NEG               ; re-negate
-       .ret                            ; RET               ;
-loc_8f8f:                              ; >8f8f
-       ; RRCA                          ; RRCA              ;
-       ; RRCA                          ; RRCA              ;
-       ; RRCA                          ; RRCA              ;
-       ; RRCA                          ; RRCA              ; high nibble to low nibble
-       andi a,>0f00                    ; AND $0F           ; keep low nibble
+;       ; AND A                         ; AND A             ; positive?
+;       ; JP P,$8F8F                    ; JP P,$8F8F        ; jump if so
+;       movb a,a
+;       jgt  loc_8f8f
+;       jeq  loc_8f8f
+;       neg a                           ; NEG               ; negate
+;       ; RRCA                          ; RRCA              ;
+;       ; RRCA                          ; RRCA              ;
+;       ; RRCA                          ; RRCA              ;
+;       ; RRCA                          ; RRCA              ; high nibble to low nibble
+;       srl  a,4
+;       andi a,>0f00                    ; AND $0F           ; keep low nibble
+;       neg a                           ; NEG               ; re-negate
+;       .ret                            ; RET               ;
+;loc_8f8f:                              ; >8f8f
+;       ; RRCA                          ; RRCA              ;
+;       ; RRCA                          ; RRCA              ;
+;       ; RRCA                          ; RRCA              ;
+;       ; RRCA                          ; RRCA              ; high nibble to low nibble
+;       srl  a,4
+;       andi a,>0f00                    ; AND $0F           ; keep low nibble
+       sra  a,4                        ; TODO: not sure
        .ret                            ; RET               ;
 
+*********************************************************************
+*
+* This entry point is used by the routine at #R$9980.
+*
+* Jump to one of the 8 the entries in the jump table in hl
+* speficied by the top three bits in b.
+* Also push bc.
+*
+jump_table_b:                          ; >9965
+       .push bc                        ; PUSH BC           ;
+       movb b,a                        ; LD A,B            ;
+;      sla  a,1                        ; RLCA              ;
+;      sla  a,1                        ; RLCA              ;
+;      sla  a,1                        ; RLCA              ; move b7-5 to b2-0
+       srl  a,5
+       andi a,>0700                    ; AND $07           ;
+       movb a,@c                       ; LD C,A            ;
+;      b    @lookup_c_hl               ; JP $7E85          ;
+
+*********************************************************************
+*
+* This entry point is used by the routine at #R$9924.
+*
+* Jump to one of the 8 the entries in the jump table in hl
+* specified by the index in c
+*
+lookup_c_hl:                           ; >7e85
+       sb   b,b                        ; LD B,$00          ;
+       sla  bc,1                       ; SLA C             ;
+;      sla  b,1                        ; RL B              ; * 2 (bytes per entry)
+       a    bc,hl                      ; ADD HL,BC         ;
+;      movb *hl,a                      ; LD A,(HL)         ; LSB
+;      inc  hl                         ; INC HL            ;
+;      movb *hl,h                      ; LD H,(HL)         ; MSB
+;      movb a,@l                       ; LD L,A            ;
+       mov  *hl,hl
+       b    *hl                        ; JP $5CB0          ; This was jumping to a JP (HL) instruction
