@@ -234,6 +234,7 @@ start_game:                            ; >7d9a
 ;       .call @randomise_doors          ; CALL $94F5        ; randomise which doors can open/close
        .call @prepare_player           ; CALL $9443        ; prepare player to spawn
 
+       movb @bytes+2,@room_attr
        .call @draw_panel_attrs
        bl   @upload_zx_screen
 stop:  jmp  stop
@@ -5737,10 +5738,11 @@ loc_a259:                              ; >a259
        a    bc,hl                      ; ADD HL,BC         ; down a row
        .pop bc                         ; POP BC            ; 
        sb   one,@c                     ; DEC C             ; 
-       jne  loc_a257                   ; JR NZ,$A257       ; 
+       jne  loc_a257                   ; JR NZ,$A257       ;
+;      Now set special attributes
        li   hl,>90c8                   ; LD HL,$90C8       ;
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
-       movb @room_attr,a               ; LD A,($5E1A)      ; 
+       movb @room_attr,a               ; LD A,($5E1A)      ;
        li   bc,>0303                   ; LD BC,$0303       ; 3x3 (rosette body)
        .call @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
        ab   one,@l                     ; INC L             ; 
