@@ -10,6 +10,10 @@
 * 971F: D4->D3 - fixed typo in congratulations message
 * D505: 00->E9 - JP (HL) instruction moved from printer buffer
 
+* RM: I found that after a byte compare (cp on Z80, cb on the TI) the carry condition on the Z80 correspond to JL on the TI
+* or JHE for the inverse condition. If the carry flag is checked after a subtraction instead of a compare this has to be
+* turned into a compare followed by a (possible) subtraction on the TI.
+
 * Routine at 6000
 start:                                 ; >6000
       limi 0
@@ -224,17 +228,17 @@ start_game:                            ; >7d9a
        .call @clear_screen             ; CALL $80AA        ; clear display, attributes, and set black border
        .call @draw_side_panel          ; CALL $A219        ; draw side panel background scroll
        .call @draw_lives               ; CALL $A2CE        ; draw lives sprites in side panel
+;       .call @place_key_pieces         ; CALL $94B6        ; set locations of ACG key pieces
+;       .call @set_key_positions        ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy
+       .call @reset_game_state         ; CALL $8D61        ; copy initial game state to working state area
+;       .call @randomise_doors          ; CALL $94F5        ; randomise which doors can open/close
+       .call @prepare_player           ; CALL $9443        ; prepare player to spawn
 
        .call @draw_panel_attrs
        bl   @upload_zx_screen
 stop:  jmp  stop
 
-       .call @place_key_pieces         ; CALL $94B6        ; set locations of ACG key pieces
-       .call @set_key_positions        ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy
-       .call @reset_game_state         ; CALL $8D61        ; copy initial game state to working state area
-       .call @randomise_doors          ; CALL $94F5        ; randomise which doors can open/close
-       .call @prepare_player           ; CALL $9443        ; prepare player to spawn
-       b    @enter_room                ; JP $9147          ; 
+       b    @enter_room                ; JP $9147          ;
 
 * Routine at 7dc3
 * 
@@ -363,14 +367,16 @@ lookup_graphic:                        ; >7e82
 * This entry point is used by the routine at #R$9924.
 lookup_c_hl:                           ; >7e85
        sb   b,b                        ; LD B,$00          ; 
-       ; SLA C                         ; SLA C             ; 
-       sla  b,1                        ; RL B              ; TODO: check code. * 2 (bytes per entry)
+       sla  bc,1                       ; SLA C             ;
+;      sla  b,1                        ; RL B              ; * 2 (bytes per entry)
        a    bc,hl                      ; ADD HL,BC         ; 
-       movb *hl,a                      ; LD A,(HL)         ; LSB
-       inc  hl                         ; INC HL            ; 
-       movb *hl,h                      ; LD H,(HL)         ; MSB
-       movb a,@l                       ; LD L,A            ; 
-       b    @zx_frames+>0038           ; JP $5CB0          ; 
+;      movb *hl,a                      ; LD A,(HL)         ; LSB
+;      inc  hl                         ; INC HL            ;
+;      movb *hl,h                      ; LD H,(HL)         ; MSB
+;      movb a,@l                       ; LD L,A            ;
+       mov  *hl,hl
+       b    *hl                        ; JP $5CB0          ; This was jumping to a JP (HL) instruction
+
 * This entry point is used by the routine at #R$7e13.
 loc_7e93:                              ; >7e93
        li   bc,decor_loop              ; LD BC,$7E35       ; 
@@ -2015,7 +2021,7 @@ damage_8:                              ; >8a1e
 * This entry point is used by the routine at #R$8a15.
 loc_8a25:                              ; >8a25
        movb a,@player_energy           ; LD ($5E28),A      ; 
-       b    @draw_chicken              ; JP $8B8A          ; draw chicken energy bar
+       b    @draw_chicken_branch_target ; JP $8B8A          ; draw chicken energy bar
 * This entry point is used by the routine at #R$8a15.
 player_dead_pop:                       ; >8a2b
        .pop hl                         ; POP HL            ; don't return to entity handler
@@ -2229,105 +2235,133 @@ creatures:                             ; >8b7a
 * Used by the routines at #R$8a1e, #R$8c63, #R$8e26, #R$8ed7, #R$9443 and
 * #R$988b.
 draw_chicken:                          ; >8b8a
-       movb @player_energy,a           ; LD A,($5E28)      ; 
-       srl  a,1                        ; SRL A             ; 
-       srl  a,1                        ; SRL A             ; 
-       srl  a,1                        ; SRL A             ; 
-       movb a,@c                       ; LD C,A            ; 
+       .proc
+draw_chicken_branch_target:
+       seto @background_graphics_rom_bank
+
+;      For now, just drawn the full chicken - TODO.
+       .push ix
+       li   ix,chicken_entity
+       bl   @draw_rot_obj
+       .pop  ix
+       .endproc
+
+       movb @player_energy,a           ; LD A,($5E28)      ;
+;      srl  a,1                        ; SRL A             ;
+;      srl  a,1                        ; SRL A             ;
+;      srl  a,1                        ; SRL A             ;
+       srl  a,3
+       movb a,@c                       ; LD C,A            ; desired height
        movb @chicken_level,a           ; LD A,($5E29)      ; last drawn chicken level
-       srl  a,1                        ; SRL A             ; 
-       srl  a,1                        ; SRL A             ; 
-       srl  a,1                        ; SRL A             ; 
-       movb a,b                        ; LD B,A            ; 
-       cb   a,@c                       ; CP C              ; 
-       jne  !                          ; RET Z             ; 
-       .ret                            ;                   
-!
-       movb @g_chicken_full+>0001,a    ; LD A,($C543)      ; full chicken height
-       movb a,@e                       ; LD E,A            ; 
-       movb @g_chicken_empty+>0001,a   ; LD A,($C48D)      ; empty chicken height
-       movb a,d                        ; LD D,A            ; 
+;      srl  a,1                        ; SRL A             ;
+;      srl  a,1                        ; SRL A             ;
+;      srl  a,1                        ; SRL A             ;
+       srl  a,3
+       movb a,b                        ; LD B,A            ; Last drawn height
+       cb   a,@c                       ; CP C              ; if desired height = last drawn then return
+       jeq  draw_chicken_end           ; RET Z             ;
+       movb @g_chicken_full+1,@e       ; LD A,($C543)      ; e = full chicken height
+;      movb a,@e                       ; LD E,A            ;
+       movb @g_chicken_empty+1,d       ; LD A,($C48D)      ; d = empty chicken height
+;      movb a,d                        ; LD D,A            ;
        .push ix                        ; PUSH IX           ; 
-       li   ix,chicken_entity          ; LD IX,$8C2D       ; 
-       .push de                        ; PUSH DE           ; 
-       joc  loc_8c12                   ; JR C,$8C12        ; TODO: check code. 
-       movb @g_chicken_empty,a         ; LD A,($C48C)      ; 
-       movb a,@e                       ; LD E,A            ; 
-       sb   d,d                        ; LD D,$00          ; 
-       movb @c,a                       ; LD A,C            ; 
-       .push bc                        ; PUSH BC           ; 
-       .call @mult_de_a                ; CALL $9AAD        ; HL = DE * A
-       .pop bc                         ; POP BC            ; 
-       mov  @chicken_empty_addr,de     ; LD DE,($A626)     ; 
-       .push de                        ; PUSH DE           ; 
-       a    de,hl                      ; ADD HL,DE         ; 
-       mov  hl,@chicken_empty_addr     ; LD ($A626),HL     ; 
-       movb *hl,@e                     ; LD E,(HL)         ; 
-       inc  hl                         ; INC HL            ; 
-       movb *hl,d                      ; LD D,(HL)         ; 
-       movb @g_chicken_empty+>0001,a   ; LD A,($C48D)      ; 
-       sb   @c,a                       ; SUB C             ; 
-       jeq  loc_8bfc                   ; JR Z,$8BFC        ; 
-       .push de                        ; PUSH DE           ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       movb @g_chicken_empty,a         ; LD A,($C48C)      ; 
-       dec  hl                         ; DEC HL            ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       .push hl                        ; PUSH HL           ; 
-       movb @bytes+>14,a               ; LD A,$14          ; empty chicken graphic
-       movb a,*ix                      ; LD (IX+$00),A     ; 
-       li   hl,room_17+>0009           ; LD HL,$77C8       ; chicken draw coords
-       movb h,a                        ; LD A,H            ; 
-       sb   @c,a                       ; SUB C             ; 
-       movb a,h                        ; LD H,A            ; 
-       mov  hl,@chicken_entity+>0003   ; LD ($8C30),HL     ; coords
+       li   ix,chicken_entity          ; LD IX,$8C2D       ; Entity to draw
+       .push de                        ; PUSH DE           ; Save original heights
+       cb   a,@c                                           ; Compare last drawn to desired height again
+       jh   loc_8c12                   ; JR C,$8C12        ; Jump if last drawn height was higher
+       movb @g_chicken_empty,@e        ; LD A,($C48C)      ; e = width
+;      movb a,@e                       ; LD E,A            ;
+       sb   d,d                        ; LD D,$00          ; de = width
+       movb @c,a                       ; LD A,C            ; a = desired height
+;      .push bc                        ; PUSH BC           ;
+       .call @mult_de_a                ; CALL $9AAD        ; HL = DE * A = width * desired height
+;      .pop bc                         ; POP BC            ;
+       mov  @chicken_empty_addr,de     ; LD DE,($A626)     ; de = address of empty chicken graphics
+       .push de                        ; PUSH DE           ; Save address
+       a    de,hl                      ; ADD HL,DE         ; Add offset
+;      mov  hl,@chicken_empty_addr     ; LD ($A626),HL     ; Update the address in the graphics table. TODO: in ROM
+       movb *hl+,@e                    ; LD E,(HL)         ; Get the graphics data at the offset
+;      inc  hl                         ; INC HL            ;
+       movb *hl,d                      ; LD D,(HL)         ; Get the graphics data at the offset
+       movb @g_chicken_empty+1,a       ; LD A,($C48D)      ; Original height
+       sb   @c,a                       ; SUB C             ; Minus desired height
+       jeq  loc_8bfc                   ; JR Z,$8BFC        ; Return if they are the same
+       .push de                        ; PUSH DE           ; Save the graphics data at the offset
+;      movb a,*hl                      ; LD (HL),A         ; Update graphics height at offset with modified value. TODO: in ROM
+       movb @g_chicken_empty,a         ; LD A,($C48C)      ; Original width
+       dec  hl                         ; DEC HL            ; Point hl to width
+;      movb a,*hl                      ; LD (HL),A         ; Update graphics width at offset with modified value. TODO: in ROM
+       .push hl                        ; PUSH HL           ; Save the address at the offset
+;      movb @bytes+>14,a               ; LD A,$14          ; empty chicken graphic
+       movb @bytes+>14,*ix             ; LD (IX+$00),A     ; Set entity to draw
+       li   hl,>77C8                   ; LD HL,$77C8       ; chicken draw coords
+;      movb h,a                        ; LD A,H            ;
+       sb   @c,h                       ; SUB C             ; Subtract desired height from y
+;      movb a,h                        ; LD H,A            ;
+;      mov  hl,@chicken_entity+>0003   ; LD ($8C30),HL     ; coords
+       movb @l,@chicken_entity+entity_x                    ; Write x
+       movb h,@chicken_entity+entity_y                     ; Write y
        .call @draw_rot_obj             ; CALL $9213        ; 
-       mov  @chicken_entity+>0003,hl   ; LD HL,($8C30)     ; 
+;      mov  @chicken_entity+>0003,hl   ; LD HL,($8C30)     ;
+       movb @chicken_entity+entity_x,@l                    ; Get coordinates back
+       movb @chicken_entity+entity_y,h
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       movb @g_chicken_empty,a         ; LD A,($C48C)      ; 
-       movb a,b                        ; LD B,A            ; 
+       movb @g_chicken_empty,a         ; LD A,($C48C)      ; a = Width
+       movb a,b                        ; LD B,A            ; b = width
 loc_8bf2:                              ; >8bf2
-       sb   *hl,*hl                    ; LD (HL),$00       ; 
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $8BF2        ; 
+       sb   *hl,*hl                    ; LD (HL),$00       ; Clear screen byte
+       ab   one,@l                     ; INC L             ; Next byte
+       sb   one,b                      ; DJNZ $8BF2        ; Clear width bytes
        jne  loc_8bf2                   ;                   
-       .pop hl                         ; POP HL            ; 
-       .pop de                         ; POP DE            ; 
-       movb @e,*hl                     ; LD (HL),E         ; 
-       inc  hl                         ; INC HL            ; 
-       movb d,*hl                      ; LD (HL),D         ; 
+       .pop hl                         ; POP HL            ; Restore address at the offset
+       .pop de                         ; POP DE            ; Restore data at offset
+       movb @e,*hl+                    ; LD (HL),E         ; Restore first byte
+;      inc  hl                         ; INC HL            ;
+       movb d,*hl                      ; LD (HL),D         ; Restore second byte
 loc_8bfc:                              ; >8bfc
-       .pop hl                         ; POP HL            ; 
-       mov  hl,@chicken_empty_addr     ; LD ($A626),HL     ; 
+       .pop hl                         ; POP HL            ; Restore original address of empty chicken
+;      mov  hl,@chicken_empty_addr     ; LD ($A626),HL     ; Write it to the graphics table. TODO: In ROM
 loc_8c00:                              ; >8c00
-       .pop de                         ; POP DE            ; 
-       movb @e,a                       ; LD A,E            ; 
-       movb a,@g_chicken_full+>0001    ; LD ($C543),A      ; 
-       movb d,a                        ; LD A,D            ; 
-       movb a,@g_chicken_empty+>0001   ; LD ($C48D),A      ; 
+       .pop de                         ; POP DE            ; Restore original heights
+;      movb @e,a                       ; LD A,E            ;
+;      movb @e,@g_chicken_full+>0001   ; LD ($C543),A      ; Restore height. TODO: In ROM
+;      movb d,a                        ; LD A,D            ;
+;      movb d,@g_chicken_empty+>0001   ; LD ($C48D),A      ; Restore height. TODO: In ROM
        .pop ix                         ; POP IX            ; 
-       movb @player_energy,a           ; LD A,($5E28)      ; 
-       movb a,@chicken_level           ; LD ($5E29),A      ; last drawn chicken level
-       .ret                            ; RET               ; 
+       movb @player_energy,@chicken_level ; LD A,($5E28)   ; Save new level
+;      movb a,@chicken_level           ; LD ($5E29),A      ; last drawn chicken height
+draw_chicken_end:
+       .endproc                        ; RET               ;
 loc_8c12:                              ; >8c12
-       movb @c,a                       ; LD A,C            ; 
-       movb a,@g_chicken_full+>0001    ; LD ($C543),A      ; 
-       movb @bytes+>13,a               ; LD A,$13          ; full chicken graphic
-       movb a,*ix                      ; LD (IX+$00),A     ; 
-       li   hl,room_17+>0009           ; LD HL,$77C8       ; 
-       mov  hl,@chicken_entity+>0003   ; LD ($8C30),HL     ; coords
-       .call @draw_rot_obj             ; CALL $9213        ; 
-       movb @bytes+>06,b               ; LD B,$06          ; 
+       movb @c,a                       ; LD A,C            ; Desired height
+;      movb a,@g_chicken_full+>0001    ; LD ($C543),A      ; Set height of graphics. TODO: In ROM
+       movb @bytes+>13,*ix             ; LD A,$13          ; full chicken graphic
+;      movb a,*ix                      ; LD (IX+$00),A     ;
+       li   hl,>77c8                   ; LD HL,$77C8       ; Coordinates
+;      mov  hl,@chicken_entity+>0003   ; LD ($8C30),HL     ; coords
+       movb @l,@chicken_entity+entity_x
+       movb h,@chicken_entity+entity_y
+       .call @draw_rot_obj             ; CALL $9213        ;
+       movb @bytes+>06,b               ; LD B,$06          ; Width
 loc_8c26:                              ; >8c26
-       sb   *hl,*hl                    ; LD (HL),$00       ; 
-       ab   one,@l                     ; INC L             ; 
-       sb   one,b                      ; DJNZ $8C26        ; 
+       sb   *hl,*hl                    ; LD (HL),$00       ; Clear screen byte
+       ab   one,@l                     ; INC L             ; Next byte
+       sb   one,b                      ; DJNZ $8C26        ; Clear width bytes
        jne  loc_8c26                   ;                   
-       jmp  loc_8c00                   ; JR $8C00          ; 
+       jmp  loc_8c00                   ; JR $8C00          ; Jump to return
+*// draw_chicken
 
 * Data block at 8c2d
 chicken_entity:                        ; >8c2d
-       byte >00,>00,>00,>00,>00,>00,>00,>00
+       byte >13,>00,>00,>c8,>77,>00,>00,>00
+chicken_empty_addr_ram:
+       data chicken_empty_addr
+g_chicken_empty_ram:
+       byte >06,>1E
+chicken_full_addr_ram:
+       data chicken_full_addr
+g_chicken_full_ram:
+       byte >06,>1E
 
 * Routine at 8c35
 * 
@@ -2373,7 +2407,7 @@ loc_8c84:                              ; >8c84
        movb @bytes+>f0,a               ; LD A,$F0          ; cap energy at maximum
 loc_8c86:                              ; >8c86
        movb a,@player_energy           ; LD ($5E28),A      ; 
-       b    @draw_chicken              ; JP $8B8A          ; draw chicken energy bar
+       b    @draw_chicken_branch_target ; JP $8B8A          ; draw chicken energy bar
 
 * flash score on game start
 * 
@@ -2751,7 +2785,7 @@ loc_8ee1:                              ; >8ee1
        jmp  player_dead                ; JR $8EA0          ; 
 loc_8ee9:                              ; >8ee9
        movb a,@player_energy           ; LD ($5E28),A      ; 
-       b    @draw_chicken              ; JP $8B8A          ; draw chicken energy bar
+       b    @draw_chicken_branch_target ; JP $8B8A          ; draw chicken energy bar
 
 * apply player movement, including auto-walk
 * 
@@ -3306,11 +3340,11 @@ h_room_item:                           ; >91fe
 * 
 * Used by the routines at #R$8b8a, #R$915f and #R$91bc.
 draw_rot_obj:                          ; >9213
-       equ  $
-       movb @>03(ix),@e                ; LD E,(IX+$03)     ; xpos
-       movb @>04(ix),d                 ; LD D,(IX+$04)     ; ypos
+       .proc
+       movb @entity_x(ix),@e           ; LD E,(IX+$03)     ; xpos
+       movb @entity_y(ix),d            ; LD D,(IX+$04)     ; ypos
        movb *ix,@c                     ; LD C,(IX+$00)     ; graphic index
-       movb @>05(ix),b                 ; LD B,(IX+$05)     ; orientation
+       movb @entity_flags(ix),b        ; LD B,(IX+$05)     ; orientation
        b    @draw_orientation          ; JP $9962          ; 
 
 * return if player has required key (C if opened, NC if locked)
@@ -3713,6 +3747,7 @@ loc_943d:                              ; >943d
 * 
 * Used by the routines at #R$7d9a and #R$8d45.
 prepare_player:                        ; >9443
+       .proc
        movb @menu_selection,a          ; LD A,($5E00)      ; 
        sla  a,1                        ; RLCA              ; TODO: check code. 
        andi a,>3000                    ; AND $30           ; base character graphic
@@ -3724,8 +3759,8 @@ prepare_player:                        ; >9443
        li   de,player                  ; LD DE,$EA90       ; 
        li   bc,>0008                   ; LD BC,$0008       ; player entity size
        .ldir                           ; LDIR              ; copy to live player
-       movb @bytes+>68,a               ; LD A,$68          ; flash score for 104 frames
-       movb a,@flash_timer             ; LD ($5E3C),A      ; score flash timer
+       movb @bytes+>68,@flash_timer    ; LD A,$68          ; flash score for 104 frames
+;      movb a,@flash_timer             ; LD ($5E3C),A      ; score flash timer
        movb @lives,a                   ; LD A,($5E21)      ; 
        cb   a,@bytes+>03               ; CP $03            ; first game spawn? (full lives)
        jeq  loc_9476                   ; JR Z,$9476        ; jump if so (skip drawing player)
@@ -3734,10 +3769,10 @@ prepare_player:                        ; >9443
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
        .pop ix                         ; POP IX            ; 
 loc_9476:                              ; >9476
-       movb @bytes+>f0,a               ; LD A,$F0          ; starting energy
-       movb a,@player_energy           ; LD ($5E28),A      ; 
+       movb @bytes+>f0,@player_energy  ; LD A,$F0          ; starting energy
+;      movb a,@player_energy           ; LD ($5E28),A      ;
        .call @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
-       b    @draw_lives                ; JP $A2CE          ; draw lives sprites in side panel
+       b    @draw_lives_branch_target  ; JP $A2CE          ; draw lives sprites in side panel
 
 * blank graphic and h_player_appear handler
 player_template:                       ; >9481
@@ -4425,6 +4460,7 @@ loc_995b:                              ; >995b
        li   hl,food_items              ; LD HL,$EB58       ; 
        mov  hl,@food_ptr               ; LD ($5E55),HL     ; 
        .ret                            ; RET               ; 
+
 * This entry point is used by the routine at #R$9213.
 draw_orientation:                      ; >9962
        li   hl,disp_funcs              ; LD HL,$9970       ; 
@@ -4432,10 +4468,11 @@ draw_orientation:                      ; >9962
 jump_table_b:                          ; >9965
        .push bc                        ; PUSH BC           ; 
        movb b,a                        ; LD A,B            ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. move b7-5 to b2-0
-       andi a,>0700                    ; AND $07           ; 
+;      sla  a,1                        ; RLCA              ;
+;      sla  a,1                        ; RLCA              ;
+;      sla  a,1                        ; RLCA              ; move b7-5 to b2-0
+       srl  a,5
+       andi a,>0700                    ; AND $07           ;
        movb a,@c                       ; LD C,A            ; 
        b    @lookup_c_hl               ; JP $7E85          ; 
 
@@ -4446,7 +4483,7 @@ disp_funcs:                            ; >9970
        data draw_disp_2                ; 010 >40           ; right
        data draw_disp_3                ; 011 >60           ; right and flip
        data draw_disp_4                ; 100 >80           ; bottom
-       data draw_disp_5                ; 101 >A0           ; botomm and flip
+       data draw_disp_5                ; 101 >A0           ; bottom and flip
        data draw_disp_6                ; 110 >C0           ; left
        data draw_disp_7                ; 111 >E0           ; left and not flip?
 
@@ -4468,30 +4505,35 @@ attr_funcs:                            ; >9985
        data draw_attr_6
        data draw_attr_7
 
-* C=gfx idx, DE=coords
+* C=gfx idx
+*
+* On return b contain the width, c contains the height, and de contains the data address
 * 
 * Used by the routines at #R$99c9, #R$99e5, #R$9a0a, #R$9a50, #R$9acb, #R$9aef,
 * #R$9b14 and #R$9b5d.
 get_gfx_data:                          ; >9995
-       li   hl,gfx_data                ; LD HL,$A600       ; 
+       .proc
+       li   hl,gfx_data                ; LD HL,$A600       ;
        sb   one,@c                     ; DEC C             ; 1-based
        sb   b,b                        ; LD B,$00          ; 
-       ; SLA C                         ; SLA C             ; 
-       sla  b,1                        ; RL B              ; TODO: check code. 
-       a    bc,hl                      ; ADD HL,BC         ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-       inc  hl                         ; INC HL            ; 
-       movb *hl,h                      ; LD H,(HL)         ; 
-       movb a,@l                       ; LD L,A            ; 
-       .ex_de_hl                       ; EX DE,HL          ; 
+;       ; SLA C                         ; SLA C             ;
+;       sla  b,1                        ; RL B              ;
+       sla  bc,1
+       a    bc,hl                      ; ADD HL,BC         ;
+;       movb *hl,a                      ; LD A,(HL)         ;
+;       inc  hl                         ; INC HL            ;
+;       movb *hl,h                      ; LD H,(HL)         ;
+;       movb a,@l                       ; LD L,A            ;
+       mov  *hl,hl
+       .ex_de_hl                       ; EX DE,HL          ;
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       movb *de,a                      ; LD A,(DE)         ; 
-       movb a,b                        ; LD B,A            ; 
-       inc  de                         ; INC DE            ; 
-       movb *de,a                      ; LD A,(DE)         ; 
-       movb a,@c                       ; LD C,A            ; 
-       inc  de                         ; INC DE            ; 
-       .ret                            ; RET               ; 
+       movb *de+,b                     ; LD A,(DE)         ; width
+;      movb a,b                        ; LD B,A            ;
+;      inc  de                         ; INC DE            ;
+       movb *de+,@c                    ; LD A,(DE)         ; height
+;      movb a,@c                       ; LD C,A            ;
+;      inc  de                         ; INC DE            ;
+       .endproc                        ; RET               ;
 
 * IN: C=gfx idx, DE=coords  OUT: HL=attr addr, DE=attr data, B=width, C=height
 * 
@@ -4520,18 +4562,18 @@ get_gfx_attrs:                         ; >99af
 
 * Routine at 99c9
 draw_disp_0:                           ; >99c9
-       .pop bc                         ; POP BC            ; 
-       .call @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
-       movb a,@loc_99d7                ; LD ($99D7),A      ; 
-       .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
+       .pop bc                         ; POP BC            ; Now B has the entity_flags orientation and C has the graphics index
+       .call @get_blend_instr          ; CALL $9D19        ; map B=0-2 to Z80 opcode used to blend graphics data
+       mov  af,@loc_99d7               ; LD ($99D7),A      ;
+       .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, on return b contain the width, c contains the height, and de contains the data address
 loc_99d3:                              ; >99d3
        .push bc                        ; PUSH BC           ; 
        .push hl                        ; PUSH HL           ; 
 loc_99d5:                              ; >99d5
-       movb *de,a                      ; LD A,(DE)         ; 
-       inc  de                         ; INC DE            ; 
+       movb *de+,a                     ; LD A,(DE)         ;
+;      inc  de                         ; INC DE            ;
 loc_99d7:                              ; >99d7
-       nop                             ; NOP               ; 
+       nop                             ; NOP               ; Self-modified
        movb a,*hl                      ; LD (HL),A         ; 
        ab   one,@l                     ; INC L             ; 
        sb   one,b                      ; DJNZ $99D5        ; 
@@ -4541,7 +4583,7 @@ loc_99d7:                              ; >99d7
        .pop bc                         ; POP BC            ; 
        sb   one,@c                     ; DEC C             ; 
        jne  loc_99d3                   ; JR NZ,$99D3       ; 
-       .ret                            ; RET               ; 
+       .endproc                        ; RET               ;
 
 * Routine at 99e5
 draw_disp_1:                           ; >99e5
@@ -4805,7 +4847,7 @@ loc_9b43:                              ; >9b43
 draw_disp_7:                           ; >9b5d
        .pop bc                         ; POP BC            ; 
        .call @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
-       movb a,@loc_9b88                ; LD ($9B88),A      ; 
+       movb a,@loc_9b88                ; LD ($9B88),A      ;
        .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
        movb b,a                        ; LD A,B            ; 
        .exx                            ; EXX               ; 
@@ -5114,23 +5156,38 @@ loc_9d04:                              ; >9d04
        .pop hl                         ; POP HL            ; 
        b    @plot_l_h                  ; JP $9C61          ; plot pixel at L,H
 
-* map A=0-2 to Z80 opcode used to blend graphics data
+* map B=0-2 to Z80 opcode used to blend graphics data
 * 
 * Used by the routines at #R$99c9, #R$99e5, #R$9a0a, #R$9a50, #R$9acb, #R$9aef,
 * #R$9b14 and #R$9b5d.
 get_blend_instr:                       ; >9d19
        movb b,a                        ; LD A,B            ; 
        andi a,>0300                    ; AND $03           ; 
-       jne  !                          ; RET Z             ; return
-       .ret                            ;                   
-!
-       cb   a,one                      ; CP $01            ; 
-       movb @bytes+>ae,a               ; LD A,$AE          ; TODO
-       jeq  !                          ; RET NZ            ; return
-       .ret                            ;                   
-!
-       ab   @bytes+>08,a               ; ADD A,$08         ; TODO
-       .ret                            ; RET               ; return
+;       jne  !                          ; RET Z             ; return
+;       .ret                            ;
+;!
+;       cb   a,one                      ; CP $01            ;
+;       movb @bytes+>ae,a               ; LD A,$AE          ; xor (hl)
+;       jeq  !                          ; RET NZ            ; return
+;       .ret                            ;
+;!
+;       ab   @bytes+>08,a               ; ADD A,$08         ; b6 or (hl)
+;       .ret                            ; RET               ; return
+       jne  !
+       mov  @nop_instr,af
+       .ret
+!      cb   a,one
+       jne  !
+       mov  @xor_instr,af
+       .ret
+!      mov  @socb_instr,af
+       .ret
+nop_instr:
+       nop
+xor_instr:
+       xor  *hl,a                      ; TODO: should be a byte instruction
+socb_instr:
+       socb *hl,a
 
 * Routine at 9d25
 draw_attr_0:                           ; >9d25
@@ -5499,7 +5556,7 @@ add_score_bc_bcd:                      ; >a19c
 loc_a1ae:                              ; >a1ae
        li   hl,digit_charset           ; LD HL,$BFCC       ; 
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
-       li   hl,zx_screen+>10c8         ; LD HL,$50C8       ; 
+       li   hl,>50C8                   ; LD HL,$50C8       ;
 
 * print player score at position HL
 * 
@@ -5515,7 +5572,8 @@ print_bcd_bytes:                       ; >a1bf
        ; RRCA                          ; RRCA              ; 
        ; RRCA                          ; RRCA              ; 
        ; RRCA                          ; RRCA              ; 
-       andi a,>0f00                    ; AND $0F           ; 
+       srl  a,4
+       andi a,>0f00                    ; AND $0F           ;
        .call @print_char               ; CALL $A1D3        ; print a single character
 
 * print a single BCD digit
@@ -5528,7 +5586,7 @@ print_bcd_digit:                       ; >a1c9
        inc  de                         ; INC DE            ; 
        sb   one,b                      ; DJNZ $A1BF        ; print B BCD bytes at DE
        jne  print_bcd_bytes            ;                   
-       .ret                            ; RET               ; 
+       .endproc                        ; RET               ;
 
 * print a single character
 * 
@@ -5638,8 +5696,7 @@ loc_a22d:                              ; >a22d
        .pop bc                         ; POP BC            ; 
        sb   one,@c                     ; DEC C             ; 
        jne  loc_a228                   ; JR NZ,$A228       ;
-       .endproc                        ; TODO
-       b    @loc_a1ae                  ; JP $A1AE          ; 
+       b    @loc_a1ae                  ; JP $A1AE          ;
 
 * draw side-panel colours, which follow room colour
 * 
@@ -5718,9 +5775,10 @@ loc_a259:                              ; >a259
 * 
 * Used by the routines at #R$7d9a and #R$9443.
 draw_lives:                            ; >a2ce
-       seto @sprite_graphics_rom_bank
        .proc
-       .push ix                        ; PUSH IX           ; 
+draw_lives_branch_target:
+       seto @sprite_graphics_rom_bank
+       .push ix                        ; PUSH IX           ;
        li   ix,entity_to_draw          ; LD IX,$A17D       ; 
        movb @menu_selection,a          ; LD A,($5E00)      ; 
        sla  a,1                        ; RLCA              ;

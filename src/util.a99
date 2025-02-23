@@ -90,6 +90,30 @@ xy_to_attr:                            ; >9bd2
        .ret                            ; RET               ;
 
 *********************************************************************
+* This entry point is used by the routines at #R$99c9, #R$99e5, #R$9a0a,
+* #R$9a50, #R$9acb, #R$9aef, #R$9b14, #R$9b5d, #R$9ece, #R$9f13 and #R$a185.
+* Branch target
+pixel_line_up:                         ; >9f03
+       .proc
+pixel_line_up_branch_target:
+       sb   one,h                      ; DEC H             ; move up 1 display line in HL
+       movb h,a                        ; LD A,H            ;
+       inv  a                          ; CPL               ;
+       andi a,>0700                    ; AND $07           ;
+       jne  pixel_line_up_end          ; RET NZ            ;
+       movb @l,a                       ; LD A,L            ;
+       movb a,r0
+       sb   @bytes+>20,a               ; SUB $20           ;
+       movb a,@l                       ; LD L,A            ;
+       cb   r0,@bytes+>20
+       jl   pixel_line_up_end          ; RET C             ; TODO: check code.
+       movb h,a                        ; LD A,H            ;
+       ab   @bytes+>08,a               ; ADD A,$08         ;
+       movb a,h                        ; LD H,A            ;
+pixel_line_up_end:
+       .endproc                        ; RET               ;
+
+*********************************************************************
 *
 * mirror bits in A
 *

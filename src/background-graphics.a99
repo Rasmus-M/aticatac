@@ -21,6 +21,7 @@ gfx_data:                              ; >a600
        data g_clock
        data g_ghost_picture
        data g_table
+chicken_full_addr:
        data g_chicken_full
 chicken_empty_addr:                    ; >a626
        data g_chicken_empty
