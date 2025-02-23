@@ -2011,7 +2011,7 @@ damage_8:                              ; >8a1e
 * This entry point is used by the routine at #R$8a15.
 loc_8a25:                              ; >8a25
        movb a,@player_energy           ; LD ($5E28),A      ; 
-       b    @draw_chicken_branch_target ; JP $8B8A          ; draw chicken energy bar
+       b    @draw_chicken_branch       ; JP $8B8A          ; draw chicken energy bar
 * This entry point is used by the routine at #R$8a15.
 player_dead_pop:                       ; >8a2b
        .pop hl                         ; POP HL            ; don't return to entity handler
@@ -2226,7 +2226,7 @@ creatures:                             ; >8b7a
 * #R$988b.
 draw_chicken:                          ; >8b8a
        .proc
-draw_chicken_branch_target:
+draw_chicken_branch:
        seto @background_graphics_rom_bank
        movb @player_energy,a           ; LD A,($5E28)      ;
 ;      srl  a,1                        ; SRL A             ;
@@ -2389,7 +2389,7 @@ loc_8c84:                              ; >8c84
        movb @bytes+>f0,a               ; LD A,$F0          ; cap energy at maximum
 loc_8c86:                              ; >8c86
        movb a,@player_energy           ; LD ($5E28),A      ; 
-       b    @draw_chicken_branch_target ; JP $8B8A          ; draw chicken energy bar
+       b    @draw_chicken_branch ; JP $8B8A          ; draw chicken energy bar
 
 * flash score on game start
 * 
@@ -2767,7 +2767,7 @@ loc_8ee1:                              ; >8ee1
        jmp  player_dead                ; JR $8EA0          ; 
 loc_8ee9:                              ; >8ee9
        movb a,@player_energy           ; LD ($5E28),A      ; 
-       b    @draw_chicken_branch_target ; JP $8B8A          ; draw chicken energy bar
+       b    @draw_chicken_branch ; JP $8B8A          ; draw chicken energy bar
 
 * apply player movement, including auto-walk
 * 
@@ -3316,7 +3316,7 @@ h_room_item:                           ; >91fe
        ; AND A                         ; AND A             ; room content drawn?
        jeq  !                          ; RET NZ            ; return if so
        .ret                            ;                   
-!      b    @draw_bgrnd_graphics
+!      b    @draw_bgrnd_graphics_branch
 
 * return if player has required key (C if opened, NC if locked)
 * 
@@ -3743,7 +3743,7 @@ loc_9476:                              ; >9476
        movb @bytes+>f0,@player_energy  ; LD A,$F0          ; starting energy
 ;      movb a,@player_energy           ; LD ($5E28),A      ;
        .call @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
-       b    @draw_lives_branch_target  ; JP $A2CE          ; draw lives sprites in side panel
+       b    @draw_lives_branch  ; JP $A2CE          ; draw lives sprites in side panel
 
 * blank graphic and h_player_appear handler
 player_template:                       ; >9481
@@ -4707,36 +4707,6 @@ xor_instr:
 socb_instr:
        socb *hl,a
 
-* Routine at 9d25
-draw_attr_0:                           ; >9d25
-       .pop bc                         ; POP BC            ;
-       .call @get_gfx_attrs            ; CALL $99AF        ; IN
-loc_9d29:                              ; >9d29
-       .push bc                        ; PUSH BC           ;
-       .push hl                        ; PUSH HL           ;
-loc_9d2b:                              ; >9d2b
-       movb *de,a                      ; LD A,(DE)         ; attr byte
-       inc  de                         ; INC DE            ;
-       ; AND A                         ; AND A             ; skip attr?
-       jeq  loc_9d38                   ; JR Z,$9D38        ; jump if so
-       cb   a,@b255                    ; CP $FF            ; use room attr?
-       jne  loc_9d37                   ; JR NZ,$9D37       ; jump if not
-       movb @room_attr,a               ; LD A,($5E1A)      ;
-loc_9d37:                              ; >9d37
-       movb a,*hl                      ; LD (HL),A         ; set attr
-loc_9d38:                              ; >9d38
-       ab   one,@l                     ; INC L             ;
-       sb   one,b                      ; DJNZ $9D2B        ;
-       jne  loc_9d2b                   ;
-       .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
-       .pop bc                         ; POP BC            ;
-       sb   one,@c                     ; DEC C             ;
-       jne  loc_9d29                   ; JR NZ,$9D29       ;
-       .ret                            ; RET               ;
-
 * draw any items in player inventory
 * 
 * Used by the routines at #R$9117, #R$92f5 and #R$93e3.
@@ -4751,7 +4721,7 @@ loc_a143:                              ; >a143
        movb a,@e                       ; LD E,A            ; 
        sb   one,b                      ; DJNZ $A143        ; 
        jne  loc_a143                   ;                   
-       .ret                            ; RET               ; 
+       .ret                            ; RET               ;
 
 * draw inventory item at position DE
 * 
@@ -5034,7 +5004,7 @@ loc_a259:                              ; >a259
 * Used by the routines at #R$7d9a and #R$9443.
 draw_lives:                            ; >a2ce
        .proc
-draw_lives_branch_target:
+draw_lives_branch:
        seto @sprite_graphics_rom_bank
        .push ix                        ; PUSH IX           ;
        li   ix,entity_to_draw          ; LD IX,$A17D       ; 

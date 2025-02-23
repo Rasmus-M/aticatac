@@ -2,6 +2,7 @@
 *
 * Used by the routine at #R$91fe.
 draw_bgrnd_attrs:                      ; >9980
+       .proc
        li   hl,attr_funcs              ; LD HL,$9985       ;
        b    @jump_table_b              ; JR $9965          ;
 
@@ -15,6 +16,36 @@ attr_funcs:                            ; >9985
        data draw_attr_5
        data draw_attr_6
        data draw_attr_7
+
+* Routine at 9d25
+draw_attr_0:                           ; >9d25
+       .pop bc                         ; POP BC            ;
+       .call @get_gfx_attrs            ; CALL $99AF        ; IN
+loc_9d29:                              ; >9d29
+       .push bc                        ; PUSH BC           ;
+       .push hl                        ; PUSH HL           ;
+loc_9d2b:                              ; >9d2b
+       movb *de,a                      ; LD A,(DE)         ; attr byte
+       inc  de                         ; INC DE            ;
+       ; AND A                         ; AND A             ; skip attr?
+       jeq  loc_9d38                   ; JR Z,$9D38        ; jump if so
+       cb   a,@b255                    ; CP $FF            ; use room attr?
+       jne  loc_9d37                   ; JR NZ,$9D37       ; jump if not
+       movb @room_attr,a               ; LD A,($5E1A)      ;
+loc_9d37:                              ; >9d37
+       movb a,*hl                      ; LD (HL),A         ; set attr
+loc_9d38:                              ; >9d38
+       ab   one,@l                     ; INC L             ;
+       sb   one,b                      ; DJNZ $9D2B        ;
+       jne  loc_9d2b                   ;
+       .pop hl                         ; POP HL            ;
+       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ; AND A                         ; AND A             ;
+       s    bc,hl                      ; SBC HL,BC         ; up a row
+       .pop bc                         ; POP BC            ;
+       sb   one,@c                     ; DEC C             ;
+       jne  loc_9d29                   ; JR NZ,$9D29       ;
+       .endproc                        ; RET               ;
 
 * Routine at 9d47
 draw_attr_1:                           ; >9d47
@@ -48,7 +79,7 @@ loc_9d5f:                              ; >9d5f
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_9d4c                   ; JR NZ,$9D4C       ;
-       .ret                            ; RET               ;
+       .endproc                        ; RET               ;
 
 * Routine at 9d6f
 draw_attr_2:                           ; >9d6f
@@ -88,7 +119,7 @@ loc_9d8a:                              ; >9d8a
        sb   one,b                      ; DEC B             ;
        .exx                            ; EXX               ;
        jne  loc_9d7a                   ; JR NZ,$9D7A       ;
-       .ret                            ; RET               ;
+       .endproc                        ; RET               ;
 
 * Routine at 9da0
 draw_attr_3:                           ; >9da0
@@ -127,7 +158,7 @@ loc_9db7:                              ; >9db7
        sb   one,b                      ; DEC B             ;
        .exx                            ; EXX               ;
        jne  loc_9da8                   ; JR NZ,$9DA8       ;
-       .ret                            ; RET               ;
+       .endproc                        ; RET               ;
 
 * Routine at 9dce
 draw_attr_4:                           ; >9dce
@@ -161,7 +192,7 @@ loc_9de5:                              ; >9de5
        .call @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
        sb   one,@c                     ; DEC C             ;
        jne  loc_9dd5                   ; JR NZ,$9DD5       ;
-       .ret                            ; RET               ;
+       .endproc                        ; RET               ;
 
 * Routine at 9df8
 draw_attr_5:                           ; >9df8
@@ -194,7 +225,7 @@ loc_9e12:                              ; >9e12
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_9e03                   ; JR NZ,$9E03       ;
-       .ret                            ; RET               ;
+       .endproc                        ; RET               ;
 
 * Routine at 9e21
 draw_attr_6:                           ; >9e21
@@ -235,7 +266,7 @@ loc_9e3f:                              ; >9e3f
        sb   one,b                      ; DEC B             ;
        .exx                            ; EXX               ;
        jne  loc_9e2f                   ; JR NZ,$9E2F       ;
-       .ret                            ; RET               ;
+       .endproc                        ; RET               ;
 
 * Routine at 9e55
 draw_attr_7:                           ; >9e55
@@ -275,4 +306,30 @@ loc_9e6f:                              ; >9e6f
        sb   one,b                      ; DEC B             ;
        .exx                            ; EXX               ;
        jne  loc_9e60                   ; JR NZ,$9E60       ;
-       .ret                            ; RET               ;
+       .endproc                        ; RET               ;
+
+* IN: C=gfx idx, DE=coords  OUT: HL=attr addr, DE=attr data, B=width, C=height
+*
+* Used by the routines at #R$9d25, #R$9d47, #R$9d6f, #R$9da0, #R$9dce, #R$9df8,
+* #R$9e21 and #R$9e55.
+get_gfx_attrs:                         ; >99af
+       .proc
+       li   hl,gfx_attrs               ; LD HL,$A64E       ;
+       sb   one,@c                     ; DEC C             ; 1-based
+       sb   b,b                        ; LD B,$00          ;
+       ; SLA C                         ; SLA C             ;
+       sla  b,1                        ; RL B              ; TODO: check code.
+       a    bc,hl                      ; ADD HL,BC         ;
+       movb *hl,a                      ; LD A,(HL)         ;
+       inc  hl                         ; INC HL            ;
+       movb *hl,h                      ; LD H,(HL)         ;
+       movb a,@l                       ; LD L,A            ;
+       .ex_de_hl                       ; EX DE,HL          ;
+       .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       movb *de,a                      ; LD A,(DE)         ;
+       movb a,b                        ; LD B,A            ;
+       inc  de                         ; INC DE            ;
+       movb *de,a                      ; LD A,(DE)         ;
+       movb a,@c                       ; LD C,A            ;
+       inc  de                         ; INC DE            ;
+       .endproc                        ; RET               ;

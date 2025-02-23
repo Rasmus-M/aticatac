@@ -98,7 +98,7 @@ xy_to_attr:                            ; >9bd2
 *
 pixel_line_up:                         ; >9f03
        .proc
-pixel_line_up_branch_target:
+pixel_line_up_branch:
 ;       sb   one,h                      ; DEC H             ; move up 1 display line in HL
 ;       movb h,a                        ; LD A,H            ;
 ;       inv  a                          ; CPL               ;

@@ -104,7 +104,7 @@ draw_unshifted:                        ; >9ece
        movb a,*hl                      ; LD (HL),A         ;
        .pop de                         ; POP DE            ;
        sb   one,@l                     ; DEC L             ;
-       b    @pixel_line_up_branch_target ; JP $9F03          ; move up 1 display line in HL
+       b    @pixel_line_up_branch      ; JP $9F03          ; move up 1 display line in HL
 
 *********************************************************************
 *
@@ -164,7 +164,7 @@ draw_2_bytes:                          ; >9ef9
        .pop de                         ; POP DE            ;
        sb   one,@l                     ; DEC L             ;
        sb   one,@l                     ; DEC L             ;
-       b    @pixel_line_up_branch_target
+       b    @pixel_line_up_branch
 
 *********************************************************************
 * draw 2-byte unshifted graphic
@@ -189,7 +189,7 @@ draw_unshifted_2:                      ; >9f13
        movb a,*hl                      ; LD (HL),A         ;
        .pop de                         ; POP DE            ; de=data addr
        sb   one,@l                     ; DEC L             ;
-       b    @pixel_line_up_branch_target ; JP $9F03        ; move up 1 display line in HL
+       b    @pixel_line_up_branch      ; JP $9F03        ; move up 1 display line in HL
 
 *********************************************************************
 *

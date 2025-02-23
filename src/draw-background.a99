@@ -6,6 +6,7 @@
 *
 draw_bgrnd_graphics:                   ; >9213
        .proc
+draw_bgrnd_graphics_branch:
        movb @entity_x(ix),@e           ; LD E,(IX+$03)     ; xpos
        movb @entity_y(ix),d            ; LD D,(IX+$04)     ; ypos
        movb *ix,@c                     ; LD C,(IX+$00)     ; graphic index
@@ -383,31 +384,6 @@ blend_instr_7:                              ; >9b88
 !
        inc  de                         ; INC DE            ;
        jmp  loc_9b70                   ; JR $9B70          ;
-
-* IN: C=gfx idx, DE=coords  OUT: HL=attr addr, DE=attr data, B=width, C=height
-*
-* Used by the routines at #R$9d25, #R$9d47, #R$9d6f, #R$9da0, #R$9dce, #R$9df8,
-* #R$9e21 and #R$9e55.
-get_gfx_attrs:                         ; >99af
-       li   hl,gfx_attrs               ; LD HL,$A64E       ;
-       sb   one,@c                     ; DEC C             ; 1-based
-       sb   b,b                        ; LD B,$00          ;
-       ; SLA C                         ; SLA C             ;
-       sla  b,1                        ; RL B              ; TODO: check code.
-       a    bc,hl                      ; ADD HL,BC         ;
-       movb *hl,a                      ; LD A,(HL)         ;
-       inc  hl                         ; INC HL            ;
-       movb *hl,h                      ; LD H,(HL)         ;
-       movb a,@l                       ; LD L,A            ;
-       .ex_de_hl                       ; EX DE,HL          ;
-       .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
-       movb *de,a                      ; LD A,(DE)         ;
-       movb a,b                        ; LD B,A            ;
-       inc  de                         ; INC DE            ;
-       movb *de,a                      ; LD A,(DE)         ;
-       movb a,@c                       ; LD C,A            ;
-       inc  de                         ; INC DE            ;
-       .ret                            ; RET               ;
 
 * C=gfx idx, DE=coordinates
 *
