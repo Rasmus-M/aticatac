@@ -2272,19 +2272,19 @@ draw_chicken_branch_target:
        mov  @chicken_empty_addr,de     ; LD DE,($A626)     ; de = address of empty chicken graphics
        .push de                        ; PUSH DE           ; Save address
        a    de,hl                      ; ADD HL,DE         ; Add offset
-       mov  hl,@chicken_empty_addr_ram ; LD ($A626),HL     ; Update the address in the graphics table. TODO: in ROM
-       movb *hl+,@e                    ; LD E,(HL)         ; Get the graphics data at the offset
+       mov  hl,@chicken_empty_addr_ram ; LD ($A626),HL     ; Update the address in the graphics table.
+       movb @chicken_empty_size,@e     ; LD E,(HL)         ; Get the graphics data at the offset
 ;      inc  hl                         ; INC HL            ;
-       movb *hl,d                      ; LD D,(HL)         ; Get the graphics data at the offset
+       movb @chicken_empty_size+1,d    ; LD D,(HL)         ; Get the graphics data at the offset
        movb @g_chicken_empty+1,a       ; LD A,($C48D)      ; Original height
        sb   @c,a                       ; SUB C             ; Minus desired height
        jeq  loc_8bfc                   ; JR Z,$8BFC        ; Return if they are the same
        .push de                        ; PUSH DE           ; Save the graphics data at the offset
-       movb a,@g_chicken_empty_ram+1   ; LD (HL),A         ; Update graphics height at offset with modified value. TODO: in ROM
+       movb a,@chicken_empty_size+1    ; LD (HL),A         ; Update graphics height at offset with modified value.
        movb @g_chicken_empty,a         ; LD A,($C48C)      ; Original width
-       dec  hl                         ; DEC HL            ; Point hl to width
-       movb a,@g_chicken_empty_ram     ; LD (HL),A         ; Update graphics width at offset with modified value. TODO: in ROM
-       .push hl                        ; PUSH HL           ; Save the address at the offset
+;      dec  hl                         ; DEC HL            ; Point hl to width
+       movb a,@chicken_empty_size      ; LD (HL),A         ; Update graphics width at offset with modified value.
+;      .push hl                        ; PUSH HL           ; Save the address at the offset
 ;      movb @bytes+>14,a               ; LD A,$14          ; empty chicken graphic
        movb @bytes+>14,*ix             ; LD (IX+$00),A     ; Set entity to draw
        li   hl,>77C8                   ; LD HL,$77C8       ; chicken draw coords
@@ -2306,20 +2306,20 @@ loc_8bf2:                              ; >8bf2
        ab   one,@l                     ; INC L             ; Next byte
        sb   one,b                      ; DJNZ $8BF2        ; Clear width bytes
        jne  loc_8bf2                   ;                   
-       .pop hl                         ; POP HL            ; Restore address at the offset
+;      .pop hl                         ; POP HL            ; Restore address at the offset
        .pop de                         ; POP DE            ; Restore data at offset
-       movb @e,*hl+                    ; LD (HL),E         ; Restore first byte
+       movb @e,@chicken_empty_size     ; LD (HL),E         ; Restore first byte
 ;      inc  hl                         ; INC HL            ;
-       movb d,*hl                      ; LD (HL),D         ; Restore second byte
+       movb d,@chicken_empty_size+1    ; LD (HL),D         ; Restore second byte
 loc_8bfc:                              ; >8bfc
        .pop hl                         ; POP HL            ; Restore original address of empty chicken
-       mov  hl,@chicken_empty_addr_ram ; LD ($A626),HL     ; Write it to the graphics table. TODO: In ROM
+       mov  hl,@chicken_empty_addr_ram ; LD ($A626),HL     ; Write it to the graphics table.
 loc_8c00:                              ; >8c00
        .pop de                         ; POP DE            ; Restore original heights
 ;      movb @e,a                       ; LD A,E            ;
-       movb @e,@g_chicken_full_ram+1   ; LD ($C543),A      ; Restore height. TODO: In ROM
+       movb @e,@chicken_full_size+1   ; LD ($C543),A       ; Restore height.
 ;      movb d,a                        ; LD A,D            ;
-       movb d,@g_chicken_empty_ram+1   ; LD ($C48D),A      ; Restore height. TODO: In ROM
+       movb d,@chicken_empty_size+1   ; LD ($C48D),A       ; Restore height.
        .pop ix                         ; POP IX            ; 
        movb @player_energy,@chicken_level ; LD A,($5E28)   ; Save new level
 ;      movb a,@chicken_level           ; LD ($5E29),A      ; last drawn chicken height
@@ -2327,7 +2327,7 @@ draw_chicken_end:
        .endproc                        ; RET               ;
 loc_8c12:                              ; >8c12
        movb @c,a                       ; LD A,C            ; Desired height
-       movb a,@g_chicken_full_ram+1    ; LD ($C543),A      ; Set height of graphics. TODO: In ROM
+       movb a,@chicken_full_size+1     ; LD ($C543),A      ; Set height of graphics. TODO: In ROM
        movb @bytes+>13,*ix             ; LD A,$13          ; full chicken graphic
 ;      movb a,*ix                      ; LD (IX+$00),A     ;
        li   hl,>77c8                   ; LD HL,$77C8       ; Coordinates
@@ -2349,11 +2349,11 @@ chicken_entity:                        ; >8c2d
        byte >13,>00,>00,>c8,>77,>00,>00,>00
 chicken_empty_addr_ram:
        data chicken_empty_addr
-g_chicken_empty_ram:
+chicken_empty_size:
        byte >06,>1E
 chicken_full_addr_ram:
        data chicken_full_addr
-g_chicken_full_ram:
+chicken_full_size:
        byte >06,>1E
 
 * Routine at 8c35
@@ -4521,16 +4521,16 @@ get_gfx_data:                          ; >9995
        jne  get_gfx_data_1
        mov  @chicken_empty_addr_ram,hl
        inct hl
-       movb @g_chicken_empty_ram,b
-       movb @g_chicken_empty_ram+1,@c
+       movb @chicken_empty_size,b      ; Width
+       movb @chicken_empty_size+1,@c   ; Height
        jmp  get_gfx_data_3
 get_gfx_data_1:
        ci   hl,g_chicken_full
        jne  get_gfx_data_2
        mov  @chicken_full_addr_ram,hl
        inct hl
-       movb @g_chicken_full_ram,b
-       movb @g_chicken_full_ram+1,@c
+       movb @chicken_full_size,b       ; Width
+       movb @chicken_full_size+1,@c    ; Height
        jmp  get_gfx_data_3
 get_gfx_data_2:
        mov  *hl,hl
