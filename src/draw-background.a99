@@ -432,3 +432,42 @@ get_gfx_data_3:
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        .endproc                        ; RET               ;
 
+* map B=0-2 to Z80 opcode used to blend graphics data
+*
+* Used by the routines at #R$99c9, #R$99e5, #R$9a0a, #R$9a50, #R$9acb, #R$9aef,
+* #R$9b14 and #R$9b5d.
+get_blend_instr:                       ; >9d19
+       movb b,a                        ; LD A,B            ;
+       andi a,>0300                    ; AND $03           ;
+;       jne  !                          ; RET Z             ; return
+;       .ret                            ;
+;!
+;       cb   a,one                      ; CP $01            ;
+;       movb @bytes+>ae,a               ; LD A,$AE          ; xor (hl)
+;       jeq  !                          ; RET NZ            ; return
+;       .ret                            ;
+;!
+;       ab   @bytes+>08,a               ; ADD A,$08         ; b6 or (hl)
+;       .ret                            ; RET               ; return
+       jne  !
+       mov  @jmp2_instr,af
+       mov  @nop_instr,af_
+       .ret
+!      cb   a,one
+       jne  !
+       mov  @movb_instr,af
+       mov  @xor_instr,af_
+       .ret
+!      mov  @socb_instr,af
+       mov  @nop_instr,af_
+       .ret
+jmp2_instr:
+       jmp  $+2
+nop_instr:
+       nop
+movb_instr:
+       movb *hl,r0
+xor_instr:
+       xor  r0,a
+socb_instr:
+       socb *hl,a

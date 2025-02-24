@@ -233,12 +233,6 @@ start_game:                            ; >7d9a
        .call @reset_game_state         ; CALL $8D61        ; copy initial game state to working state area
 ;       .call @randomise_doors          ; CALL $94F5        ; randomise which doors can open/close
        .call @prepare_player           ; CALL $9443        ; prepare player to spawn
-
-       movb @bytes+2,@room_attr
-       .call @draw_panel_attrs
-       bl   @upload_zx_screen
-stop:  jmp  stop
-
        b    @enter_room                ; JP $9147          ;
 
 * Routine at 7dc3
@@ -505,9 +499,11 @@ delay_loop:                            ; >808d
 * 
 * Used by the routines at #R$8c35, #R$9117 and #R$9731.
 clear_play_area:                       ; >8093
-       li   hl,zx_screen               ; LD HL,$4000       ; 
+       .proc
+       li   hl,zx_screen               ; LD HL,$4000       ;
        li   bc,>18c0                   ; LD BC,$18C0       ; 24x192
        sb   a,a                        ; XOR A             ; 
+       jmp  !
 
 * fill C rows of B columns of value A at address HL
 * 
@@ -3198,6 +3194,10 @@ enter_room:                            ; >9147
        .call @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
        .call @draw_room_frame          ; CALL $9BEA        ; draw lines that make up outer room frame
        .call @draw_panel_attrs         ; CALL $A240        ; draw side-panel colours, which follow room colour
+
+       bl   @upload_zx_screen
+stop:  jmp  stop
+
        .call @draw_inventory           ; CALL $A13B        ; draw any items in player inventory
        .call @entry_sound              ; CALL $A403        ; room entry sound effect
        b    @main_loop                 ; JP $7DC3          ; 
@@ -4116,15 +4116,21 @@ visit_room:                            ; >96af
        ; SRL C                         ; SRL C             ; 
        ; SRL C                         ; SRL C             ; 
        ; SRL C                         ; SRL C             ; 
-       sb   b,b                        ; LD B,$00          ; 
+       sb   b,b                        ; LD B,$00          ;
+       srl  bc,3
        li   hl,visited_rooms           ; LD HL,$5E40       ; visit rooms bit array
        a    bc,hl                      ; ADD HL,BC         ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
-       andi a,>3800                    ; AND $38           ; 
-       socb @bytes+>c6,a               ; OR $C6            ; 
-       movb a,@loc_96c6+>0001          ; LD ($96C7),A      ; self-modify bit in SET below
+;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       andi a,>3800                    ; AND $38           ;
+;       socb @bytes+>c6,a               ; OR $C6            ;
+;       movb a,@loc_96c6+>0001          ; LD ($96C7),A      ; self-modify bit in SET below
+       movb a,r0
+       swpb r0
+       andi r0,7
+       ai   r0,bits
+       mov  r0,@loc_96c6+2
 loc_96c6:                              ; >96c6
        socb @bits+0,*hl                ; SET 0,(HL)        ; mark room as visited
        .ret                            ; RET               ; 
@@ -4431,281 +4437,6 @@ loc_995b:                              ; >995b
        li   hl,food_items              ; LD HL,$EB58       ; 
        mov  hl,@food_ptr               ; LD ($5E55),HL     ; 
        .ret                            ; RET               ; 
-
-* draw lines that make up outer room frame
-* 
-* Used by the routine at #R$9117.
-draw_room_frame:                       ; >9bea
-       sb   a,a                        ; XOR A             ; 
-       movb a,@game_flags              ; LD ($5E14),A      ; b0 set if room content drawn
-       movb @player_room,a             ; LD A,($EA91)      ; 
-* This entry point is used by the routine at #R$9731.
-draw_room_a:                           ; >9bf1
-       li   bc,room_attrs              ; LD BC,$A854       ; room attr colour and style (0-B)
-       movb a,@l                       ; LD L,A            ; 
-       sb   h,h                        ; LD H,$00          ; 
-       a    hl,hl                      ; ADD HL,HL         ; 2 bytes per entry
-       a    bc,hl                      ; ADD HL,BC         ; 
-       movb *hl,a                      ; LD A,(HL)         ; attr colour
-       inc  hl                         ; INC HL            ; 
-       movb a,@room_attr               ; LD ($5E1A),A      ; 
-       .exx                            ; EXX               ; 
-       li   hl,zx_attrs                ; LD HL,$5800       ; 
-       li   bc,>1818                   ; LD BC,$1818       ; 24x24 room area
-       movb @room_attr,a               ; LD A,($5E1A)      ; 
-       .call @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
-       .exx                            ; EXX               ; 
-       movb *hl,@l                     ; LD L,(HL)         ; style?
-       sb   h,h                        ; LD H,$00          ; 
-       a    hl,hl                      ; ADD HL,HL         ; * 2
-       movb @l,@c                      ; LD C,L            ; 
-       movb h,b                        ; LD B,H            ; 
-       a    hl,hl                      ; ADD HL,HL         ; * 4
-       a    bc,hl                      ; ADD HL,BC         ; * 6
-       li   bc,room_styles             ; LD BC,$A982       ; 
-       a    bc,hl                      ; ADD HL,BC         ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-       inc  hl                         ; INC HL            ; 
-       movb a,@room_width              ; LD ($5E1D),A      ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-       inc  hl                         ; INC HL            ; 
-       movb a,@room_height             ; LD ($5E1E),A      ; 
-       movb *hl,@e                     ; LD E,(HL)         ; points LSB
-       inc  hl                         ; INC HL            ; 
-       movb *hl,d                      ; LD D,(HL)         ; points MSB
-       inc  hl                         ; INC HL            ; 
-       movb *hl,a                      ; LD A,(HL)         ; lines LSB
-       inc  hl                         ; INC HL            ; 
-       movb *hl,h                      ; LD H,(HL)         ; lines MSB
-       movb a,@l                       ; LD L,A            ; 
-       .push de                        ; PUSH DE           ; 
-       .pop ix                         ; POP IX            ; 
-       .push bc                        ; PUSH BC           ; 
-loc_9c2e:                              ; >9c2e
-       .pop bc                         ; POP BC            ; 
-       movb *hl,a                      ; LD A,(HL)         ; x of first point
-       inc  hl                         ; INC HL            ; 
-       cb   a,@b255                    ; CP $FF            ; end marker?
-       jne  !                          ; RET Z             ; return if so
-       .ret                            ;                   
-!
-       sla  a,1                        ; SLA A             ; * 2 (bytes per point)
-       movb a,@loc_9c3d+>0002          ; LD ($9C3F),A      ; offset of source x
-       ab   one,a                      ; INC A             ; 
-       movb a,@loc_9c40+>0002          ; LD ($9C42),A      ; offset of source y
-loc_9c3d:                              ; >9c3d
-       movb *ix,@c                     ; LD C,(IX+$00)     ; source x
-loc_9c40:                              ; >9c40
-       movb *ix,b                      ; LD B,(IX+$00)     ; source y
-loc_9c43:                              ; >9c43
-       .push bc                        ; PUSH BC           ; 
-       movb *hl,a                      ; LD A,(HL)         ; next point x
-       inc  hl                         ; INC HL            ; 
-       cb   a,@b255                    ; CP $FF            ; end marker?
-       jeq  loc_9c2e                   ; JR Z,$9C2E        ; jump if so (next source point)
-       sla  a,1                        ; SLA A             ; * 2 (bytes per point)
-       movb a,@loc_9c53+>0002          ; LD ($9C55),A      ; offset of target x
-       ab   one,a                      ; INC A             ; 
-       movb a,@loc_9c56+>0002          ; LD ($9C58),A      ; offset of target y
-loc_9c53:                              ; >9c53
-       movb *ix,@e                     ; LD E,(IX+$00)     ; target x
-loc_9c56:                              ; >9c56
-       movb *ix,d                      ; LD D,(IX+$00)     ; target y
-       .push hl                        ; PUSH HL           ; 
-       .call @draw_line_bc_de          ; CALL $9C79        ; draw line from (B,C) to (D,E)
-       .pop hl                         ; POP HL            ; 
-       .pop bc                         ; POP BC            ; 
-       jmp  loc_9c43                   ; JR $9C43          ; next target point
-
-* plot pixel at L,H
-* 
-* Used by the routine at #R$9c79.
-plot_l_h:                              ; >9c61
-       movb @l,a                       ; LD A,L            ; 
-       andi a,>0700                    ; AND $07           ; 
-       ab   one,a                      ; INC A             ; 
-       movb a,b                        ; LD B,A            ; 
-       sb   a,a                        ; XOR A             ; 
-       ; SCF                           ; SCF               ; 
-loc_9c68:                              ; >9c68
-       srl  a,1                        ; RRA               ; TODO: check code. 
-       sb   one,b                      ; DJNZ $9C68        ; 
-       jne  loc_9c68                   ;                   
-       .push hl                        ; PUSH HL           ; 
-       .push af                        ; PUSH AF           ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       .push af                        ; PUSH AF           ; 
-       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       .pop af                         ; POP AF            ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       .pop af                         ; POP AF            ; 
-       socb *hl,a                      ; OR (HL)           ; merge pixel
-       movb a,*hl                      ; LD (HL),A         ; write to display
-       .pop hl                         ; POP HL            ; 
-       .ret                            ; RET               ; 
-
-* draw line from (B,C) to (D,E)
-* 
-* Used by the routine at #R$9bea.
-draw_line_bc_de:                       ; >9c79
-       movb b,h                        ; LD H,B            ; move source point to HL
-       movb @c,@l                      ; LD L,C            ; 
-       sb   @c,@c                      ; LD C,$00          ; clear flags
-       movb h,a                        ; LD A,H            ; 
-       sb   d,a                        ; SUB D             ; drawing upwards?
-       jnc  loc_9c85                   ; JR NC,$9C85       ; TODO: check code. jump if so
-       neg a                           ; NEG               ; abs
-       socb @bits+0,@c                 ; SET 0,C           ; flag drawing down
-loc_9c85:                              ; >9c85
-       movb a,b                        ; LD B,A            ; vertical count
-       movb @l,a                       ; LD A,L            ; 
-       sb   @e,a                       ; SUB E             ; drawing left?
-       jnc  loc_9c8e                   ; JR NC,$9C8E       ; TODO: check code. jump if so
-       neg a                           ; NEG               ; abs
-       socb @bits+1,@c                 ; SET 1,C           ; flag drawing right
-loc_9c8e:                              ; >9c8e
-       cb   a,b                        ; CP B              ; drawing more horiz than vert?
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       movb @c,a                       ; LD A,C            ; 
-       movb a,@line_flags              ; LD ($5E24),A      ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       jnc  !                          ; JP C,$9CD6        ; TODO: check code. jump if so
-       b    @loc_9cd6                  ;                   
-!
-       movb a,@line_counter            ; LD ($5E23),A      ; horiz counter
-       .push de                        ; PUSH DE           ; 
-       .push hl                        ; PUSH HL           ; 
-       movb a,@e                       ; LD E,A            ; horiz line size
-       sb   d,d                        ; LD D,$00          ; 
-       movb d,@l                       ; LD L,D            ; 
-       movb b,h                        ; LD H,B            ; vert line size
-       .call @line_slope               ; CALL $A379        ; determine Bresenham line slope step
-       movb @line_flags,a              ; LD A,($5E24)      ; 
-       movb a,r0                       ; BIT 0,A           ; 
-       andi r0,>0100                   ;                   
-       jne  loc_9caf                   ; JR NZ,$9CAF       ; 
-       .call @minus_de                 ; CALL $A39E        ; HL = -DE
-loc_9caf:                              ; >9caf
-       movb @line_flags,a              ; LD A,($5E24)      ; 
-       movb a,r0                       ; BIT 1,A           ; drawing down?
-       andi r0,>0200                   ;                   
-       movb one,@c                     ; LD C,$01          ; y step
-       jne  loc_9cba                   ; JR NZ,$9CBA       ; jump if so
-       movb @b255,@c                   ; LD C,$FF          ; y step
-loc_9cba:                              ; >9cba
-       .ex_de_hl                       ; EX DE,HL          ; 
-       .pop hl                         ; POP HL            ; 
-       movb @line_counter,a            ; LD A,($5E23)      ; 
-       ab   one,a                      ; INC A             ; 
-       movb a,b                        ; LD B,A            ; 
-       movb @e,a                       ; LD A,E            ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-loc_9cc3:                              ; >9cc3
-       .push bc                        ; PUSH BC           ; 
-       .call @plot_l_h                 ; CALL $9C61        ; plot pixel at L,H
-       movb @l,a                       ; LD A,L            ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       movb a,@l                       ; LD L,A            ; 
-       a    de,hl                      ; ADD HL,DE         ; step partial x
-       movb @l,a                       ; LD A,L            ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       .pop bc                         ; POP BC            ; 
-       ab   @c,a                       ; ADD A,C           ; step y
-       movb a,@l                       ; LD L,A            ; 
-       sb   one,b                      ; DJNZ $9CC3        ; 
-       jne  loc_9cc3                   ;                   
-       .pop hl                         ; POP HL            ; 
-       b    @plot_l_h                  ; JP $9C61          ; plot pixel at L,H
-loc_9cd6:                              ; >9cd6
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       movb b,a                        ; LD A,B            ; 
-       movb a,@line_counter            ; LD ($5E23),A      ; vert counter
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       .push de                        ; PUSH DE           ; 
-       .push hl                        ; PUSH HL           ; 
-       movb b,@e                       ; LD E,B            ; 
-       sb   d,d                        ; LD D,$00          ; 
-       movb d,@l                       ; LD L,D            ; 
-       movb a,h                        ; LD H,A            ; 
-       .call @line_slope               ; CALL $A379        ; determine Bresenham line slope step
-       movb @line_flags,a              ; LD A,($5E24)      ; 
-       movb a,r0                       ; BIT 1,A           ; drawing right?
-       andi r0,>0200                   ;                   
-       jne  loc_9cf0                   ; JR NZ,$9CF0       ; jump if so
-       .call @minus_de                 ; CALL $A39E        ; HL = -DE
-loc_9cf0:                              ; >9cf0
-       movb @line_flags,a              ; LD A,($5E24)      ; 
-       movb a,r0                       ; BIT 0,A           ; drawing right?
-       andi r0,>0100                   ;                   
-       movb one,@c                     ; LD C,$01          ; x step
-       jne  loc_9cfb                   ; JR NZ,$9CFB       ; jump if so
-       movb @b255,@c                   ; LD C,$FF          ; x step
-loc_9cfb:                              ; >9cfb
-       .ex_de_hl                       ; EX DE,HL          ; 
-       .pop hl                         ; POP HL            ; 
-       movb @line_counter,a            ; LD A,($5E23)      ; 
-       ab   one,a                      ; INC A             ; 
-       movb a,b                        ; LD B,A            ; 
-       movb @e,a                       ; LD A,E            ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-loc_9d04:                              ; >9d04
-       .push bc                        ; PUSH BC           ; 
-       .call @plot_l_h                 ; CALL $9C61        ; plot pixel at L,H
-       movb h,a                        ; LD A,H            ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       movb @l,h                       ; LD H,L            ; 
-       movb a,@l                       ; LD L,A            ; 
-       a    de,hl                      ; ADD HL,DE         ; step partial y
-       movb @l,a                       ; LD A,L            ; 
-       movb h,@l                       ; LD L,H            ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       .pop bc                         ; POP BC            ; 
-       ab   @c,a                       ; ADD A,C           ; step x
-       movb a,h                        ; LD H,A            ; 
-       sb   one,b                      ; DJNZ $9D04        ; 
-       jne  loc_9d04                   ;                   
-       .pop hl                         ; POP HL            ; 
-       b    @plot_l_h                  ; JP $9C61          ; plot pixel at L,H
-
-* map B=0-2 to Z80 opcode used to blend graphics data
-* 
-* Used by the routines at #R$99c9, #R$99e5, #R$9a0a, #R$9a50, #R$9acb, #R$9aef,
-* #R$9b14 and #R$9b5d.
-get_blend_instr:                       ; >9d19
-       movb b,a                        ; LD A,B            ; 
-       andi a,>0300                    ; AND $03           ; 
-;       jne  !                          ; RET Z             ; return
-;       .ret                            ;
-;!
-;       cb   a,one                      ; CP $01            ;
-;       movb @bytes+>ae,a               ; LD A,$AE          ; xor (hl)
-;       jeq  !                          ; RET NZ            ; return
-;       .ret                            ;
-;!
-;       ab   @bytes+>08,a               ; ADD A,$08         ; b6 or (hl)
-;       .ret                            ; RET               ; return
-       jne  !
-       mov  @jmp2_instr,af
-       mov  @nop_instr,af_
-       .ret
-!      cb   a,one
-       jne  !
-       mov  @movb_instr,af
-       mov  @xor_instr,af_
-       .ret
-!      mov  @socb_instr,af
-       mov  @nop_instr,af_
-       .ret
-jmp2_instr:
-       jmp  $+2
-nop_instr:
-       nop
-movb_instr:
-       movb *hl,r0
-xor_instr:
-       xor  r0,a
-socb_instr:
-       socb *hl,a
 
 * draw any items in player inventory
 * 
@@ -5079,40 +4810,3 @@ menu_entities:                         ; >a331
        byte >01,>00,>00,>28,>67,>47,>00,>00                          ; knight (facing left)
        byte >11,>00,>00,>28,>7F,>47,>00,>00                          ; wizard (facing left)
        byte >21,>00,>00,>28,>97,>47,>00,>00                          ; serf (facing left)
-
-* determine Bresenham line slope step
-* 
-* Used by the routine at #R$9c79.
-line_slope:                            ; >a379
-       movb h,@l                       ; LD L,H            ; 
-       sb   h,h                        ; LD H,$00          ; 
-       .exx                            ; EXX               ; 
-       li   hl,>0000                   ; LD HL,$0000       ; 
-       movb @bytes+>08,b               ; LD B,$08          ; 
-loc_a382:                              ; >a382
-       .exx                            ; EXX               ; 
-       ; SLA L                         ; SLA L             ; 
-       sla  h,1                        ; RL H              ; TODO: check code. 
-       .push hl                        ; PUSH HL           ; 
-       ; AND A                         ; AND A             ; 
-       s    de,hl                      ; SBC HL,DE         ; 
-       joc  loc_a399                   ; JR C,$A399        ; TODO: check code. 
-       .pop af                         ; POP AF            ; 
-       .exx                            ; EXX               ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       inc  hl                         ; INC HL            ; 
-loc_a391:                              ; >a391
-       sb   one,b                      ; DJNZ $A382        ; 
-       jne  loc_a382                   ;                   
-       .push hl                        ; PUSH HL           ; 
-       .exx                            ; EXX               ; 
-       movb @l,@e                      ; LD E,L            ; 
-       movb h,d                        ; LD D,H            ; 
-       .pop hl                         ; POP HL            ; 
-       .ret                            ; RET               ; 
-loc_a399:                              ; >a399
-       .pop hl                         ; POP HL            ; 
-       .exx                            ; EXX               ; 
-       a    hl,hl                      ; ADD HL,HL         ; 
-       jmp  loc_a391                   ; JR $A391          ; 
-

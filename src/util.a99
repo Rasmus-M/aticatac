@@ -259,21 +259,20 @@ hl_de_b_c:                             ; >9aba
        mov  r1,hl
        .ret                            ; RET               ;
 
-*********************************************************************
-*
-* HL = -DE
-*
-* Used by the routine at #R$9c79.
-minus_de:                              ; >a39e
-;       .push de                        ; PUSH DE           ;
-;       .ex_de_hl                       ; EX DE,HL          ;
-;       li   hl,>0000                   ; LD HL,$0000       ;
-;       ; AND A                         ; AND A             ;
-;       s    de,hl                      ; SBC HL,DE         ;
-;       .pop de                         ; POP DE            ;
-       mov  de,hl
-       neg  hl
-       .ret                            ; RET               ;
+;*********************************************************************
+;*
+;* HL = -HL
+;*
+;* Used by the routine at #R$9c79.
+;neg_hl:                                 ; >a39e
+;;      .push de                        ; PUSH DE           ; Save DE
+;;      .ex_de_hl                       ; EX DE,HL          ; HL=de DE=hl
+;;      li   hl,>0000                   ; LD HL,$0000       ; HL=0
+;;      ; AND A                         ; AND A             ;
+;;      s    de,hl                      ; SBC HL,DE         ; HL=0-hl
+;;      .pop de                         ; POP DE            ; DE=de
+;       neg  hl
+;       .ret                            ; RET               ;
 
 *********************************************************************
 *
