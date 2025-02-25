@@ -829,8 +829,11 @@ _eee8:                                 ; >eee8
        byte >00,>3C,>40,>3C,>02,>42,>3C,>00
        byte >00,>FE,>10,>10,>10,>10,>10,>00
        byte >00,>42,>42,>42,>42,>42,>3C,>00
-
-player_end:
+linked_items_end:
        equ  $
+linked_items_size:
+       equ  linked_items_end-linked_items
+player_end:
+       equ  linked_items_end
 player_size:
        equ  player_end-player

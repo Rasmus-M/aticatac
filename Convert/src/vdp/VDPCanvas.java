@@ -185,8 +185,6 @@ public class VDPCanvas extends Canvas {
             for (int i = 0; i < width; i++) {
                 if (grid[j][i] != 0) {
                     plot(x + i, y + j, grid[j][i]);
-                } else {
-                    System.out.println();
                 }
             }
         }

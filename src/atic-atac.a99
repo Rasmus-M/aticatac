@@ -233,13 +233,13 @@ start_game:                            ; >7d9a
        .call @reset_game_state         ; CALL $8D61        ; copy initial game state to working state area
 ;       .call @randomise_doors          ; CALL $94F5        ; randomise which doors can open/close
        .call @prepare_player           ; CALL $9443        ; prepare player to spawn
-       b    @enter_room                ; JP $9147          ;
+       b    @enter_room                ; JP $9147          ; Will jump back to main_loop
 
 * Routine at 7dc3
 * 
 * Used by the routines at #R$7e13 and #R$9117.
 main_loop:                             ; >7dc3
-       li   sp,menu_selection          ; LD SP,$5E00       ; 
+       li   sp,stack                   ; LD SP,$5E00       ;
        ; EI                            ; EI                ; 
        sb   a,a                        ; XOR A             ; 
 loc_7dc8:                              ; >7dc8
@@ -250,7 +250,7 @@ loc_7dc8:                              ; >7dc8
        andi r0,>0100                   ;                   
        jne  loc_7ddc                   ; JR NZ,$7DDC       ; jump if so
        li   ix,linked_items            ; LD IX,$EEE0       ; pairs of linked items, including doors
-       jmp  draw_room                  ; JR $7E23          ; 
+       jmp  draw_room                  ; JR $7E23          ;
 loc_7ddc:                              ; >7ddc
        movb @zx_frames,a               ; LD A,($5C78)      ; 
        movb a,@c                       ; LD C,A            ; 
@@ -297,31 +297,10 @@ loop2_return:                          ; >7e13
        ; AND A                         ; AND A             ; 
        s    de,hl                      ; SBC HL,DE         ; 
        joc  loc_7e03                   ; JR C,$7E03        ; TODO: check code. 
-* This entry point is used by the routine at #R$7dc3.
-draw_room:                             ; >7e23
-       movb @player_room,a             ; LD A,($EA91)      ; 
-       movb a,@l                       ; LD L,A            ; 
-       sb   h,h                        ; LD H,$00          ; 
-       a    hl,hl                      ; ADD HL,HL         ; * 2 (bytes per entry)
-       li   bc,room_table              ; LD BC,$757D       ; 
-       a    bc,hl                      ; ADD HL,BC         ; 
-       movb *hl,a                      ; LD A,(HL)         ; room data LSB
-       inc  hl                         ; INC HL            ; 
-       movb *hl,h                      ; LD H,(HL)         ; room data MSB
-       movb a,@l                       ; LD L,A            ; 
-       mov  hl,@room_ptr               ; LD ($5E1B),HL     ; 
-decor_loop:                            ; >7e35
-       mov  @room_ptr,hl               ; LD HL,($5E1B)     ; 
-       movb *hl,a                      ; LD A,(HL)         ; room item LSB
-       inc  hl                         ; INC HL            ; 
-       inc  hl                         ; INC HL            ; 
-       mov  hl,@room_ptr               ; LD ($5E1B),HL     ; 
-       dec  hl                         ; DEC HL            ; 
-       movb *hl,h                      ; LD H,(HL)         ; room item MSB
-       movb a,@l                       ; LD L,A            ; 
-       socb h,a                        ; OR H              ; end of list?
-       jne  loc_7e93                   ; JR NZ,$7E93       ; jump if not
-       mov  @counter_low,hl            ; LD HL,($5E12)     ; 
+
+draw_room:
+       .call @draw_room_decor
+       mov  @counter_low,hl            ; LD HL,($5E12)     ;
        inc  hl                         ; INC HL            ; advance game loop counter
        mov  hl,@counter_low            ; LD ($5E12),HL     ; 
        li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
@@ -356,28 +335,10 @@ process_action:                        ; >7e7e
        .push hl                        ; PUSH HL           ; push return location
 * This entry point is used by the routine at #R$7eb2.
 run_handler:                           ; >7e7f
-       li   hl,handler_table           ; LD HL,$7EE6       ; 
+       li   hl,handler_table           ; LD HL,$7EE6       ;
 lookup_graphic:                        ; >7e82
-       movb *ix,@c                     ; LD C,(IX+$00)     ; 
-       b    @lookup_c_hl
-
-* This entry point is used by the routine at #R$7e13.
-loc_7e93:                              ; >7e93
-       li   bc,decor_loop              ; LD BC,$7E35       ; 
-       .push bc                        ; PUSH BC           ; 
-       li   bc,room_table              ; LD BC,$757D       ; 
-       ; AND A                         ; AND A             ; 
-       s    bc,hl                      ; SBC HL,BC         ; 
-       .push hl                        ; PUSH HL           ; 
-       .pop ix                         ; POP IX            ; 
-       movb @player_room,a             ; LD A,($EA91)      ; 
-       cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
-       jeq  loc_7ead                   ; JR Z,$7EAD        ; jump if so
-       li   bc,>0008                   ; LD BC,$0008       ; 
-       a    bc,ix                      ; ADD IX,BC         ; 
-loc_7ead:                              ; >7ead
-       li   hl,handler_table2          ; LD HL,$802A       ; 
-       jmp  lookup_graphic             ; JR $7E82          ; 
+       movb *ix,@c                     ; LD C,(IX+$00)     ;
+       b    @branch_c_hl
 
 * run player, weapon, and sound handlers
 * 
@@ -456,19 +417,6 @@ handler_table:                         ; >7ee6
        data h_monk_bat,h_monk_bat,h_monk_bat,h_monk_bat              ; &98
        data h_hunchback,h_hunchback,h_hunchback,h_hunchback          ; &9c
        data h_food_eaten,h_mushroom                                  ; &a0
-
-* Data block at 802a
-handler_table2:                        ; >802a
-       data h_creat_delay,h_door_exit,h_door_exit,h_big_door_exit    ; &00
-       data h_creat_delay,h_creat_delay,h_creat_delay,h_creat_delay  ; &04 extra delay for inactive creatures
-       data h_door_locked,h_door_locked,h_door_locked,h_door_locked  ; &08
-       data h_cave_locked,h_cave_locked,h_cave_locked,h_cave_locked  ; &0c
-       data h_clock,h_room_item,h_room_item,h_creat_delay            ; &10
-       data h_creat_delay,h_room_item,h_room_item,h_bookcase         ; &14
-       data h_trap_closed,h_trap_open,h_barrel,h_room_item           ; &18
-       data h_room_item,h_room_item,h_room_item,h_creat_delay        ; &1c
-       data h_door_closed,h_door_open,h_door_closed,h_door_open      ; &20
-       data h_acg_exit,h_room_item,h_room_item,h_room_item           ; &24
 
 * extra delay applied to inactive creatures
 h_creat_delay:                         ; >807a
@@ -2525,8 +2473,12 @@ reset_game_state:                      ; >8d61
        li   de,player                  ; LD DE,$EA90       ; working game state
        li   bc,player_init_size        ; LD BC,$1570       ; 0x10000-player, rather than real init data size!
        .ldir                           ; LDIR              ;
-;      TODO: Clear area from player+player_init_size to player_end
-       .ret                            ; RET               ; 
+       seto @room_data_rom_bank
+       li   hl,door_07_00
+       li   de,linked_items
+       li   bc,linked_items_size
+       .ldir
+       .ret                            ; RET               ;
 
 * reduce auto-walk counter
 * 
@@ -3195,6 +3147,7 @@ enter_room:                            ; >9147
        .call @draw_room_frame          ; CALL $9BEA        ; draw lines that make up outer room frame
        .call @draw_panel_attrs         ; CALL $A240        ; draw side-panel colours, which follow room colour
 
+       bl   @draw_room_decor
        bl   @upload_zx_screen
 stop:  jmp  stop
 
@@ -3226,7 +3179,7 @@ h_door_closed:                         ; >917d
        movb @counter_low,a             ; LD A,($5E12)      ; closed door handler
        andi a,>0100                    ; AND $01           ; 2 alternating tasks
        jeq  !                          ; JP NZ,$91FE       ; jump if we're drawing this time
-       b    @h_room_item               ;                   
+       b    @draw_room_item            ;
 !
        movb @door_timer,a              ; LD A,($5E2E)      ; 
        ; AND A                         ; AND A             ; door timer expired?
@@ -3235,7 +3188,7 @@ h_door_closed:                         ; >917d
 !
        sb   one,a                      ; DEC A             ; 
        movb a,@door_timer              ; LD ($5E2E),A      ; 
-       b    @h_room_item               ; JP $91FE          ; draw room item
+       b    @draw_room_item            ; JP $91FE          ; draw room item
 loc_9193:                              ; >9193
        movb @bytes+>5e,a               ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer
                                                            ; processing
@@ -3252,7 +3205,7 @@ loc_9193:                              ; >9193
        .pop af                         ; POP AF            ; 
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; restore door attr
        .call @update_door              ; CALL $9546        ; update solid/passable door state
-       .call @h_room_item              ; CALL $91FE        ; draw room item
+       .call @draw_room_item_call      ; CALL $91FE        ; draw room item
        b    @door_sound                ; JP $A46E          ; door sound (short burst of white noise)
 
 * closed trapdoor handler
@@ -3260,7 +3213,7 @@ h_trap_closed:                         ; >91bc
        movb @counter_low,a             ; LD A,($5E12)      ; 
        ; AND A                         ; AND A             ; 
        jeq  !                          ; JP NZ,$91FE       ; draw room item
-       b    @h_room_item               ;                   
+       b    @draw_room_item            ;
 !
        jmp  trap_common                ; JR $91CC          ; 
 h_trap_open:                           ; >91c5
@@ -3282,7 +3235,7 @@ trap_common:                           ; >91cc
        .call @draw_bgrnd_graphics             ; CALL $9213        ;
        .pop af                         ; POP AF            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
-       .call @h_room_item              ; CALL $91FE        ; draw room item
+       .call @draw_room_item_call              ; CALL $91FE        ; draw room item
        b    @door_sound                ; JP $A46E          ; door sound (short burst of white noise)
 
 * big door exit handler
@@ -3299,24 +3252,7 @@ h_door_exit:                           ; >91f2
 loc_91f5:                              ; >91f5
        .call @check_exit               ; CALL $90CC        ; check if player has left through a door
        ; CALL C,$9117                  ; CALL C,$9117      ; move player to room linked to entity (usually door)
-       b    @h_room_item               ; JP $91FE          ; draw room item
-
-* draw room item
-* 
-* Used by the routines at #R$915f, #R$91bc, #R$91f2, #R$9244, #R$9252, #R$9421,
-* #R$961b and #R$9731.
-h_room_item:                           ; >91fe
-       movb @entity_x(ix),@e           ; LD E,(IX+$03)     ; xpos
-       movb @entity_y(ix),d            ; LD D,(IX+$04)     ; ypos
-       sb   one,d                      ; DEC D             ; 
-       movb *ix,@c                     ; LD C,(IX+$00)     ; graphic
-       movb @entity_flags(ix),b        ; LD B,(IX+$05)     ; attr
-       .call @draw_bgrnd_attrs         ; CALL $9980        ; B=attr, C=graphic, E=xpos, D=ypos
-       movb @game_flags,a              ; LD A,($5E14)      ; b0 set if room content drawn
-       ; AND A                         ; AND A             ; room content drawn?
-       jeq  !                          ; RET NZ            ; return if so
-       .ret                            ;                   
-!      b    @draw_bgrnd_graphics_branch
+       b    @draw_room_item            ; JP $91FE          ; draw room item
 
 * return if player has required key (C if opened, NC if locked)
 * 
@@ -3344,7 +3280,7 @@ loc_923f:                              ; >923f
 h_door_locked:                         ; >9244
        .call @check_key_colour         ; CALL $9222        ; does player have the required key colour?
        joc  !                          ; JP NC,$91FE       ; TODO: check code. jump if not
-       b    @h_room_item               ;                   
+       b    @draw_room_item            ;
 !
        movb @bytes+>02,a               ; LD A,$02          ; open door graphic
 * This entry point is used by the routine at #R$9252.
@@ -3357,7 +3293,7 @@ h_cave_locked:                         ; >9252
        .call @check_key_colour         ; CALL $9222        ; return if player has required key (C if opened, NC if
                                                            ; locked)
        joc  !                          ; JP NC,$91FE       ; TODO: check code. draw room item
-       b    @h_room_item               ;                   
+       b    @draw_room_item            ;
 !
        movb one,a                      ; LD A,$01          ; open cave graphic
        jmp  loc_924c                   ; JR $924C          ; 
@@ -3712,7 +3648,7 @@ loc_9433:                              ; >9433
        b    @h_door_exit               ; JP $91F2          ; door exit handler
 loc_943d:                              ; >943d
        .call @loc_9565                 ; CALL $9565        ; 
-       b    @h_room_item               ; JP $91FE          ; draw room item
+       b    @draw_room_item            ; JP $91FE          ; draw room item
 
 * prepare player to spawn
 * 
@@ -4080,7 +4016,7 @@ h_acg_exit:                            ; >961b
        b    @loc_91f5                  ; JP $91F5          ; 
 loc_963b:                              ; >963b
        .call @loc_9565                 ; CALL $9565        ; 
-       b    @h_room_item               ; JP $91FE          ; draw room item
+       b    @draw_room_item            ; JP $91FE          ; draw room item
 
 * show game statistics
 * 
@@ -4186,7 +4122,7 @@ chk_trap_exit:                         ; >9731
        li   bc,>1818                   ; LD BC,$1818       ; 24x24
        .call @check_exit               ; CALL $90CC        ; fallen into trap door?
        joc  !                          ; JP NC,$91FE       ; TODO: check code. jump if not
-       b    @h_room_item               ;                   
+       b    @draw_room_item            ;
 !
        .call @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
        movb @bytes+>96,a               ; LD A,$96          ; room 150 is trap door tunnel

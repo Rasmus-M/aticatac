@@ -81,9 +81,16 @@ ix     requ 8
 iy     requ 9
 sp     requ 10
 af_    requ 12
+a_     requ 12
 bc_    requ 13
+b_     requ 13
+c_     equ wrksp+27
 de_    requ 14
+d_     requ 14
+e_     equ wrksp+29
 hl_    requ 15
+h_     requ 15
+l_     equ wrksp+31
 r      requ 0
 
 **

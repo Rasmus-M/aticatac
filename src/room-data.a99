@@ -851,6 +851,7 @@ room_table:                            ; >757d
 * Data block at 76a9
 room_00:                               ; >76a9
        data door_07_00
+       data >0000
        data door_19_00
        data door_01_00_c
        data acgexit_00_8e

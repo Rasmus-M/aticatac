@@ -25,7 +25,7 @@ loc_a3b6:                              ; >a3b6
        .ret                            ; RET               ;
 * This entry point is used by the routine at #R$9326.
 inventory_sound:                       ; >a3bd
-       li   bc,zx_screen+>0040         ; LD BC,$4040       ;
+       li   bc,>4040                   ; LD BC,$4040       ;
        jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
 
 * Routine at a3c2
@@ -63,14 +63,14 @@ walk_low:                              ; >a3d8
 *
 * Used by the routine at #R$8c8c.
 start_beep:                            ; >a3e0
-       li   bc,handler_table2+>0036    ; LD BC,$8060       ; long low beep
+       li   bc,>8060                   ; LD BC,$8060       ; long low beep
        jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
 
 * play monster touched sound
 *
 * Used by the routines at #R$85b2 and #R$988b.
 touching_sound:                        ; >a3e5
-       li   bc,byte_640d+>0003         ; LD BC,$6410       ;
+       li   bc,>6410                   ; LD BC,$6410       ;
 * This entry point is used by the routines at #R$a403 and #R$a485.
 queue_sound:                           ; >a3e8
        li   hl,sound                   ; LD HL,$EAA0       ;
@@ -98,7 +98,7 @@ clear_sound:                           ; >a3fe
 *
 * Used by the routine at #R$9117.
 entry_sound:                           ; >a403
-       li   bc,door_08_06_g+>000d      ; LD BC,$650A       ;
+       li   bc,>650a                   ; LD BC,$650A       ;
        jmp  queue_sound                ; JR $A3E8          ;
 
 * play next note of sound effect
@@ -226,7 +226,7 @@ loc_a477:                              ; >a477
 *
 * Used by the routine at #R$8c63.
 eat_sound:                             ; >a485
-       li   bc,set_entity_attrs+>0002  ; LD BC,$A010       ; A0 is blank graphic with food-eaten handler (below)
+       li   bc,>a010                   ; LD BC,$A010       ; A0 is blank graphic with food-eaten handler (below)
        b    @queue_sound               ; JP $A3E8          ;
 
 * eaten food sound effect handler

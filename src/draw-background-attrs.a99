@@ -86,9 +86,9 @@ draw_attr_2:                           ; >9d6f
        .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
        movb b,a                        ; LD A,B            ;
-       .exx                            ; EXX               ;
-       movb a,b                        ; LD B,A            ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       movb a,b_                       ; LD B,A            ;
+;      .exx                            ; EXX               ;
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
 loc_9d7a:                              ; >9d7a
        dec  de                         ; DEC DE            ;
@@ -115,9 +115,9 @@ loc_9d8a:                              ; >9d8a
        s    bc,hl                      ; SBC HL,BC         ; up a row
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
-       .exx                            ; EXX               ;
-       sb   one,b                      ; DEC B             ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       sb   one,b_                     ; DEC B             ;
+;      .exx                            ; EXX               ;
        jne  loc_9d7a                   ; JR NZ,$9D7A       ;
        .endproc                        ; RET               ;
 
@@ -126,9 +126,9 @@ draw_attr_3:                           ; >9da0
        .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
        movb b,a                        ; LD A,B            ;
-       .exx                            ; EXX               ;
-       movb a,b                        ; LD B,A            ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       movb a,b_                       ; LD B,A            ;
+;      .exx                            ; EXX               ;
 loc_9da8:                              ; >9da8
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
@@ -154,9 +154,9 @@ loc_9db7:                              ; >9db7
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
        inc  de                         ; INC DE            ;
-       .exx                            ; EXX               ;
-       sb   one,b                      ; DEC B             ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       sb   one,b_                     ; DEC B             ;
+;      .exx                            ; EXX               ;
        jne  loc_9da8                   ; JR NZ,$9DA8       ;
        .endproc                        ; RET               ;
 
@@ -170,8 +170,8 @@ loc_9dd5:                              ; >9dd5
        .push de                        ; PUSH DE           ;
        .push hl                        ; PUSH HL           ;
 loc_9dd8:                              ; >9dd8
-       movb *de,a                      ; LD A,(DE)         ;
-       inc  de                         ; INC DE            ;
+       movb *de+,a                     ; LD A,(DE)         ;
+;      inc  de                         ; INC DE            ;
        ; AND A                         ; AND A             ; skip attr?
        jeq  loc_9de5                   ; JR Z,$9DE5        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?
@@ -232,9 +232,9 @@ draw_attr_6:                           ; >9e21
        .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
        movb b,a                        ; LD A,B            ;
-       .exx                            ; EXX               ;
-       movb a,b                        ; LD B,A            ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       movb a,b_                       ; LD B,A            ;
+;      .exx                            ; EXX               ;
        .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
 loc_9e2f:                              ; >9e2f
@@ -262,9 +262,9 @@ loc_9e3f:                              ; >9e3f
        s    bc,hl                      ; SBC HL,BC         ; up a row
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
-       .exx                            ; EXX               ;
-       sb   one,b                      ; DEC B             ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       sb   one,b_                     ; DEC B             ;
+;      .exx                            ; EXX               ;
        jne  loc_9e2f                   ; JR NZ,$9E2F       ;
        .endproc                        ; RET               ;
 
@@ -273,9 +273,9 @@ draw_attr_7:                           ; >9e55
        .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
        movb b,a                        ; LD A,B            ;
-       .exx                            ; EXX               ;
-       movb a,b                        ; LD B,A            ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       movb a,b_                         ; LD B,A            ;
+;      .exx                            ; EXX               ;
        .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
 loc_9e60:                              ; >9e60
        .push bc                        ; PUSH BC           ;
@@ -302,9 +302,9 @@ loc_9e6f:                              ; >9e6f
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
        inc  de                         ; INC DE            ;
-       .exx                            ; EXX               ;
-       sb   one,b                      ; DEC B             ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       sb   one,b_                     ; DEC B             ;
+;      .exx                            ; EXX               ;
        jne  loc_9e60                   ; JR NZ,$9E60       ;
        .endproc                        ; RET               ;
 

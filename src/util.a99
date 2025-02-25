@@ -204,7 +204,7 @@ sbc_de_b:                              ; >9aa5
 ;       sb   @zero,a                    ; SBC A,$00         ;
 ;       movb a,d                        ; LD D,A            ;
        mov  bc,r0
-       srl  r0,0
+       srl  r0,8
        s    r0,de
        .ret                            ; RET               ;
 
@@ -232,31 +232,32 @@ mult_de_a:                             ; >9aad
 
 *********************************************************************
 *
-* HL = DE + B * C
+* DE = de + b * (c-1).
 *
 * Used by the routines at #R$9acb, #R$9aef, #R$9b14, #R$9b5d, #R$9dce, #R$9df8,
 * #R$9e21 and #R$9e55.
 hl_de_b_c:                             ; >9aba
 ;       .push hl                        ; PUSH HL           ;
 ;       .push de                        ; PUSH DE           ;
-;       movb b,a                        ; LD A,B            ;
-;       movb @c,@e                      ; LD E,C            ;
-;       sb   one,@e                     ; DEC E             ; convert 1-based to 0-based
-;       sb   d,d                        ; LD D,$00          ;
+;       movb b,a                        ; LD A,B            ; A=b
+;       movb @c,@e                      ; LD E,C            ; E=c
+;       sb   one,@e                     ; DEC E             ; E=c-1 convert 1-based to 0-based
+;       sb   d,d                        ; LD D,$00          ; D=0, DE=0 c-1
 ;       .push bc                        ; PUSH BC           ;
-;       .call @mult_de_a                ; CALL $9AAD        ; HL = DE * A
+;       .call @mult_de_a                ; CALL $9AAD        ; HL = b * (c-1)
 ;       .pop bc                         ; POP BC            ;
 ;       .pop de                         ; POP DE            ;
-;       a    de,hl                      ; ADD HL,DE         ;
-;       .ex_de_hl                       ; EX DE,HL          ;
-;       .pop hl                         ; POP HL            ;
+;       a    de,hl                      ; ADD HL,DE         ; HL = de + b * (c-1)
+;       .ex_de_hl                       ; EX DE,HL          ; DE = de + b * (c-1)
+;       .pop hl                         ; POP HL            ; HL = hl
        mov  bc,r0
        srl  r0,8                       ; b
        mov  bc,r1
        andi r1,>00ff                   ; c
-       mpy  r1,r0                      ; b * c
-       a    de,r1                      ; de + b * c
-       mov  r1,hl
+       dec  r1                         ; c - 1
+       mpy  r1,r0                      ; b * (c - 1)
+       a    de,r1                      ; de + b * (c - 1)
+       mov  r1,de
        .ret                            ; RET               ;
 
 ;*********************************************************************
@@ -337,16 +338,16 @@ jump_table_b:                          ; >9965
        srl  a,5
        andi a,>0700                    ; AND $07           ;
        movb a,@c                       ; LD C,A            ;
-;      b    @lookup_c_hl               ; JP $7E85          ;
+;      b    @branch_c_hl               ; JP $7E85          ;
 
 *********************************************************************
 *
 * This entry point is used by the routine at #R$9924.
 *
-* Jump to one of the 8 the entries in the jump table in hl
+* Jump to one of the entry in the jump table in hl
 * specified by the index in c
 *
-lookup_c_hl:                           ; >7e85
+branch_c_hl:                           ; >7e85
        sb   b,b                        ; LD B,$00          ;
        sla  bc,1                       ; SLA C             ;
 ;      sla  b,1                        ; RL B              ; * 2 (bytes per entry)

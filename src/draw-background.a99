@@ -7,6 +7,7 @@
 draw_bgrnd_graphics:                   ; >9213
        .proc
 draw_bgrnd_graphics_branch:
+       seto @background_graphics_rom_bank
        movb @entity_x(ix),@e           ; LD E,(IX+$03)     ; xpos
        movb @entity_y(ix),d            ; LD D,(IX+$04)     ; ypos
        movb *ix,@c                     ; LD C,(IX+$00)     ; graphic index
@@ -21,15 +22,18 @@ draw_bgrnd_graphics_branch:
 * Data block at 9970
 disp_funcs:                            ; >9970
        data draw_disp_0                ; 000 >00           ; normal
-       data draw_disp_1                ; 001 >20           ; normal and flip? Not used
-       data draw_disp_2                ; 010 >40           ; right
-       data draw_disp_3                ; 011 >60           ; right and flip
-       data draw_disp_4                ; 100 >80           ; bottom
-       data draw_disp_5                ; 101 >A0           ; bottom and flip
-       data draw_disp_6                ; 110 >C0           ; left
-       data draw_disp_7                ; 111 >E0           ; left and not flip?
+       data draw_disp_1                ; 001 >20           ; normal and flip vertical (not used)
+       data draw_disp_2                ; 010 >40           ; rotate right
+       data draw_disp_3                ; 011 >60           ; rotate right and flip vertical
+       data draw_disp_4                ; 100 >80           ; rotate bottom
+       data draw_disp_5                ; 101 >A0           ; rotate bottom and flip vertical
+       data draw_disp_6                ; 110 >C0           ; rotate left
+       data draw_disp_7                ; 111 >E0           ; rotate left and flip vertical (not used)
 
 * Routine at 99c9
+*
+* Normal
+*
 draw_disp_0:                           ; >99c9
        .pop bc                         ; POP BC            ; Now B has the entity_flags orientation and C has the graphics index
        .call @get_blend_instr          ; CALL $9D19        ; map B=0-2 to Z80 opcode used to blend graphics data
@@ -57,6 +61,9 @@ blend_instr_0:                         ; >99d7
        .endproc                        ; RET               ;
 
 * Routine at 99e5
+*
+* Normal and flip (not used)
+*
 draw_disp_1:                           ; >99e5
        .pop bc                         ; POP BC            ;
        .call @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
@@ -87,17 +94,20 @@ blend_instr_1:                         ; >99f9
        .endproc                        ; RET               ;
 
 * Routine at 9a0a
+*
+* Right
+*
 draw_disp_2:                           ; >9a0a
        .pop bc                         ; POP BC            ;
        .call @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
        mov  af,@blend_instr_2          ; LD ($9A36),A      ;
        mov  af_,@blend_instr_2+2
        .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
-       movb b,a                        ; LD A,B            ;
-       .exx                            ; EXX               ;
-       movb one,@l                     ; LD L,$01          ;
-       movb a,b                        ; LD B,A            ;
-       .exx                            ; EXX               ;
+       movb b,a                        ; LD A,B            ; Width
+;      .exx                            ; EXX               ;
+       movb one,@l_                    ; LD L,$01          ; X
+       movb a,b_                       ; LD B,A            ; X
+;      .exx                            ; EXX               ;
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
        dec  de                         ; DEC DE            ;
 loc_9a1e:                              ; >9a1e
@@ -106,21 +116,26 @@ loc_9a1e:                              ; >9a1e
        .push hl                        ; PUSH HL           ;
 loc_9a21:                              ; >9a21
        movb *de,a                      ; LD A,(DE)         ;
-       .exx                            ; EXX               ;
-       ; AND L                         ; AND L             ;
-       jeq  loc_9a27                   ; JR Z,$9A27        ;
-       ; SCF                           ; SCF               ;
+;      .exx                            ; EXX               ;
+       clr  r0
+       movb h_,r0                                          ;
+       sla  r0,1                       ; RL H              ; Moved up
+       movb @l_,@l_                    ; AND L             ; X
+       jeq  loc_9a27                   ; JR Z,$9A27        ; X
+       socb one,r0                     ; SCF               ; X
+       jmp  !
 loc_9a27:                              ; >9a27
-       sla  h,1                        ; RL H              ; TODO: check code.
-       .exx                            ; EXX               ;
+       szcb one,r0
+!      movb r0,h_                      ; RL H
+;      .exx                            ; EXX               ;
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
        sb   one,@c                     ; DEC C             ;
        movb @c,a                       ; LD A,C            ;
        andi a,>0700                    ; AND $07           ;
        jne  loc_9a21                   ; JR NZ,$9A21       ;
-       .exx                            ; EXX               ;
-       movb h,a                        ; LD A,H            ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       movb h_,a                       ; LD A,H            ; X
+;      .exx                            ; EXX               ;
 blend_instr_2:                         ; >9a36
        nop                             ; NOP               ;
        nop
@@ -133,13 +148,17 @@ blend_instr_2:                         ; >9a36
        .call @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
-       .exx                            ; EXX               ;
-       ; RLC L                         ; RLC L             ;
-       .exx                            ; EXX               ;
-       jnc  loc_9a1e                   ; JR NC,$9A1E       ; TODO: check code.
-       .exx                            ; EXX               ;
-       sb   one,b                      ; DEC B             ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       clr  r0
+       movb @l_,r0
+       sla  r0,1                       ; RLC L              ; X
+       movb r0,@l_
+;      .exx                            ; EXX               ;
+       jnc  loc_9a1e                   ; JR NC,$9A1E       ;
+       movb one,@l_                    ; LD L,$01          ; Added
+;      .exx                            ; EXX               ;
+       sb   one,b_                     ; DEC B             ; X
+;      .exx                            ; EXX               ;
        jne  !                          ; RET Z             ;
        .endproc                        ;
 !
@@ -147,6 +166,9 @@ blend_instr_2:                         ; >9a36
        jmp  loc_9a1e                   ; JR $9A1E          ;
 
 * Routine at 9a50
+*
+* Right and flip
+*
 draw_disp_3:                           ; >9a50
        .pop bc                         ; POP BC            ;
        .call @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
@@ -154,31 +176,36 @@ draw_disp_3:                           ; >9a50
        mov  af_,@blend_instr_3+2
        .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
        movb b,a                        ; LD A,B            ;
-       .exx                            ; EXX               ;
-       movb a,b                        ; LD B,A            ;
-       movb @bytes+>80,@l              ; LD L,$80          ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       movb a,b_                       ; LD B,A            ;
+       movb @bytes+>80,@l_             ; LD L,$80          ;
+;      .exx                            ; EXX               ;
 loc_9a60:                              ; >9a60
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
        .push hl                        ; PUSH HL           ;
 loc_9a63:                              ; >9a63
        movb *de,a                      ; LD A,(DE)         ;
-       .exx                            ; EXX               ;
-       ; AND L                         ; AND L             ;
+;      .exx                            ; EXX               ;
+       clr  r0
+       movb h_,r0                                          ;
+       sla  r0,1                       ; RL H              ; Moved up
+       movb @l_,@l_                    ; AND L             ;
        jeq  loc_9a69                   ; JR Z,$9A69        ;
-       ; SCF                           ; SCF               ;
+       socb one,r0                     ; SCF               ;
+       jmp  !
 loc_9a69:                              ; >9a69
-       sla  h,1                        ; RL H              ; TODO: check code.
-       .exx                            ; EXX               ;
+       szcb one,r0
+!      movb r0,h_                      ; RL H
+;      .exx                            ; EXX               ;
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
        sb   one,@c                     ; DEC C             ;
        movb @c,a                       ; LD A,C            ;
        andi a,>0700                    ; AND $07           ;
        jne  loc_9a63                   ; JR NZ,$9A63       ;
-       .exx                            ; EXX               ;
-       movb h,a                        ; LD A,H            ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       movb h_,a                       ; LD A,H            ;
+;      .exx                            ; EXX               ;
 blend_instr_3:                         ; >9a78
        nop                             ; NOP               ;
        nop
@@ -191,13 +218,17 @@ blend_instr_3:                         ; >9a78
        .call @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
-       .exx                            ; EXX               ;
-       ; RRC L                         ; RRC L             ;
-       .exx                            ; EXX               ;
-       jnc  loc_9a60                   ; JR NC,$9A60       ; TODO: check code.
-       .exx                            ; EXX               ;
-       sb   one,b                      ; DEC B             ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       clr  r0
+       movb @l_,@r0lb                  ; RRC L             ;
+       srl  r0,1
+       movb @r0lb,@l_
+;      .exx                            ; EXX               ;
+       jnc  loc_9a60                   ; JR NC,$9A60       ;
+       movb @bytes+>80,@l_             ; LD L,$80          ; Added
+;      .exx                            ; EXX               ;
+       sb   one,b_                     ; DEC B             ;
+;      .exx                            ; EXX               ;
        jne  !                          ; RET Z             ;
        .endproc                            ;
 !
@@ -205,21 +236,24 @@ blend_instr_3:                         ; >9a78
        jmp  loc_9a60                   ; JR $9A60          ;
 
 * Routine at 9acb
+*
+* Bottom
+*
 draw_disp_4:                           ; >9acb
        .pop bc                         ; POP BC            ;
        .call @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
        mov  af,@blend_instr_4          ; LD ($9ADD),A      ;
        mov  af_,@blend_instr_4+2
        .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
-       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9ad8:                              ; >9ad8
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
        .push hl                        ; PUSH HL           ;
 loc_9adb:                              ; >9adb
-       movb *de,a                      ; LD A,(DE)         ;
-       inc  de                         ; INC DE            ;
-blend_instr_4:                              ; >9add
+       movb *de+,a                     ; LD A,(DE)         ;
+;      inc  de                         ; INC DE            ;
+blend_instr_4:                         ; >9add
        nop                             ; NOP               ;
        nop
        movb a,*hl                      ; LD (HL),A         ;
@@ -236,13 +270,16 @@ blend_instr_4:                              ; >9add
        .endproc                        ; RET               ;
 
 * Routine at 9aef
+*
+* Bottom and flip
+*
 draw_disp_5:                           ; >9aef
        .pop bc                         ; POP BC            ;
        .call @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
        mov  af,@blend_instr_5          ; LD ($9B06),A      ;
        mov  af_,@blend_instr_5+2
        .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
-       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
 loc_9aff:                              ; >9aff
        .push bc                        ; PUSH BC           ;
@@ -251,7 +288,7 @@ loc_9b01:                              ; >9b01
        dec  de                         ; DEC DE            ;
        movb *de,a                      ; LD A,(DE)         ;
        .call @mirror_a                 ; CALL $9A92        ; mirror bits in A
-blend_instr_5:                              ; >9b06
+blend_instr_5:                         ; >9b06
        nop                             ; NOP               ;
        nop
        movb a,*hl                      ; LD (HL),A         ;
@@ -266,6 +303,9 @@ blend_instr_5:                              ; >9b06
        .endproc                        ; RET               ;
 
 * Routine at 9b14
+*
+* Left
+*
 draw_disp_6:                           ; >9b14
        .pop bc                         ; POP BC            ;
        .call @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
@@ -273,34 +313,39 @@ draw_disp_6:                           ; >9b14
        mov  af_,@blend_instr_6+2
        .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
        movb b,a                        ; LD A,B            ;
-       .exx                            ; EXX               ;
-       movb a,b                        ; LD B,A            ;
-       movb one,@l                     ; LD L,$01          ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       movb a,b_                       ; LD B,A            ;
+       movb one,@l_                    ; LD L,$01          ;
+;      .exx                            ; EXX               ;
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
        dec  de                         ; DEC DE            ;
-       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9b2b:                              ; >9b2b
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
        .push hl                        ; PUSH HL           ;
 loc_9b2e:                              ; >9b2e
        movb *de,a                      ; LD A,(DE)         ;
-       .exx                            ; EXX               ;
-       ; AND L                         ; AND L             ;
+;      .exx                            ; EXX               ;
+       clr  r0
+       movb h_,r0                                          ;
+       sla  r0,1                       ; RL H              ; Moved up
+       movb @l_,@l_                    ; AND L             ; X
        jeq  loc_9b34                   ; JR Z,$9B34        ;
-       ; SCF                           ; SCF               ;
+       socb one,r0                     ; SCF               ;
+       jmp  !
 loc_9b34:                              ; >9b34
-       sla  h,1                        ; RL H              ; TODO: check code.
-       .exx                            ; EXX               ;
+       szcb one,r0
+!      movb r0,h_                      ; RL H              ;
+;      .exx                            ; EXX               ;
        .call @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
        sb   one,@c                     ; DEC C             ;
        movb @c,a                       ; LD A,C            ;
        andi a,>0700                    ; AND $07           ;
-       jne  loc_9b2e                   ; JR NZ,$9B2E       ;
-       .exx                            ; EXX               ;
-       movb h,a                        ; LD A,H            ;
-       .exx                            ; EXX               ;
+       jne  loc_9b2e                   ; JR NZ,$9B2E       ;       ;
+;      .exx                            ; EXX               ;
+       movb h_,a                       ; LD A,H            ;
+;      .exx                            ; EXX               ;
 blend_instr_6:                              ; >9b43
        nop                             ; NOP               ;
        nop
@@ -313,13 +358,17 @@ blend_instr_6:                              ; >9b43
        .call @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
-       .exx                            ; EXX               ;
-       ; RLC L                         ; RLC L             ;
-       .exx                            ; EXX               ;
-       jnc  loc_9b2b                   ; JR NC,$9B2B       ; TODO: check code.
-       .exx                            ; EXX               ;
-       sb   one,b                      ; DEC B             ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       clr  r0
+       movb @l_,r0
+       sla  r0,1                       ; RLC L              ; X
+       movb r0,@l_
+;      .exx                            ; EXX               ;
+       jnc  loc_9b2b                   ; JR NC,$9B2B       ;
+       movb one,@l_                    ; LD L,$01          ; Added
+;      .exx                            ; EXX               ;
+       sb   one,b_                     ; DEC B             ;
+;      .exx                            ; EXX               ;
        jne  !                          ; RET Z             ;
        .endproc                        ;
 !
@@ -327,6 +376,9 @@ blend_instr_6:                              ; >9b43
        jmp  loc_9b2b                   ; JR $9B2B          ;
 
 * Routine at 9b5d
+*
+* Left and flip (not used)
+*
 draw_disp_7:                           ; >9b5d
        .pop bc                         ; POP BC            ;
        .call @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
@@ -334,33 +386,38 @@ draw_disp_7:                           ; >9b5d
        mov  af_,@blend_instr_7+2
        .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
        movb b,a                        ; LD A,B            ;
-       .exx                            ; EXX               ;
-       movb a,b                        ; LD B,A            ;
-       movb @bytes+>80,@l              ; LD L,$80          ;
-       .exx                            ; EXX               ;
-       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+;      .exx                            ; EXX               ;
+       movb a,b_                       ; LD B,A            ;
+       movb @bytes+>80,@l_             ; LD L,$80          ;
+;      .exx                            ; EXX               ;
+       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9b70:                              ; >9b70
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
        .push hl                        ; PUSH HL           ;
 loc_9b73:                              ; >9b73
        movb *de,a                      ; LD A,(DE)         ;
-       .exx                            ; EXX               ;
-       ; AND L                         ; AND L             ;
+;      .exx                            ; EXX               ;
+       clr  r0
+       movb h_,r0                                          ;
+       sla  r0,1                       ; RL H              ; Moved up
+       movb @l_,@l_                    ; AND L             ; X
        jeq  loc_9b79                   ; JR Z,$9B79        ;
-       ; SCF                           ; SCF               ;
+       socb one,r0                     ; SCF               ;
+       jmp  !
 loc_9b79:                              ; >9b79
-       sla  h,1                        ; RL H              ; TODO: check code.
-       .exx                            ; EXX               ;
+       szcb one,r0
+!      movb r0,h_                      ; RL H              ;
+;      .exx                            ; EXX               ;
        .call @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
        sb   one,@c                     ; DEC C             ;
        movb @c,a                       ; LD A,C            ;
        andi a,>0700                    ; AND $07           ;
        jne  loc_9b73                   ; JR NZ,$9B73       ;
-       .exx                            ; EXX               ;
-       movb h,a                        ; LD A,H            ;
-       .exx                            ; EXX               ;
-blend_instr_7:                              ; >9b88
+;      .exx                            ; EXX               ;
+       movb h_,a                       ; LD A,H            ;
+;      .exx                            ; EXX               ;
+blend_instr_7:                         ; >9b88
        nop                             ; NOP               ;
        nop
        movb a,*hl                      ; LD (HL),A         ;
@@ -372,13 +429,17 @@ blend_instr_7:                              ; >9b88
        .call @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
-       .exx                            ; EXX               ;
-       ; RRC L                         ; RRC L             ;
-       .exx                            ; EXX               ;
-       jnc  loc_9b70                   ; JR NC,$9B70       ; TODO: check code.
-       .exx                            ; EXX               ;
-       sb   one,b                      ; DEC B             ;
-       .exx                            ; EXX               ;
+;      .exx                            ; EXX               ;
+       clr  r0
+       movb @l_,@r0lb                  ; RRC L             ;
+       srl  r0,1
+       movb @r0lb,@l_
+;      .exx                            ; EXX               ;
+       jnc  loc_9b70                   ; JR NC,$9B70       ;
+       movb @bytes+>80,@l_             ; LD L,$80          ;
+;      .exx                            ; EXX               ;
+       sb   one,b_                     ; DEC B             ;
+;      .exx                            ; EXX               ;
        jne  !                          ; RET Z             ;
        .endproc                        ;
 !
@@ -462,7 +523,7 @@ get_blend_instr:                       ; >9d19
        mov  @nop_instr,af_
        .ret
 jmp2_instr:
-       jmp  $+2
+       jmp  $+4
 nop_instr:
        nop
 movb_instr:

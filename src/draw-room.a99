@@ -1,5 +1,101 @@
 *********************************************************************
 *
+* This entry point is used by the routine at #R$7dc3.
+*
+draw_room_decor:                             ; >7e23
+       .proc
+       seto @room_data_rom_bank
+       movb @player_room,a             ; LD A,($EA91)      ;
+       movb a,@l                       ; LD L,A            ;
+       sb   h,h                        ; LD H,$00          ;
+       a    hl,hl                      ; ADD HL,HL         ; * 2 (bytes per entry)
+       li   bc,room_table              ; LD BC,$757D       ;
+       a    bc,hl                      ; ADD HL,BC         ;
+;      movb *hl,a                      ; LD A,(HL)         ; room data LSB
+;      inc  hl                         ; INC HL            ;
+;      movb *hl,h                      ; LD H,(HL)         ; room data MSB
+;      movb a,@l                       ; LD L,A            ;
+       mov  *hl,@room_ptr              ; LD ($5E1B),HL     ;
+decor_loop:                            ; >7e35
+       seto @room_data_rom_bank
+       mov  @room_ptr,hl               ; LD HL,($5E1B)     ;
+;      movb *hl,a                      ; LD A,(HL)         ; room item LSB
+;      inc  hl                         ; INC HL            ;
+;      inc  hl                         ; INC HL            ;
+       mov  *hl+,r0                                        ; Get room item
+       mov  hl,@room_ptr               ; LD ($5E1B),HL     ; Store updated pointer
+;      dec  hl                         ; DEC HL            ;
+;      movb *hl,h                      ; LD H,(HL)         ; room item MSB
+;      movb a,@l                       ; LD L,A            ;
+;      socb h,a                        ; OR H              ; end of list?
+       mov  r0,hl                                          ; Room itme
+       jeq  draw_room_decor_1          ; JR NZ,$7E93       ; jump if the end
+* This entry point is used by the routine at #R$7e13.
+;loc_7e93:                              ; >7e93
+       li   r0,decor_loop              ; LD BC,$7E35       ; Return address
+       .push r0                        ; PUSH BC           ;
+;      li   bc,room_table              ; LD BC,$757D       ;
+;      ; AND A                         ; AND A             ;
+;      s    bc,hl                      ; SBC HL,BC         ;
+       ai   hl,-room_table                                 ; Use item's offset from room table (negative)
+;      .push hl                        ; PUSH HL           ;
+;      .pop ix                         ; POP IX            ;
+       li   ix,linked_items_end                            ; to find the item in the linked_items_table
+       a    hl,ix
+       movb @player_room,a             ; LD A,($EA91)      ;
+       cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
+       jeq  loc_7ead                   ; JR Z,$7EAD        ; jump if so
+;      li   bc,>0008                   ; LD BC,$0008       ;
+;      a    bc,ix                      ; ADD IX,BC         ; If not in player room, adjust by 8
+       ai   ix,8
+loc_7ead:                              ; >7ead
+
+       b    @draw_room_item
+
+       li   hl,handler_table2          ; LD HL,$802A       ;
+;      jmp  lookup_graphic             ; JR $7E82          ;
+       movb *ix,@c                     ; LD C,(IX+$00)     ;
+       b    @branch_c_hl
+draw_room_decor_1:
+       .endproc
+*// draw_room_decor
+
+* Data block at 802a
+handler_table2:                        ; >802a
+       data h_creat_delay,h_door_exit,h_door_exit,h_big_door_exit    ; &00
+       data h_creat_delay,h_creat_delay,h_creat_delay,h_creat_delay  ; &04 extra delay for inactive creatures
+       data h_door_locked,h_door_locked,h_door_locked,h_door_locked  ; &08
+       data h_cave_locked,h_cave_locked,h_cave_locked,h_cave_locked  ; &0c
+       data h_clock,draw_room_item,draw_room_item,h_creat_delay      ; &10
+       data h_creat_delay,draw_room_item,draw_room_item,h_bookcase   ; &14
+       data h_trap_closed,h_trap_open,h_barrel,draw_room_item        ; &18
+       data draw_room_item,draw_room_item,draw_room_item,h_creat_delay ; &1c
+       data h_door_closed,h_door_open,h_door_closed,h_door_open      ; &20
+       data h_acg_exit,draw_room_item,draw_room_item,draw_room_item  ; &24
+
+*********************************************************************
+*
+* draw room item
+*
+* Used by the routines at #R$915f, #R$91bc, #R$91f2, #R$9244, #R$9252, #R$9421,
+* #R$961b and #R$9731.
+draw_room_item_call:                   ; >91fe
+       .proc
+draw_room_item:
+       movb @entity_x(ix),@e           ; LD E,(IX+$03)     ; xpos
+       movb @entity_y(ix),d            ; LD D,(IX+$04)     ; ypos
+       sb   one,d                      ; DEC D             ;
+       movb *ix,@c                     ; LD C,(IX+$00)     ; graphic
+       movb @entity_flags(ix),b        ; LD B,(IX+$05)     ; attr
+       .call @draw_bgrnd_attrs         ; CALL $9980        ; B=attr, C=graphic, E=xpos, D=ypos
+       movb @game_flags,a              ; LD A,($5E14)      ; b0 set if room content drawn
+       ; AND A                         ; AND A             ; room content drawn?
+       jeq  !                          ; RET NZ            ; return if so
+       .endproc                            ;
+!      b    @draw_bgrnd_graphics_branch
+
+*********************************************************************
+*
 * draw lines that make up outer room frame
 *
 * Used by the routine at #R$9117.
