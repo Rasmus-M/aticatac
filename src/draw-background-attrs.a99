@@ -3,6 +3,7 @@
 * Used by the routine at #R$91fe.
 draw_bgrnd_attrs:                      ; >9980
        .proc
+       seto @background_graphics_rom_bank
        li   hl,attr_funcs              ; LD HL,$9985       ;
        b    @jump_table_b              ; JR $9965          ;
 
@@ -164,7 +165,7 @@ loc_9db7:                              ; >9db7
 draw_attr_4:                           ; >9dce
        .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
-       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9dd5:                              ; >9dd5
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
@@ -198,7 +199,7 @@ loc_9de5:                              ; >9de5
 draw_attr_5:                           ; >9df8
        .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
-       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
        dec  de                         ; DEC DE            ;
 loc_9e03:                              ; >9e03
@@ -235,7 +236,7 @@ draw_attr_6:                           ; >9e21
 ;      .exx                            ; EXX               ;
        movb a,b_                       ; LD B,A            ;
 ;      .exx                            ; EXX               ;
-       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
 loc_9e2f:                              ; >9e2f
        dec  de                         ; DEC DE            ;
@@ -276,7 +277,7 @@ draw_attr_7:                           ; >9e55
 ;      .exx                            ; EXX               ;
        movb a,b_                         ; LD B,A            ;
 ;      .exx                            ; EXX               ;
-       .call @hl_de_b_c                ; CALL $9ABA        ; HL = DE + B * C
+       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9e60:                              ; >9e60
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
@@ -318,18 +319,21 @@ get_gfx_attrs:                         ; >99af
        sb   one,@c                     ; DEC C             ; 1-based
        sb   b,b                        ; LD B,$00          ;
        ; SLA C                         ; SLA C             ;
-       sla  b,1                        ; RL B              ; TODO: check code.
+       sla  bc,1                       ; RL B              ;
        a    bc,hl                      ; ADD HL,BC         ;
-       movb *hl,a                      ; LD A,(HL)         ;
-       inc  hl                         ; INC HL            ;
-       movb *hl,h                      ; LD H,(HL)         ;
-       movb a,@l                       ; LD L,A            ;
+;      movb *hl,a                      ; LD A,(HL)         ;
+;      inc  hl                         ; INC HL            ;
+;      movb *hl,h                      ; LD H,(HL)         ;
+;      movb a,@l                       ; LD L,A            ;
+       mov  *hl,hl
        .ex_de_hl                       ; EX DE,HL          ;
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
-       movb *de,a                      ; LD A,(DE)         ;
-       movb a,b                        ; LD B,A            ;
-       inc  de                         ; INC DE            ;
-       movb *de,a                      ; LD A,(DE)         ;
-       movb a,@c                       ; LD C,A            ;
-       inc  de                         ; INC DE            ;
+;      movb *de,a                      ; LD A,(DE)         ;
+;      movb a,b                        ; LD B,A            ;
+;      inc  de                         ; INC DE            ;
+       movb *de+,b
+;      movb *de,a                      ; LD A,(DE)         ;
+;      movb a,@c                       ; LD C,A            ;
+;      inc  de                         ; INC DE            ;
+       movb *de+,@c
        .endproc                        ; RET               ;
