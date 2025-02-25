@@ -20,15 +20,16 @@ draw_bgrnd_graphics_branch:
        b    @jump_table_b
 
 * Data block at 9970
+* Flip vertical means swap left and right
 disp_funcs:                            ; >9970
        data draw_disp_0                ; 000 >00           ; normal
-       data draw_disp_1                ; 001 >20           ; normal and flip vertical (not used)
+       data draw_disp_1                ; 001 >20           ; flip vertical (not used)
        data draw_disp_2                ; 010 >40           ; rotate right
-       data draw_disp_3                ; 011 >60           ; rotate right and flip vertical
+       data draw_disp_3                ; 011 >60           ; flip vertical and rotate right
        data draw_disp_4                ; 100 >80           ; rotate bottom
-       data draw_disp_5                ; 101 >A0           ; rotate bottom and flip vertical
+       data draw_disp_5                ; 101 >A0           ; flip vertical and rotate bottom
        data draw_disp_6                ; 110 >C0           ; rotate left
-       data draw_disp_7                ; 111 >E0           ; rotate left and flip vertical (not used)
+       data draw_disp_7                ; 111 >E0           ; flip vertical and rotate left (not used)
 
 * Routine at 99c9
 *
@@ -120,7 +121,9 @@ loc_9a21:                              ; >9a21
        clr  r0
        movb h_,r0                                          ;
        sla  r0,1                       ; RL H              ; Moved up
-       movb @l_,@l_                    ; AND L             ; X
+       movb @l_,r1
+       inv  r1
+       szcb r1,a                       ; AND L             ; X
        jeq  loc_9a27                   ; JR Z,$9A27        ; X
        socb one,r0                     ; SCF               ; X
        jmp  !
@@ -175,36 +178,38 @@ draw_disp_3:                           ; >9a50
        mov  af,@blend_instr_3          ; LD ($9A78),A      ;
        mov  af_,@blend_instr_3+2
        .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
-       movb b,a                        ; LD A,B            ;
+       movb b,a                        ; LD A,B            ; Width
 ;      .exx                            ; EXX               ;
-       movb a,b_                       ; LD B,A            ;
-       movb @bytes+>80,@l_             ; LD L,$80          ;
+       movb a,b_                       ; LD B,A            ; X b_ = width
+       movb @bytes+>80,@l_             ; LD L,$80          ; X
 ;      .exx                            ; EXX               ;
-loc_9a60:                              ; >9a60
+draw_disp_3_1:                         ; >9a60
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
        .push hl                        ; PUSH HL           ;
-loc_9a63:                              ; >9a63
+draw_disp_3_2:                         ; >9a63
        movb *de,a                      ; LD A,(DE)         ;
 ;      .exx                            ; EXX               ;
        clr  r0
        movb h_,r0                                          ;
-       sla  r0,1                       ; RL H              ; Moved up
-       movb @l_,@l_                    ; AND L             ;
-       jeq  loc_9a69                   ; JR Z,$9A69        ;
-       socb one,r0                     ; SCF               ;
+       sla  r0,1                       ; RL H              ; X Moved up
+       movb @l_,r1
+       inv  r1
+       szcb r1,a                       ; AND L             ; X
+       jeq  draw_disp_3_3              ; JR Z,$9A69        ; X
+       socb one,r0                     ; SCF               ; X
        jmp  !
-loc_9a69:                              ; >9a69
+draw_disp_3_3:                         ; >9a69
        szcb one,r0
-!      movb r0,h_                      ; RL H
+!      movb r0,h_                      ; RL H              ; X Moved
 ;      .exx                            ; EXX               ;
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
-       sb   one,@c                     ; DEC C             ;
+       sb   one,@c                     ; DEC C             ; height
        movb @c,a                       ; LD A,C            ;
        andi a,>0700                    ; AND $07           ;
-       jne  loc_9a63                   ; JR NZ,$9A63       ;
+       jne  draw_disp_3_2              ; JR NZ,$9A63       ;
 ;      .exx                            ; EXX               ;
-       movb h_,a                       ; LD A,H            ;
+       movb h_,a                       ; LD A,H            ; X
 ;      .exx                            ; EXX               ;
 blend_instr_3:                         ; >9a78
        nop                             ; NOP               ;
@@ -213,27 +218,27 @@ blend_instr_3:                         ; >9a78
        ab   one,@l                     ; INC L             ;
        movb @c,a                       ; LD A,C            ;
        ; AND A                         ; AND A             ;
-       jne  loc_9a63                   ; JR NZ,$9A63       ;
+       jne  draw_disp_3_2              ; JR NZ,$9A63       ;
        .pop hl                         ; POP HL            ;
        .call @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
 ;      .exx                            ; EXX               ;
        clr  r0
-       movb @l_,@r0lb                  ; RRC L             ;
+       movb @l_,@r0lb                  ; RRC L             ; X
        srl  r0,1
        movb @r0lb,@l_
 ;      .exx                            ; EXX               ;
-       jnc  loc_9a60                   ; JR NC,$9A60       ;
+       jnc  draw_disp_3_1              ; JR NC,$9A60       ;
        movb @bytes+>80,@l_             ; LD L,$80          ; Added
 ;      .exx                            ; EXX               ;
-       sb   one,b_                     ; DEC B             ;
+       sb   one,b_                     ; DEC B             ; X width
 ;      .exx                            ; EXX               ;
        jne  !                          ; RET Z             ;
-       .endproc                            ;
+       .endproc                        ;
 !
        inc  de                         ; INC DE            ;
-       jmp  loc_9a60                   ; JR $9A60          ;
+       jmp  draw_disp_3_1              ; JR $9A60          ;
 
 * Routine at 9acb
 *
@@ -330,7 +335,9 @@ loc_9b2e:                              ; >9b2e
        clr  r0
        movb h_,r0                                          ;
        sla  r0,1                       ; RL H              ; Moved up
-       movb @l_,@l_                    ; AND L             ; X
+       movb @l_,r1
+       inv  r1
+       szcb r1,a                       ; AND L             ; X
        jeq  loc_9b34                   ; JR Z,$9B34        ;
        socb one,r0                     ; SCF               ;
        jmp  !
@@ -401,7 +408,9 @@ loc_9b73:                              ; >9b73
        clr  r0
        movb h_,r0                                          ;
        sla  r0,1                       ; RL H              ; Moved up
-       movb @l_,@l_                    ; AND L             ; X
+       movb @l_,r1
+       inv  r1
+       szcb r1,a                       ; AND L             ; X
        jeq  loc_9b79                   ; JR Z,$9B79        ;
        socb one,r0                     ; SCF               ;
        jmp  !

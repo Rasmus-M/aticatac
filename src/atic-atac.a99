@@ -3143,12 +3143,20 @@ change_room:                           ; >9117
 enter_room:                            ; >9147
        movb @player_room,a             ; LD A,($EA91)      ; 
        .call @visit_room               ; CALL $96AF        ; mark room A as visited
+room_loop:
        .call @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
        .call @draw_room_frame          ; CALL $9BEA        ; draw lines that make up outer room frame
        .call @draw_panel_attrs         ; CALL $A240        ; draw side-panel colours, which follow room colour
 
        bl   @draw_room_decor
        bl   @upload_zx_screen
+wait_key:
+       li   r0,KEY_SP
+       bl   @ti_check_key
+       jeq  wait_key
+       ab   one,@player_room
+       jmp  room_loop
+
 stop:  jmp  stop
 
        .call @draw_inventory           ; CALL $A13B        ; draw any items in player inventory

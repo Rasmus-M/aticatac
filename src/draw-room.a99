@@ -193,7 +193,7 @@ loc_9c56:                              ; >9c56
 
 *********************************************************************
 *
-* draw line from (x1, y1) = (C,B) to (x2,y2) = (E,D)
+* draw line from (C, B) = (x1, y1) to (E, D) = (x2, y2)
 *
 * Used by the routine at #R$9bea.
 *
@@ -201,7 +201,7 @@ draw_line_bc_de:                       ; >9c79
        .proc
 ;      movb b,h                        ; LD H,B            ; move start point to HL
 ;      movb @c,@l                      ; LD L,C            ;
-       mov  bc,hl                                          ; (x1, y1) = (L, H)
+       mov  bc,hl                                          ; (L, H) = (x1, y1)
        sb   @c,@c                      ; LD C,$00          ; clear flags
        movb h,a                        ; LD A,H            ; y1
        cb   d,a                                            ; y2 <= y1: drawing upwards?
@@ -213,9 +213,9 @@ draw_line_bc_de:                       ; >9c79
 !:
        sb   d,a                        ; SUB D             ; y1 - y2 (positive)
 !:
-       movb a,b                        ; LD B,A            ; b = abs(y1 - y2) vertical count
+       movb a,b                        ; LD B,A            ; b = abs(y1 - y2) vertical size
        movb @l,a                       ; LD A,L            ; x1
-       cb   @e,a                       ; SUB E             ; x1 <= x2: drawing left?
+       cb   @e,a                       ; SUB E             ; x2 <= x1: drawing left?
        jle  !                          ; JR NC,$9C8E       ; jump if so
        socb @bits+1,@c                 ; SET 1,C           ; flag drawing right
        sb   @e,a                       ; SUB E             ; x1 - x2
@@ -223,10 +223,10 @@ draw_line_bc_de:                       ; >9c79
        jmp  !!
 !:
        sb   @e,a                       ; SUB E             ; x1 - x2 (positive)
-!:
+!:                                                         ; a = abs(x1 - x2) horizontal size
 ;     .ex_af_af_                       ; EX AF,AF'         ;
-       movb @c,af_                     ; LD A,C            ; a_ = line_flags
-       movb af_,@line_flags            ; LD ($5E24),A      ;
+       movb @c,a_                      ; LD A,C            ; a_ = line_flags
+       movb a_,@line_flags             ; LD ($5E24),A      ;
 ;      .ex_af_af_                      ; EX AF,AF'         ;
        cb   a,b                        ; CP B              ; abs(x1 - x2) < abs(y1 - y2) drawing less horiz than vert?
        jl   line_steep                 ; JP C,$9CD6        ; jump if so -> steep
@@ -246,11 +246,11 @@ draw_line_bc_de:                       ; >9c79
        neg  hl                         ; CALL $A39E        ; HL = -HL
 !:                                     ; >9caf
        movb @line_flags,a              ; LD A,($5E24)      ;
-       movb one,@c                     ; LD C,$01          ; y step = 1
+       movb one,@c                     ; LD C,$01          ; x step = 1
        movb a,r0                       ; BIT 1,A           ; drawing right?
        andi r0,>0200                   ;
        jne  !                          ; JR NZ,$9CBA       ; jump if so
-       movb @b255,@c                   ; LD C,$FF          ; y step = -1
+       movb @b255,@c                   ; LD C,$FF          ; x step = -1
 !:                                     ; >9cba
        .ex_de_hl                       ; EX DE,HL          ;
        .pop hl                         ; POP HL            ;
@@ -262,15 +262,15 @@ draw_line_bc_de:                       ; >9c79
 flat_loop:                             ; >9cc3
        .push bc                        ; PUSH BC           ;
        .call @plot_l_h                 ; CALL $9C61        ; plot pixel at L,H
-       movb @l,af_                     ; LD A,L            ;
+       movb @l,a_                      ; LD A,L            ; a_
 ;      .ex_af_af_                      ; EX AF,AF'         ;
-       movb a,@l                       ; LD L,A            ; a_
-       a    de,hl                      ; ADD HL,DE         ; step partial x
-       movb @l,a                       ; LD A,L            ; a_
+       movb a,@l                       ; LD L,A            ;
+       a    de,hl                      ; ADD HL,DE         ; step partial y
+       movb @l,a                       ; LD A,L            ;
 ;      .ex_af_af_                      ; EX AF,AF'         ;
        .pop bc                         ; POP BC            ;
-       ab   @c,af_                     ; ADD A,C           ; step y
-       movb af_,@l                     ; LD L,A            ;
+       ab   @c,a_                      ; ADD A,C           ; step x
+       movb a_,@l                      ; LD L,A            ;
        sb   one,b                      ; DJNZ $9CC3        ;
        jne  flat_loop                   ;
        .pop hl                         ; POP HL            ;
@@ -278,8 +278,8 @@ flat_loop:                             ; >9cc3
 *      Steep
 line_steep:                            ; >9cd6
 ;      .ex_af_af_                      ; EX AF,AF'         ;
-       movb b,af_                      ; LD A,B            ; a_= abs(y1 - y2)
-       movb af_,@line_counter          ; LD ($5E23),A      ; vert counter = abs(y1 - y2)
+       movb b,a_                       ; LD A,B            ; a_= abs(y1 - y2)
+       movb a_,@line_counter           ; LD ($5E23),A      ; vert counter = abs(y1 - y2)
 ;      .ex_af_af_                      ; EX AF,AF'         ;
        .push de                        ; PUSH DE           ;
        .push hl                        ; PUSH HL           ;
@@ -289,17 +289,17 @@ line_steep:                            ; >9cd6
        movb a,h                        ; LD H,A            ; h = abs(x1 - x2)
        .call @line_slope               ; CALL $A379        ; determine Bresenham line slope step: hl = hl / de, de = hl % de
        movb @line_flags,a              ; LD A,($5E24)      ;
-       movb a,r0                       ; BIT 1,A           ; drawing down?
+       movb a,r0                       ; BIT 1,A           ; drawing right?
        andi r0,>0200                   ;
        jne  !                          ; JR NZ,$9CF0       ; jump if so
        neg  hl                         ; CALL $A39E        ; HL = -HL
 !:                                     ; >9cf0
-       movb one,@c                     ; LD C,$01          ; x step = 1
+       movb one,@c                     ; LD C,$01          ; y step = 1
        movb @line_flags,a              ; LD A,($5E24)      ;
-       movb a,r0                       ; BIT 0,A           ; drawing right?
+       movb a,r0                       ; BIT 0,A           ; drawing down?
        andi r0,>0100                   ;
        jne  !                          ; JR NZ,$9CFB       ; jump if so
-       movb @b255,@c                   ; LD C,$FF          ; x step = -1
+       movb @b255,@c                   ; LD C,$FF          ; y step = -1
 !:                                     ; >9cfb
        .ex_de_hl                       ; EX DE,HL          ;
        .pop hl                         ; POP HL            ;
@@ -311,17 +311,17 @@ line_steep:                            ; >9cd6
 steep_loop:                            ; >9d04
        .push bc                        ; PUSH BC           ;
        .call @plot_l_h                 ; CALL $9C61        ; plot pixel at L,H
-       movb h,af_                      ; LD A,H            ; a_
+       movb h,a_                       ; LD A,H            ; a_
 ;      .ex_af_af_                      ; EX AF,AF'         ;
        movb @l,h                       ; LD H,L            ;
        movb a,@l                       ; LD L,A            ;
-       a    de,hl                      ; ADD HL,DE         ; step partial y
+       a    de,hl                      ; ADD HL,DE         ; step partial x
        movb @l,a                       ; LD A,L            ;
        movb h,@l                       ; LD L,H            ;
 ;      .ex_af_af_                      ; EX AF,AF'         ;
        .pop bc                         ; POP BC            ;
-       ab   @c,af_                     ; ADD A,C           ; step x
-       movb af_,h                      ; LD H,A            ;
+       ab   @c,a_                      ; ADD A,C           ; step y
+       movb a_,h                       ; LD H,A            ;
        sb   one,b                      ; DJNZ $9D04        ;
        jne  steep_loop                 ;
        .pop hl                         ; POP HL            ;
