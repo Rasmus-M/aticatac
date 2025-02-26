@@ -4,6 +4,11 @@
 draw_bgrnd_attrs:                      ; >9980
        .proc
        seto @background_graphics_rom_bank
+       movb @entity_x(ix),@e           ; LD E,(IX+$03)     ; xpos
+       movb @entity_y(ix),d            ; LD D,(IX+$04)     ; ypos
+       sb   one,d                      ; DEC D             ;
+       movb *ix,@c                     ; LD C,(IX+$00)     ; graphic
+       movb @entity_flags(ix),b        ; LD B,(IX+$05)     ; attr
        li   hl,attr_funcs              ; LD HL,$9985       ;
        b    @jump_table_b              ; JR $9965          ;
 

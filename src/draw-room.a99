@@ -82,17 +82,18 @@ handler_table2:                        ; >802a
 draw_room_item_call:                   ; >91fe
        .proc
 draw_room_item:
-       movb @entity_x(ix),@e           ; LD E,(IX+$03)     ; xpos
-       movb @entity_y(ix),d            ; LD D,(IX+$04)     ; ypos
-       sb   one,d                      ; DEC D             ;
-       movb *ix,@c                     ; LD C,(IX+$00)     ; graphic
-       movb @entity_flags(ix),b        ; LD B,(IX+$05)     ; attr
+*      Moved next lines to draw_bgrnd_attrs
+;       movb @entity_x(ix),@e           ; LD E,(IX+$03)     ; xpos
+;       movb @entity_y(ix),d            ; LD D,(IX+$04)     ; ypos
+;       sb   one,d                      ; DEC D             ;
+;       movb *ix,@c                     ; LD C,(IX+$00)     ; graphic
+;       movb @entity_flags(ix),b        ; LD B,(IX+$05)     ; attr
        .call @draw_bgrnd_attrs         ; CALL $9980        ; B=attr, C=graphic, E=xpos, D=ypos
        movb @game_flags,a              ; LD A,($5E14)      ; b0 set if room content drawn
        ; AND A                         ; AND A             ; room content drawn?
-       jeq  !                          ; RET NZ            ; return if so
-       .endproc                            ;
-!      b    @draw_bgrnd_graphics_branch
+       jne  !                          ; RET NZ            ; return if so
+       b    @draw_bgrnd_graphics_branch
+!      .endproc                            ;
 
 *********************************************************************
 *
@@ -131,7 +132,6 @@ draw_room_a:                           ; >9bf1
        a    bc,hl                      ; ADD HL,BC         ; * 6
        li   bc,room_styles             ; LD BC,$A982       ;
        a    bc,hl                      ; ADD HL,BC         ;
-       movb *hl+,@room_width           ; LD A,(HL)         ;
 ;      movb *hl,a                      ; LD A,(HL)         ;
 ;      inc  hl                         ; INC HL            ;
 ;      movb a,@room_width              ; LD ($5E1D),A      ;
@@ -156,6 +156,7 @@ draw_room_a:                           ; >9bf1
        .push bc                        ; PUSH BC           ;
 loc_9c2e:                              ; >9c2e
        .pop bc                         ; POP BC            ;
+       clr  af
        movb *hl+,a                     ; LD A,(HL)         ; x of first point
 ;      inc  hl                         ; INC HL            ;
        cb   a,@b255                    ; CP $FF            ; end marker?

@@ -10,7 +10,12 @@ draw_bgrnd_graphics_branch:
        seto @background_graphics_rom_bank
        movb @entity_x(ix),@e           ; LD E,(IX+$03)     ; xpos
        movb @entity_y(ix),d            ; LD D,(IX+$04)     ; ypos
-       movb *ix,@c                     ; LD C,(IX+$00)     ; graphic index
+*      Fix bug: Y coordinates are bottom values, so they should align with the last row of a character
+       movb d,r0
+       andi r0,>0700
+       jne  !                          ; if y % 8 == 0
+       sb   one,d                      ; then y--
+!      movb *ix,@c                     ; LD C,(IX+$00)     ; graphic index
        movb @entity_flags(ix),b        ; LD B,(IX+$05)     ; orientation
 ;      b    @draw_orientation          ; JP $9962          ;
 

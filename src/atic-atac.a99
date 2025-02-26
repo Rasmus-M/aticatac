@@ -3141,7 +3141,10 @@ change_room:                           ; >9117
        movb a,@player_contact          ; LD ($EA92),A      ; 
 * This entry point is used by the routine at #R$7d9a.
 enter_room:                            ; >9147
-       movb @player_room,a             ; LD A,($EA91)      ; 
+
+       movb @bytes+83,@player_room
+
+       movb @player_room,a             ; LD A,($EA91)      ;
        .call @visit_room               ; CALL $96AF        ; mark room A as visited
 room_loop:
        .call @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
