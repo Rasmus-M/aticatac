@@ -27,7 +27,7 @@ start:                                 ; >6000
 ;       jeq  !                          ; RET NZ            ;
 ;       .ret                            ;
 ;!
-;       b    @reset_menu                ; JP $7C19          ;
+        b    @reset_menu                ; JP $7C19          ;
 
 * Routine at 7c19
 * 
@@ -120,6 +120,31 @@ loc_7c73:                              ; >7c73
        .call @set_menu_attrs           ; CALL $7C90        ; highlight knight/wizard/serf
        b    @menu_loop                 ; JP $7C2F          ; 
 
+* draw menu icons for controls and player characters
+*
+* Used by the routine at #R$7c19.
+draw_menu_icons:                       ; >a311
+       .proc
+       seto @sprite_graphics_rom_bank
+       li   ix,entity_to_draw          ; LD IX,$A17D       ;
+       li   hl,menu_entities           ; LD HL,$A331       ; entities for icons in the menu position
+       movb @bytes+>09,b               ; LD B,$09          ; 3*2 icons for controls, 3 player characters
+draw_menu_icons_1:                     ; >a31a
+       .push bc                        ; PUSH BC           ;
+       li   de,entity_to_draw          ; LD DE,$A17D       ;
+       li   bc,>0008                   ; LD BC,$0008       ;
+       .ldir                           ; LDIR              ;
+       .push hl                        ; PUSH HL           ;
+       .push de                        ; PUSH DE           ;
+       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
+       .call @set_entity_attrs         ; CALL $A00E        ; paint entity with its current attr colour
+       .pop de                         ; POP DE            ;
+       .pop hl                         ; POP HL            ;
+       .pop bc                         ; POP BC            ;
+       sb   one,b                      ; DJNZ $A31A        ;
+       jne  draw_menu_icons_1                   ;
+       .endproc                        ; RET               ;
+
 * set menu attrs to reflect current selection
 * 
 * Used by the routine at #R$7c19.
@@ -210,6 +235,8 @@ print_text:                            ; >7d8a
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        b    @loc_a1ff                  ; JP $A1FF          ; 
 
+*********************************************************************
+*
 * Routine at 7d9a
 * 
 * Used by the routine at #R$7c19.
@@ -230,6 +257,8 @@ start_game:                            ; >7d9a
        .call @prepare_player           ; CALL $9443        ; prepare player to spawn
        b    @enter_room                ; JP $9147          ; Will jump back to main_loop
 
+*********************************************************************
+*
 * Routine at 7dc3
 * 
 * Used by the routines at #R$7e13 and #R$9117.
@@ -3077,6 +3106,8 @@ loc_9114:                              ; >9114
        cb   a,@bytes+>0c               ; CP $0C            ; within range?
        .ret                            ; RET               ; return no-carry if not
 
+*********************************************************************
+*
 * move player to room linked to entity (usually door)
 * 
 * Used by the routines at #R$91f2, #R$9244 and #R$9731.
@@ -3102,7 +3133,12 @@ change_room:                           ; >9117
        movb @player_contact,a          ; LD A,($EA92)      ; 
        socb @bytes+>0f,a               ; OR $0F            ; 
        movb a,@player_contact          ; LD ($EA92),A      ; 
+       jmp  enter_room
+
+*********************************************************************
+*
 * This entry point is used by the routine at #R$7d9a.
+*
 enter_room:                            ; >9147
        movb @player_room,a             ; LD A,($EA91)      ;
        .call @visit_room               ; CALL $96AF        ; mark room A as visited
@@ -3317,13 +3353,14 @@ get_linked_door:                       ; >9286
 * Used by the routine at #R$7e13.
 draw_entities:                         ; >9291
        .proc
+       seto @sprite_graphics_rom_bank
        li   ix,player                  ; LD IX,$EA90       ;
 draw_entities_1:                       ; >9295
        movb *ix,a                      ; LD A,(IX+$00)     ; 
        ; AND A                         ; AND A             ; slot used?
        jeq  draw_entities_2            ; JR Z,$92A6        ; jump if not
-       movb @player_room,a             ; LD A,($EA91)      ; 
-       cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
+;      movb @player_room,a             ; LD A,($EA91)      ;
+       cb   @player_room,@>01(ix)      ; CP (IX+$01)       ; in player room?
        jne  draw_entities_2            ; JR NZ,$92A6       ; jump if not
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
 draw_entities_2:                       ; >92a6
@@ -3340,8 +3377,8 @@ draw_entities_3:                       ; >92b6
        movb *ix,a                      ; LD A,(IX+$00)     ; 
        ; AND A                         ; AND A             ; slot used?
        jeq  draw_entities_4            ; JR Z,$92C7        ; jump if not
-       movb @player_room,a             ; LD A,($EA91)      ; 
-       cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
+;      movb @player_room,a             ; LD A,($EA91)      ;
+       cb   @player_room,@>01(ix)      ; CP (IX+$01)       ; in player room?
        jne  draw_entities_4            ; JR NZ,$92C7       ; jump if not
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
 draw_entities_4:                       ; >92c7
@@ -4656,29 +4693,4 @@ loc_a30c:                              ; >a30c
        sb   one,b                      ; DJNZ $A2F2        ; draw remaining slots
        jne  loc_a2f2                   ;                   
        .pop ix                         ; POP IX            ; 
-       .endproc                        ; RET               ;
-
-* draw menu icons for controls and player characters
-* 
-* Used by the routine at #R$7c19.
-draw_menu_icons:                       ; >a311
-       .proc
-       seto @sprite_graphics_rom_bank
-       li   ix,entity_to_draw          ; LD IX,$A17D       ; 
-       li   hl,menu_entities           ; LD HL,$A331       ; entities for icons in the menu position
-       movb @bytes+>09,b               ; LD B,$09          ; 3*2 icons for controls, 3 player characters
-draw_menu_icons_1:                     ; >a31a
-       .push bc                        ; PUSH BC           ; 
-       li   de,entity_to_draw          ; LD DE,$A17D       ; 
-       li   bc,>0008                   ; LD BC,$0008       ; 
-       .ldir                           ; LDIR              ; 
-       .push hl                        ; PUSH HL           ; 
-       .push de                        ; PUSH DE           ; 
-       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
-       .call @set_entity_attrs         ; CALL $A00E        ; paint entity with its current attr colour
-       .pop de                         ; POP DE            ; 
-       .pop hl                         ; POP HL            ; 
-       .pop bc                         ; POP BC            ; 
-       sb   one,b                      ; DJNZ $A31A        ; 
-       jne  draw_menu_icons_1                   ;
        .endproc                        ; RET               ;
