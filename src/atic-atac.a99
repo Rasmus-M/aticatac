@@ -252,13 +252,13 @@ main_loop_1:                           ; >7ddc
        movb @last_frames,a             ; LD A,($5E03)      ; 
        cb   a,@c                       ; CP C              ; same frame as last time?
        jeq  !                          ; CALL NZ,$7EB2     ; call if not
-;       .call @run_player               ;
+       .call @run_player               ;
 !
        movb @player_room,a             ; LD A,($EA91)      ; 
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; entity in player room?
-       li   hl,loop_return_1           ; LD HL,$7DF3       ;
        jne  !                          ; JP Z,$7E7E        ; jump if so
-;       b    @process_action           ;
+       li   hl,loop_return_1           ; LD HL,$7DF3       ;
+       b    @process_action           ;
 !
 loop_return_1:                         ; >7df3
 ;      li   de,>0008                   ; LD DE,$0008       ; entity size
@@ -278,10 +278,10 @@ main_loop_2:                           ; >7e03
        movb @last_frames,a             ; LD A,($5E03)      ; 
        cb   a,@c                       ; CP C              ; same frame as last time?
        jeq  !                          ; CALL NZ,$7EB2     ; call if not
-;      .call @run_player               ;
+      .call @run_player               ;
 !
        li   hl,loop2_return            ; LD HL,$7E13       ; 
-;      jmp  process_action             ; JR $7E7E          ;
+       jmp  process_action             ; JR $7E7E          ;
 * Routine at 7e13
 loop2_return:                          ; >7e13
 ;      li   de,>0010                   ; LD DE,$0010       ; 16 bytes per linked entity pair
@@ -301,14 +301,14 @@ draw_room:
        inc  hl                         ; INC HL            ; advance game loop counter
        mov  @l,@counter_low            ; LD ($5E12),HL     ;
        mov  h,@counter_high
-       li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
-       movb *hl,r0                     ; BIT 0,(HL)        ; room drawn yet?
+;      li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
+       movb @game_flags,r0             ; BIT 0,(HL)        ; room drawn yet?
        andi r0,>0100                   ;                   
        jne  loc_7e55                   ; JR NZ,$7E55       ; jump if so
        .call @draw_entities            ; CALL $9291        ; draw all non-monster entities in the current room
 loc_7e55:                              ; >7e55
-       li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
-       socb @bits+0,*hl                ; SET 0,(HL)        ; mark room as drawn
+;      li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
+       socb @bits+0,@game_flags        ; SET 0,(HL)        ; mark room as drawn
 *      Update random number
 ;       mov  @rand8,hl                  ; LD HL,($5E05)     ; another random number source
 ;       mov  @zx_frames,de              ; LD DE,($5C78)     ;
@@ -336,6 +336,7 @@ loc_7e55:                              ; >7e55
 * 
 * Used by the routine at #R$7dc3.
 process_action:                        ; >7e7e
+       b    *hl                        ; TODO
        .push hl                        ; PUSH HL           ; push return location
 * This entry point is used by the routine at #R$7eb2.
 run_handler:                           ; >7e7f
@@ -348,7 +349,8 @@ lookup_graphic:                        ; >7e82
 * 
 * Used by the routine at #R$7dc3.
 run_player:                            ; >7eb2
-       limi 0                          ; DI                ; 
+       rt                              ; TODO
+;      limi 0                          ; DI                ;
        .push ix                        ; PUSH IX           ; 
        movb one,a                      ; LD A,$01          ; 
        movb a,@in_handlers             ; LD ($5E04),A      ; flag set but never read
