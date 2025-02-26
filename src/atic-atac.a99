@@ -196,12 +196,6 @@ loc_7cc1:                              ; >7cc1
        li   de,header_msg              ; LD DE,$7D72       ; 
        b    @colour_text_jump_target   ; JP $A1F3          ; show a line of text, first byte is attr
 
-* Data block at 7cea
-menu_attrs:                            ; >7cea
-       byte >C5,>45,>45,>C5,>45,>45,>47
-menu_ycoords:                          ; >7cf1
-       byte >10,>28,>40,>58,>70,>88,>A0
-
 * Routine at 7d8a
 * 
 * Used by the routine at #R$7caf.
@@ -228,10 +222,11 @@ start_game:                            ; >7d9a
        .call @clear_screen             ; CALL $80AA        ; clear display, attributes, and set black border
        .call @draw_side_panel          ; CALL $A219        ; draw side panel background scroll
        .call @draw_lives               ; CALL $A2CE        ; draw lives sprites in side panel
-;       .call @place_key_pieces         ; CALL $94B6        ; set locations of ACG key pieces
-;       .call @set_key_positions        ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy
+       .call @place_key_pieces         ; CALL $94B6        ; set locations of ACG key pieces
+;      .call @set_key_positions        ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy
        .call @reset_game_state         ; CALL $8D61        ; copy initial game state to working state area
-;       .call @randomise_doors          ; CALL $94F5        ; randomise which doors can open/close
+       .call @set_key_positions        ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy
+       .call @randomise_doors          ; CALL $94F5        ; randomise which doors can open/close
        .call @prepare_player           ; CALL $9443        ; prepare player to spawn
        b    @enter_room                ; JP $9147          ; Will jump back to main_loop
 
@@ -252,29 +247,29 @@ loc_7dc8:                              ; >7dc8
        li   ix,linked_items            ; LD IX,$EEE0       ; pairs of linked items, including doors
        jmp  draw_room                  ; JR $7E23          ;
 loc_7ddc:                              ; >7ddc
-       movb @zx_frames,a               ; LD A,($5C78)      ; 
+       movb @zx_frames,a               ; LD A,($5C78)      ;
        movb a,@c                       ; LD C,A            ; 
        movb @last_frames,a             ; LD A,($5E03)      ; 
        cb   a,@c                       ; CP C              ; same frame as last time?
        jeq  !                          ; CALL NZ,$7EB2     ; call if not
-       .call @run_player               ;                   
+;       .call @run_player               ;
 !
        movb @player_room,a             ; LD A,($EA91)      ; 
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; entity in player room?
        li   hl,loop_return             ; LD HL,$7DF3       ; 
        jne  !                          ; JP Z,$7E7E        ; jump if so
-       b    @process_action            ;                   
+;       b    @process_action            ;
 !
 loop_return:                           ; >7df3
-       equ  $
        li   de,>0008                   ; LD DE,$0008       ; entity size
        a    de,ix                      ; ADD IX,DE         ; next entity
-       .push ix                        ; PUSH IX           ; 
-       .pop hl                         ; POP HL            ; 
+;      .push ix                        ; PUSH IX           ;
+;      .pop hl                         ; POP HL            ;
+       mov  ix,hl
        li   de,creature1               ; LD DE,$EE60       ; end marker
        ; AND A                         ; AND A             ; 
-       s    de,hl                      ; SBC HL,DE         ; end of list?
-       joc  loc_7ddc                   ; JR C,$7DDC        ; TODO: check code. jump if not
+       c    de,hl                      ; SBC HL,DE         ; end of list?
+       jhe  loc_7ddc                   ; JR C,$7DDC        ; TODO: check code. jump if not
 * This entry point is used by the routine at #R$7e13.
 loc_7e03:                              ; >7e03
        movb @zx_frames,a               ; LD A,($5C78)      ; 
@@ -282,27 +277,30 @@ loc_7e03:                              ; >7e03
        movb @last_frames,a             ; LD A,($5E03)      ; 
        cb   a,@c                       ; CP C              ; same frame as last time?
        jeq  !                          ; CALL NZ,$7EB2     ; call if not
-       .call @run_player               ;                   
+;      .call @run_player               ;
 !
        li   hl,loop2_return            ; LD HL,$7E13       ; 
-       jmp  process_action             ; JR $7E7E          ; 
+;      jmp  process_action             ; JR $7E7E          ;
 
 * Routine at 7e13
 loop2_return:                          ; >7e13
        li   de,>0010                   ; LD DE,$0010       ; 16 bytes per linked entity pair
        a    de,ix                      ; ADD IX,DE         ; next pair
-       .push ix                        ; PUSH IX           ; 
-       .pop hl                         ; POP HL            ; 
+;      .push ix                        ; PUSH IX           ;
+;      .pop hl                         ; POP HL            ;
+       mov  ix,hl
        li   de,linked_items            ; LD DE,$EEE0       ; pairs of linked items, including doors
        ; AND A                         ; AND A             ; 
-       s    de,hl                      ; SBC HL,DE         ; 
-       joc  loc_7e03                   ; JR C,$7E03        ; TODO: check code. 
+       c    de,hl                      ; SBC HL,DE         ;
+       jhe  loc_7e03                   ; JR C,$7E03        ; TODO: check code.
 
 draw_room:
        .call @draw_room_decor
-       mov  @counter_low,hl            ; LD HL,($5E12)     ;
+       mov  @counter_low,@l            ; LD HL,($5E12)     ;
+       movb @counter_high,h
        inc  hl                         ; INC HL            ; advance game loop counter
-       mov  hl,@counter_low            ; LD ($5E12),HL     ; 
+       mov  @l,@counter_low            ; LD ($5E12),HL     ;
+       mov  h,@counter_high
        li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
        movb *hl,r0                     ; BIT 0,(HL)        ; room drawn yet?
        andi r0,>0100                   ;                   
@@ -311,13 +309,17 @@ draw_room:
 loc_7e55:                              ; >7e55
        li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
        socb @bits+0,*hl                ; SET 0,(HL)        ; mark room as drawn
-       mov  @rand8,hl                  ; LD HL,($5E05)     ; another random number source
-       mov  @zx_frames,de              ; LD DE,($5C78)     ; 
-       a    de,hl                      ; ADD HL,DE         ; add in frames
-       movb @counter_low,a             ; LD A,($5E12)      ; 
-       ab   @l,a                       ; ADD A,L           ; add in counter low
-       movb a,@l                       ; LD L,A            ; 
-       mov  hl,@rand8                  ; LD ($5E05),HL     ; only low 8 bits are meaningfully random
+*      Update random number
+;       mov  @rand8,hl                  ; LD HL,($5E05)     ; another random number source
+;       mov  @zx_frames,de              ; LD DE,($5C78)     ;
+;       a    de,hl                      ; ADD HL,DE         ; add in frames
+;       movb @counter_low,a             ; LD A,($5E12)      ;
+;       ab   @l,a                       ; ADD A,L           ; add in counter low
+;       movb a,@l                       ; LD L,A            ;
+;       mov  hl,@rand8                  ; LD ($5E05),HL     ; only low 8 bits are meaningfully random
+       bl   @ti_rnd
+       mov  r0,@rand8
+       movb r0,@zx_frames
        .call @check_pickup_key         ; CALL $938B        ; check whether pick-up key has been pressed
        .call @check_pause              ; CALL $9489        ; check for pause key, return when not paused
        .call @replenish_food           ; CALL $9924        ; periodically replenish consumed food
@@ -326,7 +328,9 @@ loc_7e55:                              ; >7e55
        jne  !                          ; JP Z,$96EC        ; congratulate player on completion
        b    @game_complete             ;                   
 !
-       b    @main_loop                 ; JP $7DC3          ; 
+       inc  @frame
+       bl   @upload_zx_screen
+       b    @main_loop                 ; JP $7DC3          ;
 
 * Routine at 7e7e
 * 
@@ -1014,25 +1018,6 @@ get_rnd_velocity:                      ; >83ba
        movb @>08(ix),r0                ; BIT 2,(IX+$08)    ; decide on using first or second entry
        andi r0,>0400                   ;                   
        .ret                            ; RET               ; 
-
-* Data block at 83ca
-rnd_velocities:                        ; >83ca
-       byte >03,>00
-       byte >03,>00                                                  ; random velocities (0-3)
-       byte >03,>01
-       byte >03,>01
-       byte >03,>01
-       byte >02,>02
-       byte >02,>02
-       byte >02,>02
-       byte >02,>02
-       byte >02,>02
-       byte >02,>02
-       byte >01,>03
-       byte >01,>03
-       byte >01,>03
-       byte >00,>03
-       byte >00,>03
 
 * check whether to add new room creatures
 * 
@@ -2140,30 +2125,6 @@ loc_8b59:                              ; >8b59
        .call @attract_de               ; CALL $882D        ; move towards door
        b    @monster_move              ; JP $84CD          ; common monster movement
 
-* Data block at 8b6a
-creature_default:                      ; >8b6a
-       byte >58,>00,>5C,>68,>68,>44,>00,>00
-       byte >02,>02,>00,>00,>00,>10,>20,>00
-
-* Data block at 8b7a
-creatures:                             ; >8b7a
-       byte >5C                                                      ; spider
-       byte >5E                                                      ; spikey
-       byte >98                                                      ; bat
-       byte >98                                                      ; bat
-       byte >90                                                      ; witch
-       byte >90                                                      ; witch
-       byte >94                                                      ; monk
-       byte >94                                                      ; monk
-       byte >5C                                                      ; spider
-       byte >5E                                                      ; spikey
-       byte >60                                                      ; blob
-       byte >62                                                      ; ghoul
-       byte >4C                                                      ; pumpkin
-       byte >4E                                                      ; ghostlet
-       byte >68                                                      ; ghost
-       byte >6A                                                      ; batlet
-
 * draw chicken energy bar
 * 
 * Used by the routines at #R$8a1e, #R$8c63, #R$8e26, #R$8ed7, #R$9443 and
@@ -3147,20 +3108,8 @@ room_loop:
        .call @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
        .call @draw_room_frame          ; CALL $9BEA        ; draw lines that make up outer room frame
        .call @draw_panel_attrs         ; CALL $A240        ; draw side-panel colours, which follow room colour
-
-       bl   @draw_room_decor
-       bl   @upload_zx_screen
-wait_key:
-       li   r0,KEY_SP
-       bl   @ti_check_key
-       jeq  wait_key
-       ab   one,@player_room
-       jmp  room_loop
-
-stop:  jmp  stop
-
        .call @draw_inventory           ; CALL $A13B        ; draw any items in player inventory
-       .call @entry_sound              ; CALL $A403        ; room entry sound effect
+;      .call @entry_sound              ; CALL $A403        ; room entry sound effect
        b    @main_loop                 ; JP $7DC3          ; 
 
 * open door handler
@@ -3306,13 +3255,6 @@ h_cave_locked:                         ; >9252
        movb one,a                      ; LD A,$01          ; open cave graphic
        jmp  loc_924c                   ; JR $924C          ; 
 
-* Data block at 925c
-key_attrs:                             ; >925c
-       byte >42                                                      ; red
-       byte >44                                                      ; green
-       byte >45                                                      ; cyan
-       byte >46                                                      ; yellow
-
 * set door type for both linked entities
 * 
 * Used by the routines at #R$915f and #R$9244.
@@ -3372,42 +3314,45 @@ get_linked_door:                       ; >9286
 * 
 * Used by the routine at #R$7e13.
 draw_entities:                         ; >9291
-       li   ix,player                  ; LD IX,$EA90       ; 
-loc_9295:                              ; >9295
+       .proc
+       li   ix,player                  ; LD IX,$EA90       ;
+draw_entities_1:                       ; >9295
        movb *ix,a                      ; LD A,(IX+$00)     ; 
        ; AND A                         ; AND A             ; slot used?
-       jeq  loc_92a6                   ; JR Z,$92A6        ; jump if not
+       jeq  draw_entities_2            ; JR Z,$92A6        ; jump if not
        movb @player_room,a             ; LD A,($EA91)      ; 
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
-       jne  loc_92a6                   ; JR NZ,$92A6       ; jump if not
+       jne  draw_entities_2            ; JR NZ,$92A6       ; jump if not
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
-loc_92a6:                              ; >92a6
-       li   de,>0008                   ; LD DE,$0008       ; 8 bytes per entry
-       a    de,ix                      ; ADD IX,DE         ; 
-       .push ix                        ; PUSH IX           ; 
-       .pop hl                         ; POP HL            ; 
-       li   de,creature1               ; LD DE,$EE60       ; end marker
+draw_entities_2:                       ; >92a6
+;      li   de,>0008                   ; LD DE,$0008       ; 8 bytes per entry
+       ai   ix,8                       ; ADD IX,DE         ;
+;      .push ix                        ; PUSH IX           ;
+;      .pop hl                         ; POP HL            ;
+;      li   de,creature1               ; LD DE,$EE60       ; end marker
        ; AND A                         ; AND A             ; 
-       s    de,hl                      ; SBC HL,DE         ; more 8-byte entries to process?
-       joc  loc_9295                   ; JR C,$9295        ; TODO: check code. jump back if so
-loc_92b6:                              ; >92b6
+;      s    de,hl                      ; SBC HL,DE         ; more 8-byte entries to process?
+       ci   ix,creature1
+       jl  draw_entities_1             ; JR C,$9295        ; jump back if so
+draw_entities_3:                       ; >92b6
        movb *ix,a                      ; LD A,(IX+$00)     ; 
        ; AND A                         ; AND A             ; slot used?
-       jeq  loc_92c7                   ; JR Z,$92C7        ; jump if not
+       jeq  draw_entities_4            ; JR Z,$92C7        ; jump if not
        movb @player_room,a             ; LD A,($EA91)      ; 
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
-       jne  loc_92c7                   ; JR NZ,$92C7       ; jump if not
+       jne  draw_entities_4            ; JR NZ,$92C7       ; jump if not
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
-loc_92c7:                              ; >92c7
-       li   de,>0010                   ; LD DE,$0010       ; 16 bytes per entry
-       a    de,ix                      ; ADD IX,DE         ; 
-       .push ix                        ; PUSH IX           ; 
-       .pop hl                         ; POP HL            ; 
-       li   de,linked_items            ; LD DE,$EEE0       ; end of 16-byte entities
+draw_entities_4:                       ; >92c7
+;      li   de,>0010                   ; LD DE,$0010       ; 16 bytes per entry
+       ai   ix,16                      ; ADD IX,DE         ;
+;      .push ix                        ; PUSH IX           ;
+;      .pop hl                         ; POP HL            ;
+;      li   de,linked_items            ; LD DE,$EEE0       ; end of 16-byte entities
        ; AND A                         ; AND A             ; 
-       s    de,hl                      ; SBC HL,DE         ; more 16-byte entries to draw?
-       joc  loc_92b6                   ; JR C,$92B6        ; TODO: check code. jump back if so
-       .ret                            ; RET               ; 
+;      s    de,hl                      ; SBC HL,DE         ; more 16-byte entries to draw?
+       ci   ix,linked_items
+       jl   draw_entities_3            ; JR C,$92B6        ; jump back if so
+       .endproc                        ; RET               ;
 
 * clear pickup key flag
 * 
@@ -3536,14 +3481,20 @@ drop_item:                             ; >9358
 * check whether pick-up key has been pressed
 * 
 * Used by the routine at #R$7e13.
-check_pickup_key:                      ; >938b
-       movb @bytes+>7e,a               ; LD A,$7E          ; read V/C/X/Z/Shift and B/N/M/Sym/Space rows
-       ; OUT ($FD),A                   ; OUT ($FD),A       ; 
-       ; IN A,($FE)                    ; IN A,($FE)        ; 
-       inv  a                          ; CPL               ; 
-       andi a,>0200                    ; AND $02           ; non-zero if Symbol Shift or Z pressed
-       movb a,@pickup_pressed          ; LD ($5E20),A      ; 
-       .ret                            ; RET               ; 
+check_pickup_key:                      ; >938b             ;
+       .proc
+;      movb @bytes+>7e,a               ; LD A,$7E          ; read V/C/X/Z/Shift and B/N/M/Sym/Space rows
+;      ; OUT ($FD),A                   ; OUT ($FD),A       ;
+;      ; IN A,($FE)                    ; IN A,($FE)        ;
+;      inv  a                          ; CPL               ;
+;      andi a,>0200                    ; AND $02           ; non-zero if Symbol Shift or Z pressed
+       li   r0,KEY_G
+       bl   @ti_check_key
+       jeq  check_pickup_key_1
+       movb @bytes+2,@pickup_pressed   ; LD ($5E20),A      ;
+check_pickup_key_1:
+       .endproc                        ; RET               ;
+
 * This entry point is used by the routine at #R$93be.
 read_cursor:                           ; >9398
        movb @bytes+>ef,a               ; LD A,$EF          ; 
@@ -3689,58 +3640,69 @@ loc_9476:                              ; >9476
        .call @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
        b    @draw_lives_branch  ; JP $A2CE          ; draw lives sprites in side panel
 
-* blank graphic and h_player_appear handler
-player_template:                       ; >9481
-       byte >66,>00,>00,>60,>68,>47,>FF,>00
 
 * check for pause key, return when not paused
 * 
 * Used by the routine at #R$7e13.
-check_pause:                           ; >9489
-       limi 0                          ; DI                ; disable interrupts to suspend FRAMES counter advance
-       movb @bytes+>7e,a               ; LD A,$7E          ; 
-       ; OUT ($FD),A                   ; OUT ($FD),A       ; 
-       ; IN A,($FE)                    ; IN A,($FE)        ; 
-       movb a,r0                       ; BIT 0,A           ; pause (space/shift) pressed?
-       andi r0,>0100                   ;                   
-       jeq  !                          ; RET NZ            ; return if not
-       .ret                            ;                   
-!
-       inv  a                          ; CPL               ; 
-       andi a,>1e00                    ; AND $1E           ; any other key on the same row pressed?
-       jeq  !                          ; RET NZ            ; return if so
-       .ret                            ;                   
-!
-loc_9497:                              ; >9497
-       equ  $
-       movb @bytes+>7e,a               ; LD A,$7E          ; 
-       ; OUT ($FD),A                   ; OUT ($FD),A       ; 
-       ; IN A,($FE)                    ; IN A,($FE)        ; 
-       movb a,r0                       ; BIT 0,A           ; space/shift pressed?
-       andi r0,>0100                   ;                   
-       jeq  loc_9497                   ; JR Z,$9497        ; jump if so (wait until released)
-loc_94a1:                              ; >94a1
-       movb @bytes+>7e,a               ; LD A,$7E          ; 
-       ; OUT ($FD),A                   ; OUT ($FD),A       ; 
-       ; IN A,($FE)                    ; IN A,($FE)        ; 
-       movb a,r0                       ; BIT 0,A           ; space/shift pressed?
-       andi r0,>0100                   ;                   
-       jne  loc_94a1                   ; JR NZ,$94A1       ; jump if not (main pause loop)
-loc_94ab:                              ; >94ab
-       movb @bytes+>7e,a               ; LD A,$7E          ; 
-       ; OUT ($FD),A                   ; OUT ($FD),A       ; 
-       ; IN A,($FE)                    ; IN A,($FE)        ; 
-       movb a,r0                       ; BIT 0,A           ; space/shift pressed?
-       andi r0,>0100                   ;                   
-       jeq  loc_94ab                   ; JR Z,$94AB        ; jump if so (wait until pause key released)
-       .ret                            ; RET               ; 
+check_pause:                           ; >9489             ;
+       .proc
+;      limi 0                          ; DI                ; disable interrupts to suspend FRAMES counter advance
+;       movb @bytes+>7e,a               ; LD A,$7E          ;
+;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
+;       ; IN A,($FE)                    ; IN A,($FE)        ;
+;       movb a,r0                       ; BIT 0,A           ; pause (space/shift) pressed?
+;       andi r0,>0100                   ;
+;       jeq  !                          ; RET NZ            ; return if not
+;       .ret                            ;
+;!
+;       inv  a                          ; CPL               ;
+;       andi a,>1e00                    ; AND $1E           ; any other key on the same row pressed?
+;       jeq  !                          ; RET NZ            ; return if so
+;       .ret                            ;
+;!
+       li   r0,KEY_P
+       bl   @ti_check_key
+       jeq  check_pause_3
+;loc_9497:                              ; >9497
+;       equ  $
+;       movb @bytes+>7e,a               ; LD A,$7E          ;
+;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
+;       ; IN A,($FE)                    ; IN A,($FE)        ;
+;       movb a,r0                       ; BIT 0,A           ; space/shift pressed?
+;       andi r0,>0100                   ;
+;       jeq  loc_9497                   ; JR Z,$9497        ; jump if so (wait until released)
+;loc_94a1:                              ; >94a1
+;       movb @bytes+>7e,a               ; LD A,$7E          ;
+;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
+;       ; IN A,($FE)                    ; IN A,($FE)        ;
+;       movb a,r0                       ; BIT 0,A           ; space/shift pressed?
+;       andi r0,>0100                   ;
+;       jne  loc_94a1                   ; JR NZ,$94A1       ; jump if not (main pause loop)
+;loc_94ab:                              ; >94ab
+;       movb @bytes+>7e,a               ; LD A,$7E          ;
+;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
+;       ; IN A,($FE)                    ; IN A,($FE)        ;
+;       movb a,r0                       ; BIT 0,A           ; space/shift pressed?
+;       andi r0,>0100                   ;
+;       jeq  loc_94ab                   ; JR Z,$94AB        ; jump if so (wait until pause key released)
+check_pause_1:
+       li   r0,KEY_P
+       bl   @ti_check_key
+       jne  check_pause_1
+check_pause_2:
+       li   r0,KEY_P
+       bl   @ti_check_key
+       jeq  check_pause_2
+check_pause_3:
+       .endproc                        ; RET               ;
 
 * set locations of ACG key pieces
 * 
 * Used by the routine at #R$7d9a.
 place_key_pieces:                      ; >94b6
-;      TODO: Do this on the game data in RAM instead
-       movb @zx_frames,a               ; LD A,($5C78)      ;
+       .proc
+       bl   @ti_rnd
+       movb r0,a                       ; LD A,($5C78)      ; zx_frames
        movb a,@c                       ; LD C,A            ; 
        movb @counter_low,a             ; LD A,($5E12)      ; 
        ab   @c,a                       ; ADD A,C           ; 
@@ -3765,26 +3727,17 @@ loc_94d3:                              ; >94d3
        .ex_af_af_                      ; EX AF,AF'         ; 
        sb   one,a                      ; DEC A             ; 
        jne  loc_94d3                   ; JR NZ,$94D3       ; 
-       .ret                            ; RET               ; 
-
-* Data block at 94dd
-acg_key_rooms:                         ; >94dd
-       byte >81,>45,>7C
-       byte >85,>49,>2B
-       byte >6A,>3B,>7C
-       byte >69,>71,>2B
-       byte >67,>85,>7C
-       byte >68,>7F,>2B
-       byte >4D,>73,>7C
-       byte >17,>10,>2B
+       .endproc                        ; RET               ;
 
 * randomise which doors can open/close
 * 
 * Used by the routine at #R$7d9a.
 randomise_doors:                       ; >94f5
-       movb @counter_low,a             ; LD A,($5E12)      ; 
+       .proc
+       movb @counter_low,a             ; LD A,($5E12)      ;
        movb a,@l                       ; LD L,A            ; set ROM addr LSB
-       movb @zx_frames,a               ; LD A,($5C78)      ; 0-49
+       bl   @ti_rnd
+       movb r0,a                       ; LD A,($5C78)      ; 0-49
        andi a,>0f00                    ; AND $0F           ; limit to 4K (0000-0FFF)
        socb @bytes+>10,a               ; OR $10            ; add 4K (1000-1FFF)
        movb a,h                        ; LD H,A            ; set ROM addr MSB
@@ -3811,7 +3764,7 @@ loc_951f:                              ; >951f
        .ex_de_hl                       ; EX DE,HL          ; 
        a    bc,hl                      ; ADD HL,BC         ; next entry
        jnc  !                          ; RET C             ; TODO: check code. return if hit end of RAM
-       .ret                            ;                   
+       .endproc                            ;
 !
        .ex_de_hl                       ; EX DE,HL          ; 
        jmp  loc_950b                   ; JR $950B          ; 
@@ -4241,13 +4194,6 @@ set_entry_walk:                        ; >986a
        movb a,@player_steps_y          ; LD ($EA97),A      ; 
        .ret                            ; RET               ; 
 
-* Data block at 9883
-walk_dir:                              ; >9883
-       byte >00,>20                                                  ; walk down
-       byte >E0,>00                                                  ; walk left ($e0 is actually -$20)
-       byte >00,>E0                                                  ; walk up ($e0 is actually -$20)
-       byte >20,>00                                                  ; walk right
-
 * mushroom handler
 h_mushroom:                            ; >988b
        .call @save_entity              ; CALL $9FFB        ; save entity position for undraw
@@ -4280,13 +4226,6 @@ loc_98b1:                              ; >98b1
        .call @touching_sound           ; CALL $A3E5        ; play monster touched sound
        b    @loc_9893                  ; JP $9893          ; 
 
-* Data block at 98c4
-mushroom_attrs:                        ; >98c4
-       byte >42                                                      ; bright red
-       byte >43                                                      ; bright magenta
-       byte >46                                                      ; bright yellow
-       byte >43                                                      ; bright magenta
-
 * Routine at 98c8
 * 
 * Used by the routine at #R$988b.
@@ -4299,27 +4238,37 @@ mushroom_death:                        ; >98c8
 * 
 * Used by the routine at #R$7d9a.
 set_key_positions:                     ; >98d2
-;      TODO: Do this on the game data in RAM instead
-       movb @zx_frames,a               ; LD A,($5C78)      ; 
+       .proc
+*      Green
+       bl   @ti_rnd
+       movb r0,a                       ; LD A,($5C78)      ; zx_frames
        li   hl,green_key_rooms         ; LD HL,$990C       ; 
        .call @get_key_room             ; CALL $9904        ; 
-       movb a,@green_key_init+>0001    ; LD ($603E),A      ; set green key room
-       movb @zx_frames,a               ; LD A,($5C78)      ; 
+;      movb a,@green_key_init+>0001    ; LD ($603E),A      ; set green key room
+       movb a,@green_key+>0001         ; LD ($603E),A      ; set green key room
+*      Red
+       bl   @ti_rnd
+       movb r0,a                       ; LD A,($5C78)      ; zx_frames
        movb a,@c                       ; LD C,A            ; 
        movb @counter_low,a             ; LD A,($5E12)      ; 
        ab   @c,a                       ; ADD A,C           ; 
        li   hl,red_key_rooms           ; LD HL,$9914       ; 
        .call @get_key_room             ; CALL $9904        ; 
-       movb a,@red_key_init+>0001      ; LD ($6046),A      ; set red key room
-       movb a,@byte_640d+>0001         ; LD ($640E),A      ; set Mummy room to match
-       movb @zx_frames+>0001,a         ; LD A,($5C79)      ; 
+;      movb a,@red_key_init+1          ; LD ($6046),A      ; set red key room
+       movb a,@red_key+1               ; LD ($6046),A      ; set red key room
+;      movb a,@mummy_init+1            ; LD ($640E),A      ; set Mummy room to match
+       movb a,@mummy+1                 ; LD ($640E),A      ; set Mummy room to match
+*      Cyan
+       bl   @ti_rnd
+       movb r0,a                       ; LD A,($5C79)      ; zx_frames
        movb a,@c                       ; LD C,A            ; 
        movb @counter_high,a            ; LD A,($5E13)      ; 
        ab   @c,a                       ; ADD A,C           ; 
        li   hl,cyan_key_rooms          ; LD HL,$991C       ; 
        .call @get_key_room             ; CALL $9904        ; 
-       movb a,@cyan_key_init+>0001     ; LD ($604E),A      ; set cyan key room
-       .ret                            ; RET               ; 
+;      movb a,@cyan_key_init+1         ; LD ($604E),A      ; set cyan key room
+       movb a,@cyan_key+1              ; LD ($604E),A      ; set cyan key room
+       .endproc                        ; RET               ;
 
 * Routine at 9904
 * 
@@ -4332,14 +4281,6 @@ get_key_room:                          ; >9904
        movb *hl,a                      ; LD A,(HL)         ; 
        .ret                            ; RET               ; 
 
-* Data block at 990c
-green_key_rooms:                       ; >990c
-       byte >05,>06,>07,>6D,>25,>24,>23,>22
-red_key_rooms:                         ; >9914
-       byte >17,>13,>09,>0D,>89,>87,>80,>85
-cyan_key_rooms:                        ; >991c
-       byte >53,>8F,>41,>94,>33,>91,>39,>4C
-
 * periodically replenish consumed food
 * 
 * Used by the routine at #R$7e13.
@@ -4349,77 +4290,78 @@ replenish_food:                        ; >9924
        movb @counter_high,a            ; LD A,($5E13)      ; 
        andi a,>0100                    ; AND $01           ; 
        socb @c,a                       ; OR C              ; 9-bit counter value zero?
-       jeq  !                          ; RET NZ            ; return if not
-       .ret                            ;                   
-!
-       mov  @food_ptr,hl               ; LD HL,($5E55)     ; 
-       li   de,>0008                   ; LD DE,$0008       ; 8 bytes per item
-       a    de,hl                      ; ADD HL,DE         ; next food item
+       jne  replenish_food_2           ; RET NZ            ; return if not
+       mov  @food_ptr,hl               ; LD HL,($5E55)     ;
+;      li   de,>0008                   ; LD DE,$0008       ; 8 bytes per item
+       ai   hl,>0008                      ; ADD HL,DE         ; next food item
        mov  hl,@food_ptr               ; LD ($5E55),HL     ; 
-       .push hl                        ; PUSH HL           ; 
-       .pop ix                         ; POP IX            ; 
+;      .push hl                        ; PUSH HL           ;
+;      .pop ix                         ; POP IX            ;
+       mov  hl,ix
        li   de,food_end                ; LD DE,$EDD8       ; end marker
        ; AND A                         ; AND A             ; 
-       s    de,hl                      ; SBC HL,DE         ; end of list?
-       jnc  loc_995b                   ; JR NC,$995B       ; TODO: check code. jump if so
+       c    de,hl                      ; SBC HL,DE         ; end of list?
+       jle  replenish_food_1                   ; JR NC,$995B       ; jump if so
        movb @player_room,a             ; LD A,($EA91)      ; 
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
-       jne  !                          ; RET Z             ; return if so
-       .ret                            ;                   
-!
-       movb *ix,a                      ; LD A,(IX+$00)     ; 
+       jne  replenish_food_2           ; RET Z             ; return if so
+       movb *ix,a                      ; LD A,(IX+$00)     ;
        ; AND A                         ; AND A             ; does food still exist?
-       jeq  !                          ; RET NZ            ; return if so
-       .ret                            ;                   
-!
+       jne  replenish_food_2           ; RET NZ            ; return if so
        movb @zx_frames,a               ; LD A,($5C78)      ; pseudo random value
        andi a,>0700                    ; AND $07           ; 8 available food items
        ab   @bytes+>50,a               ; ADD A,$50         ; add food base graphic
        movb a,*ix                      ; LD (IX+$00),A     ; set food graphic (replenish)
-       .ret                            ; RET               ; 
-loc_995b:                              ; >995b
+       jmp  replenish_food_2           ; RET               ;
+replenish_food_1:                      ; >995b
        li   hl,food_items              ; LD HL,$EB58       ; 
        mov  hl,@food_ptr               ; LD ($5E55),HL     ; 
-       .ret                            ; RET               ; 
+replenish_food_2:
+       .ret                            ; RET               ;
 
 * draw any items in player inventory
 * 
 * Used by the routines at #R$9117, #R$92f5 and #R$93e3.
 draw_inventory:                        ; >a13b
+       seto @sprite_graphics_rom_bank
+       .proc
        li   de,>2cc8                   ; LD DE,$2CC8       ; coords of first inventory item
        li   hl,inventory1              ; LD HL,$5E30       ; 
        movb @bytes+>03,b               ; LD B,$03          ; 3 items to draw
 loc_a143:                              ; >a143
        .call @draw_inv_item            ; CALL $A14D        ; draw inventory item at position DE
-       movb @e,a                       ; LD A,E            ; 
-       ab   @bytes+>10,a               ; ADD A,$10         ; next inventory position
-       movb a,@e                       ; LD E,A            ; 
+;      movb @e,a                       ; LD A,E            ;
+       ab   @bytes+>10,@e              ; ADD A,$10         ; next inventory position
+;      movb a,@e                       ; LD E,A            ;
        sb   one,b                      ; DJNZ $A143        ; 
        jne  loc_a143                   ;                   
-       .ret                            ; RET               ;
+       .endproc                        ; RET               ;
 
 * draw inventory item at position DE
 * 
 * Used by the routine at #R$a13b.
 draw_inv_item:                         ; >a14d
-       .push bc                        ; PUSH BC           ; 
+       .proc
+       .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ; 
        .push ix                        ; PUSH IX           ; 
        li   ix,entity_to_draw          ; LD IX,$A17D       ; 
-       movb *hl,a                      ; LD A,(HL)         ; entity LSB
-       inc  hl                         ; INC HL            ; 
-       socb *hl,a                      ; OR (HL)           ; object in this slot?
-       inc  hl                         ; INC HL            ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
+       movb *hl+,a                     ; LD A,(HL)         ; entity LSB
+;      inc  hl                         ; INC HL            ;
+       socb *hl+,a                     ; OR (HL)           ; object in this slot?
+;      inc  hl                         ; INC HL            ;
        jne  loc_a15e                   ; JR NZ,$A15E       ; jump if so
        movb @bytes+>31,a               ; LD A,$31          ; blank space
+       inc  hl                         ; INC HL            ;
+       jmp  !
 loc_a15e:                              ; >a15e
-       inc  hl                         ; INC HL            ; 
+       movb *hl+,a                     ; LD A,(HL)         ;
+!:
        movb a,*ix                      ; LD (IX+$00),A     ; set graphic
        movb @e,@>03(ix)                ; LD (IX+$03),E     ; set xpos
        movb d,@>04(ix)                 ; LD (IX+$04),D     ; set ypos
-       movb *hl,a                      ; LD A,(HL)         ; 
-       inc  hl                         ; INC HL            ; 
+       movb *hl+,a                     ; LD A,(HL)         ;
+;      inc  hl                         ; INC HL            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; set attr
        .push hl                        ; PUSH HL           ; 
        .call @clear_sprite             ; CALL $A185        ; 
@@ -4429,11 +4371,7 @@ loc_a15e:                              ; >a15e
        .pop ix                         ; POP IX            ; 
        .pop de                         ; POP DE            ; 
        .pop bc                         ; POP BC            ; 
-       .ret                            ; RET               ; 
-
-* Data block at a17d
-entity_to_draw:                        ; >a17d
-       byte >21,>00,>00,>28,>97,>47,>00,>00
+       .endproc                        ; RET               ;
 
 * add BC to current score
 * 
@@ -4742,15 +4680,3 @@ draw_menu_icons_1:                     ; >a31a
        sb   one,b                      ; DJNZ $A31A        ; 
        jne  draw_menu_icons_1                   ;
        .endproc                        ; RET               ;
-
-* Data block at a331
-menu_entities:                         ; >a331
-       byte >32,>00,>00,>20,>4F,>46,>00,>00                          ; cursor (left)
-       byte >33,>00,>00,>30,>4F,>46,>00,>00                          ; cursor (right)
-       byte >4A,>00,>00,>20,>37,>44,>00,>00                          ; kempston (left)
-       byte >4B,>00,>00,>30,>37,>44,>00,>00                          ; kempston (right)
-       byte >48,>00,>00,>20,>1C,>43,>00,>00                          ; keyboard (left)
-       byte >49,>00,>00,>30,>1C,>43,>00,>00                          ; keyboard (right)
-       byte >01,>00,>00,>28,>67,>47,>00,>00                          ; knight (facing left)
-       byte >11,>00,>00,>28,>7F,>47,>00,>00                          ; wizard (facing left)
-       byte >21,>00,>00,>28,>97,>47,>00,>00                          ; serf (facing left)

@@ -3,7 +3,7 @@
 * Setup environment
 *
 ti_setup_environment:
-;      mov  @rndsd,@rnd_seed
+       mov  @rndsd,@rnd_seed
        li   one,>0100
        li   r0,>fffe
        mov  r0,@b255
@@ -785,25 +785,23 @@ ti_quit:
 ;       .endproc                        ; Pop return address off the stack
 ;*// ti_rnd_range
 
-;*********************************************************************
-;*
-;* Generate a pseudo random number
-;*
-;* On return r0 contains the number, which is also stored at @rnd_seed
-;*
-;* r1 and r2 are modified
-;*
-;ti_rnd:
-;       li   r1,28643                 ; A prime number to multiply by
-;       mpy  @rnd_seed,r1             ; Multiply by last random number
-;       ai   r2,31873                 ; Add a prime number
-;       src  r2,7                     ; Mix up the number to break odd/even pattern
-;       mov  r2,@rnd_seed             ; Save this number for next time
-;       mov  r2,r0
-;       rt
-;rnd_seed:
-;       data 0
-;*// ti_rnd
+*********************************************************************
+*
+* Generate a pseudo random number
+*
+* On return r0 contains the number, which is also stored at @rnd_seed
+*
+* r1 and r2 are modified
+*
+ti_rnd:
+       li   r1,28643                 ; A prime number to multiply by
+       mpy  @rnd_seed,r1             ; Multiply by last random number
+       ai   r2,31873                 ; Add a prime number
+       src  r2,7                     ; Mix up the number to break odd/even pattern
+       mov  r2,@rnd_seed             ; Save this number for next time
+       mov  r2,r0
+       rt
+*// ti_rnd
 
 *********************************************************************
 *
