@@ -249,10 +249,11 @@ start_game:                            ; >7d9a
        .call @clear_screen             ; CALL $80AA        ; clear display, attributes, and set black border
        .call @draw_side_panel          ; CALL $A219        ; draw side panel background scroll
        .call @draw_lives               ; CALL $A2CE        ; draw lives sprites in side panel
+;      .call @place_key_pieces         ; CALL $94B6        ; set locations of ACG key pieces (moved)
+;      .call @set_key_positions        ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy (moved)
+       .call @reset_game_state         ; CALL $8D61        ; copy initial game state to working state area
        .call @place_key_pieces         ; CALL $94B6        ; set locations of ACG key pieces
 ;      .call @set_key_positions        ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy
-       .call @reset_game_state         ; CALL $8D61        ; copy initial game state to working state area
-       .call @set_key_positions        ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy
        .call @randomise_doors          ; CALL $94F5        ; randomise which doors can open/close
        .call @prepare_player           ; CALL $9443        ; prepare player to spawn
        b    @enter_room                ; JP $9147          ; Will jump back to main_loop
@@ -325,11 +326,11 @@ loop2_return:                          ; >7e13
 *
 draw_room:
        .call @draw_room_decor
-       mov  @counter_low,@l            ; LD HL,($5E12)     ;
+       movb @counter_low,@l            ; LD HL,($5E12)     ;
        movb @counter_high,h
        inc  hl                         ; INC HL            ; advance game loop counter
-       mov  @l,@counter_low            ; LD ($5E12),HL     ;
-       mov  h,@counter_high
+       movb @l,@counter_low            ; LD ($5E12),HL     ;
+       movb h,@counter_high
 ;      li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
        movb @game_flags,r0             ; BIT 0,(HL)        ; room drawn yet?
        andi r0,>0100                   ;                   
@@ -3360,7 +3361,7 @@ draw_entities_1:                       ; >9295
        ; AND A                         ; AND A             ; slot used?
        jeq  draw_entities_2            ; JR Z,$92A6        ; jump if not
 ;      movb @player_room,a             ; LD A,($EA91)      ;
-       cb   @player_room,@>01(ix)      ; CP (IX+$01)       ; in player room?
+       cb   @player_room,@entity_screen(ix)                ; CP (IX+$01)       ; in player room?
        jne  draw_entities_2            ; JR NZ,$92A6       ; jump if not
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
 draw_entities_2:                       ; >92a6
@@ -3378,7 +3379,7 @@ draw_entities_3:                       ; >92b6
        ; AND A                         ; AND A             ; slot used?
        jeq  draw_entities_4            ; JR Z,$92C7        ; jump if not
 ;      movb @player_room,a             ; LD A,($EA91)      ;
-       cb   @player_room,@>01(ix)      ; CP (IX+$01)       ; in player room?
+       cb   @player_room,@entity_screen(ix)                ; CP (IX+$01)       ; in player room?
        jne  draw_entities_4            ; JR NZ,$92C7       ; jump if not
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
 draw_entities_4:                       ; >92c7
@@ -3754,7 +3755,8 @@ place_key_pieces:                      ; >94b6
        li   bc,acg_key_rooms           ; LD BC,$94DD       ; 
        a    bc,hl                      ; ADD HL,BC         ; 
        .ex_de_hl                       ; EX DE,HL          ; 
-       li   hl,acg_key_init+>0001      ; LD HL,$6026       ; first key piece room
+;      li   hl,acg_key_init+>0001      ; LD HL,$6026       ; first key piece room
+       li   hl,acg_key_1+>0001         ; LD HL,$6026       ; first key piece room
        li   bc,>0008                   ; LD BC,$0008       ; 8 bytes per entity
        movb @bytes+>03,a               ; LD A,$03          ; 3 key pieces
 loc_94d3:                              ; >94d3

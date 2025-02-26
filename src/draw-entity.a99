@@ -12,7 +12,7 @@ get_saved_sprite_addr:                 ; >9e86
 * Used by the routines at #R$8cb7, #R$8d45, #R$8e26 and #R$9e96.
 *
 get_sprite_addr:                       ; >9e89
-       sb   one,a                      ; DEC A             ;
+       sb   one,a                      ; DEC A             ; one-based
        sb   h,h
        movb a,@l                       ; LD L,A            ;
 ;      sb   h,h                        ; LD H,$00          ;
