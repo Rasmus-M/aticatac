@@ -240,13 +240,13 @@ main_loop:                             ; >7dc3
 loc_7dc8:                              ; >7dc8
        movb a,@num_creatures           ; LD ($5E25),A      ; number of creatures processed this frame
        li   ix,acg_key_1               ; LD IX,$EAA8       ; first entity
-       movb @game_flags,a              ; LD A,($5E14)      ; b0 set if room content drawn
-       movb a,r0                       ; BIT 0,A           ; room content drawn?
+       movb @game_flags,r0             ; LD A,($5E14)      ; b0 set if room content drawn
+;      movb a,r0                       ; BIT 0,A           ; room content drawn?
        andi r0,>0100                   ;                   
-       jne  loc_7ddc                   ; JR NZ,$7DDC       ; jump if so
+       jne  main_loop_1                ; JR NZ,$7DDC       ; jump if so
        li   ix,linked_items            ; LD IX,$EEE0       ; pairs of linked items, including doors
        jmp  draw_room                  ; JR $7E23          ;
-loc_7ddc:                              ; >7ddc
+main_loop_1:                           ; >7ddc
        movb @zx_frames,a               ; LD A,($5C78)      ;
        movb a,@c                       ; LD C,A            ; 
        movb @last_frames,a             ; LD A,($5E03)      ; 
@@ -256,22 +256,23 @@ loc_7ddc:                              ; >7ddc
 !
        movb @player_room,a             ; LD A,($EA91)      ; 
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; entity in player room?
-       li   hl,loop_return             ; LD HL,$7DF3       ; 
+       li   hl,loop_return_1           ; LD HL,$7DF3       ;
        jne  !                          ; JP Z,$7E7E        ; jump if so
-;       b    @process_action            ;
+;       b    @process_action           ;
 !
-loop_return:                           ; >7df3
-       li   de,>0008                   ; LD DE,$0008       ; entity size
-       a    de,ix                      ; ADD IX,DE         ; next entity
+loop_return_1:                         ; >7df3
+;      li   de,>0008                   ; LD DE,$0008       ; entity size
+       ai    ix,8                       ; ADD IX,DE         ; next entity
 ;      .push ix                        ; PUSH IX           ;
 ;      .pop hl                         ; POP HL            ;
-       mov  ix,hl
-       li   de,creature1               ; LD DE,$EE60       ; end marker
-       ; AND A                         ; AND A             ; 
-       c    de,hl                      ; SBC HL,DE         ; end of list?
-       jhe  loc_7ddc                   ; JR C,$7DDC        ; TODO: check code. jump if not
+;      li   de,creature1               ; LD DE,$EE60       ; end marker
+;      ; AND A                         ; AND A             ;
+;       c    de,hl                     ; SBC HL,DE         ; end of list?
+       ci   ix,creature1
+       jl   main_loop_1                ; JR C,$7DDC        ; jump if not
+**
 * This entry point is used by the routine at #R$7e13.
-loc_7e03:                              ; >7e03
+main_loop_2:                           ; >7e03
        movb @zx_frames,a               ; LD A,($5C78)      ; 
        movb a,@c                       ; LD C,A            ; 
        movb @last_frames,a             ; LD A,($5E03)      ; 
@@ -281,19 +282,18 @@ loc_7e03:                              ; >7e03
 !
        li   hl,loop2_return            ; LD HL,$7E13       ; 
 ;      jmp  process_action             ; JR $7E7E          ;
-
 * Routine at 7e13
 loop2_return:                          ; >7e13
-       li   de,>0010                   ; LD DE,$0010       ; 16 bytes per linked entity pair
-       a    de,ix                      ; ADD IX,DE         ; next pair
+;      li   de,>0010                   ; LD DE,$0010       ; 16 bytes per linked entity pair
+       ai   ix,16                      ; ADD IX,DE         ; next pair
 ;      .push ix                        ; PUSH IX           ;
 ;      .pop hl                         ; POP HL            ;
-       mov  ix,hl
-       li   de,linked_items            ; LD DE,$EEE0       ; pairs of linked items, including doors
-       ; AND A                         ; AND A             ; 
-       c    de,hl                      ; SBC HL,DE         ;
-       jhe  loc_7e03                   ; JR C,$7E03        ; TODO: check code.
-
+;      mov  ix,hl
+;      li   de,linked_items            ; LD DE,$EEE0       ; pairs of linked items, including doors
+;      ; AND A                         ; AND A             ;
+       ci   ix,linked_items            ; SBC HL,DE         ;
+       jl  main_loop_2                 ; JR C,$7E03         ;
+*
 draw_room:
        .call @draw_room_decor
        mov  @counter_low,@l            ; LD HL,($5E12)     ;
@@ -3743,7 +3743,7 @@ randomise_doors:                       ; >94f5
        movb a,h                        ; LD H,A            ; set ROM addr MSB
        .exx                            ; EXX               ; 
        li   hl,linked_items            ; LD HL,$EEE0       ; pairs of linked items, including doors
-       li   de,_eee8                   ; LD DE,$EEE8       ; pairs of linked items, including doors
+       li   de,second_linked_item                   ; LD DE,$EEE8       ; pairs of linked items, including doors
        li   bc,>0010                   ; LD BC,$0010       ; 16 bytes per entry
 loc_950b:                              ; >950b
        .exx                            ; EXX               ; 

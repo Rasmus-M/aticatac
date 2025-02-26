@@ -276,12 +276,12 @@ hunchback:                             ; >eed0
        byte >00,>00,>00,>00,>00,>00,>00,>00
        byte >00,>00,>00,>00,>00,>00,>00,>00
 
-* Here the player_init data ends
+* Here the player data ends
 
 * Data block at eee0
 linked_items:                          ; >eee0
        byte >00,>00,>00,>00,>00,>00,>00,>00
-_eee8:                                 ; >eee8
+second_linked_item:                    ; >eee8
        byte >00,>00,>00,>00,>00,>00,>00,>00
        byte >00,>00,>00,>00,>00,>00,>00,>00
        byte >00,>00,>00,>00,>00,>00,>00,>00
