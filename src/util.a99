@@ -19,8 +19,8 @@ xy_to_display:                         ; >9ba2
 ;       andi a,>1f00                    ; AND $1F           ;
 ;       movb a,@l                       ; LD L,A            ;
 ;       movb h,a                        ; LD A,H            ;
-;       sla  a,1                        ; RLCA              ; TODO: check code.
-;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       sla  a,1                        ; RLCA              ;
+;       sla  a,1                        ; RLCA              ;
 ;       andi a,>e000                    ; AND $E0           ;
 ;       socb @l,a                       ; OR L              ;
 ;       movb a,@l                       ; LD L,A            ;
@@ -109,7 +109,7 @@ pixel_line_up_branch:
 ;       sb   @bytes+>20,a               ; SUB $20           ;
 ;       movb a,@l                       ; LD L,A            ;
 ;       cb   r0,@bytes+>20
-;       jl   pixel_line_up_end          ; RET C             ; TODO: check code.
+;       jl   pixel_line_up_end          ; RET C             ;
 ;       movb h,a                        ; LD A,H            ;
 ;       ab   @bytes+>08,a               ; ADD A,$08         ;
 ;       movb a,h                        ; LD H,A            ;
@@ -155,8 +155,8 @@ mirror_a:                              ; >9a92
 ;       .push bc                        ; PUSH BC           ;
 ;       movb @bytes+>08,b               ; LD B,$08          ;
 ;loc_9a95:                              ; >9a95
-;       ; RLA                           ; TODO RLA               ;
-;       ; RR C                          ; TODO RR C              ;
+;       ; RLA                           ; RLA               ;
+;       ; RR C                          ; RR C              ;
 ;       sb   one,b                      ; DJNZ $9A95        ;
 ;       jne  loc_9a95                   ;
 ;       movb @c,a                       ; LD A,C            ;
@@ -213,13 +213,13 @@ sbc_de_b:                              ; >9aa5
 * HL = DE * A
 *
 * Used by the routines at #R$8b8a and #R$9aba.
-mult_de_a:                             ; >9aad
+mpy_de_a:                             ; >9aad
 ;       li   hl,>0000                   ; LD HL,$0000       ;
 ;       movb @bytes+>08,b               ; LD B,$08          ;
 ;loc_9ab2:                              ; >9ab2
 ;       a    hl,hl                      ; ADD HL,HL         ;
-;       sla  a,1                        ; RLCA              ; TODO: check code.
-;       jnc  loc_9ab7                   ; JR NC,$9AB7       ; TODO: check code.
+;       sla  a,1                        ; RLCA              ;
+;       jnc  loc_9ab7                   ; JR NC,$9AB7       ;
 ;       a    de,hl                      ; ADD HL,DE         ;
 ;loc_9ab7:                              ; >9ab7
 ;       sb   one,b                      ; DJNZ $9AB2        ;
@@ -236,7 +236,7 @@ mult_de_a:                             ; >9aad
 *
 * Used by the routines at #R$9acb, #R$9aef, #R$9b14, #R$9b5d, #R$9dce, #R$9df8,
 * #R$9e21 and #R$9e55.
-hl_de_b_c:                             ; >9aba
+de_plus_b_mpy_c:                             ; >9aba
 ;       .push hl                        ; PUSH HL           ;
 ;       .push de                        ; PUSH DE           ;
 ;       movb b,a                        ; LD A,B            ; A=b
@@ -311,7 +311,7 @@ get_signed_b7_4:                       ; >8f80
 ;       andi a,>0f00                    ; AND $0F           ; keep low nibble
 ;       neg a                           ; NEG               ; re-negate
 ;       .ret                            ; RET               ;
-;loc_8f8f:                              ; >8f8f
+; loc_8f8f:                             ; >8f8f
 ;       ; RRCA                          ; RRCA              ;
 ;       ; RRCA                          ; RRCA              ;
 ;       ; RRCA                          ; RRCA              ;

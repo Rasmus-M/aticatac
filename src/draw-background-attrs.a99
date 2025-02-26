@@ -14,14 +14,14 @@ draw_bgrnd_attrs:                      ; >9980
 
 * Data block at 9985
 attr_funcs:                            ; >9985
-       data draw_attr_0
-       data draw_attr_1
-       data draw_attr_2
-       data draw_attr_3
-       data draw_attr_4
-       data draw_attr_5
-       data draw_attr_6
-       data draw_attr_7
+       data draw_attr_0                ; 000 >00           ; normal
+       data draw_attr_1                ; 001 >20           ; flip vertical (not used)
+       data draw_attr_2                ; 010 >40           ; rotate right
+       data draw_attr_3                ; 011 >60           ; flip vertical and rotate right
+       data draw_attr_4                ; 100 >80           ; rotate bottom
+       data draw_attr_5                ; 101 >A0           ; flip vertical and rotate bottom
+       data draw_attr_6                ; 110 >C0           ; rotate left
+       data draw_attr_7                ; 111 >E0           ; flip vertical and rotate left (not used)
 
 * Routine at 9d25
 draw_attr_0:                           ; >9d25
@@ -170,7 +170,7 @@ loc_9db7:                              ; >9db7
 draw_attr_4:                           ; >9dce
        .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
-       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       .call @de_plus_b_mpy_c          ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9dd5:                              ; >9dd5
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
@@ -204,7 +204,7 @@ loc_9de5:                              ; >9de5
 draw_attr_5:                           ; >9df8
        .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
-       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       .call @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
        dec  de                         ; DEC DE            ;
 loc_9e03:                              ; >9e03
@@ -241,7 +241,7 @@ draw_attr_6:                           ; >9e21
 ;      .exx                            ; EXX               ;
        movb a,b_                       ; LD B,A            ;
 ;      .exx                            ; EXX               ;
-       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       .call @de_plus_b_mpy_c          ; CALL $9ABA        ; DE = DE + B * (C - 1)
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
 loc_9e2f:                              ; >9e2f
        dec  de                         ; DEC DE            ;
@@ -280,9 +280,9 @@ draw_attr_7:                           ; >9e55
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
        movb b,a                        ; LD A,B            ;
 ;      .exx                            ; EXX               ;
-       movb a,b_                         ; LD B,A            ;
+       movb a,b_                       ; LD B,A            ;
 ;      .exx                            ; EXX               ;
-       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       .call @de_plus_b_mpy_c          ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9e60:                              ; >9e60
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;

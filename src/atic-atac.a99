@@ -2200,7 +2200,7 @@ draw_chicken_branch:
        sb   d,d                        ; LD D,$00          ; de = width
        movb @c,a                       ; LD A,C            ; a = desired height
 ;      .push bc                        ; PUSH BC           ;
-       .call @mult_de_a                ; CALL $9AAD        ; HL = DE * A = width * desired height
+       .call @mpy_de_a                ; CALL $9AAD        ; HL = DE * A = width * desired height
 ;      .pop bc                         ; POP BC            ;
        mov  @chicken_empty_addr,de     ; LD DE,($A626)     ; de = address of empty chicken graphics
        .push de                        ; PUSH DE           ; Save address
@@ -3141,9 +3141,6 @@ change_room:                           ; >9117
        movb a,@player_contact          ; LD ($EA92),A      ; 
 * This entry point is used by the routine at #R$7d9a.
 enter_room:                            ; >9147
-
-       movb @bytes+83,@player_room
-
        movb @player_room,a             ; LD A,($EA91)      ;
        .call @visit_room               ; CALL $96AF        ; mark room A as visited
 room_loop:

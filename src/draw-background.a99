@@ -255,7 +255,7 @@ draw_disp_4:                           ; >9acb
        mov  af,@blend_instr_4          ; LD ($9ADD),A      ;
        mov  af_,@blend_instr_4+2
        .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
-       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       .call @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9ad8:                              ; >9ad8
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
@@ -289,7 +289,7 @@ draw_disp_5:                           ; >9aef
        mov  af,@blend_instr_5          ; LD ($9B06),A      ;
        mov  af_,@blend_instr_5+2
        .call @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
-       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       .call @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
 loc_9aff:                              ; >9aff
        .push bc                        ; PUSH BC           ;
@@ -329,7 +329,7 @@ draw_disp_6:                           ; >9b14
 ;      .exx                            ; EXX               ;
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
        dec  de                         ; DEC DE            ;
-       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       .call @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9b2b:                              ; >9b2b
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
@@ -402,7 +402,7 @@ draw_disp_7:                           ; >9b5d
        movb a,b_                       ; LD B,A            ;
        movb @bytes+>80,@l_             ; LD L,$80          ;
 ;      .exx                            ; EXX               ;
-       .call @hl_de_b_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       .call @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9b70:                              ; >9b70
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
