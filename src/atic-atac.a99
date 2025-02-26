@@ -349,7 +349,6 @@ loc_7e55:                              ; >7e55
 ;       mov  hl,@rand8                  ; LD ($5E05),HL     ; only low 8 bits are meaningfully random
        bl   @ti_rnd
        mov  r0,@rand8
-       movb r0,@zx_frames
        .call @check_pickup_key         ; CALL $938B        ; check whether pick-up key has been pressed
        .call @check_pause              ; CALL $9489        ; check for pause key, return when not paused
        .call @replenish_food           ; CALL $9924        ; periodically replenish consumed food
@@ -358,7 +357,7 @@ loc_7e55:                              ; >7e55
        jne  !                          ; JP Z,$96EC        ; congratulate player on completion
        b    @game_complete             ;                   
 !
-       inc  @frame
+       ab   one,@zx_frames
        bl   @upload_zx_screen
        b    @main_loop                 ; JP $7DC3          ;
 
@@ -379,36 +378,39 @@ lookup_graphic:                        ; >7e82
 * 
 * Used by the routine at #R$7dc3.
 run_player:                            ; >7eb2
-       rt                              ; TODO
+;       rt
+       .proc
 ;      limi 0                          ; DI                ;
        .push ix                        ; PUSH IX           ; 
-       movb one,a                      ; LD A,$01          ; 
-       movb a,@in_handlers             ; LD ($5E04),A      ; flag set but never read
+       movb one,@in_handlers           ; LD A,$01          ;
+;      movb a,@in_handlers             ; LD ($5E04),A      ; flag set but never read
        li   ix,player                  ; LD IX,$EA90       ; 
 * This entry point is used by the routine at #R$7ec5.
 loc_7ebe:                              ; >7ebe
        li   hl,handler_loop            ; LD HL,$7EC5       ; 
        .push hl                        ; PUSH HL           ; 
-       b    @run_handler               ; JP $7E7F          ; 
-
+       b    @run_handler               ; JP $7E7F          ;
 * Routine at 7ec5
 handler_loop:                          ; >7ec5
-       li   de,>0008                   ; LD DE,$0008       ; 8 bytes per entry
-       a    de,ix                      ; ADD IX,DE         ; next entry
-       .push ix                        ; PUSH IX           ; 
-       .pop hl                         ; POP HL            ; 
-       li   de,acg_key_1               ; LD DE,$EAA8       ; end marker
-       ; AND A                         ; AND A             ; 
-       s    de,hl                      ; SBC HL,DE         ; end of list?
-       joc  loc_7ebe                   ; JR C,$7EBE        ; TODO: check code. jump if not
-       .call @clock_tick               ; CALL $95DA        ; advance the clock 1 frame
-       movb @zx_frames,a               ; LD A,($5C78)      ; 
-       movb a,@last_frames             ; LD ($5E03),A      ; 
+;       li   de,>0008                   ; LD DE,$0008       ; 8 bytes per entry
+;       a    de,ix                      ; ADD IX,DE         ; next entry
+;       .push ix                        ; PUSH IX           ;
+;       .pop hl                         ; POP HL            ;
+;       li   de,acg_key_1               ; LD DE,$EAA8       ; end marker
+;       ; AND A                         ; AND A             ;
+;       s    de,hl                      ; SBC HL,DE         ; end of list?
+;       joc  loc_7ebe                   ; JR C,$7EBE        ; jump if not
+       ai   ix,8
+       ci   ix,acg_key_1
+       jl   loc_7ebe
+;      .call @clock_tick               ; CALL $95DA        ; TODO advance the clock 1 frame
+       movb @zx_frames,@last_frames    ; LD A,($5C78)      ;
+;      movb a,@last_frames             ; LD ($5E03),A      ;
        sb   a,a                        ; XOR A             ; 
        movb a,@in_handlers             ; LD ($5E04),A      ; flag set but never read
        .pop ix                         ; POP IX            ; 
        ; EI                            ; EI                ; 
-       .ret                            ; RET               ; 
+       .endproc                        ; RET               ;
 
 * Data block at 7ee6
 handler_table:                         ; >7ee6
@@ -456,6 +458,7 @@ handler_table:                         ; >7ee6
 
 * extra delay applied to inactive creatures
 h_creat_delay:                         ; >807a
+       jmp  h_creat_delay_1            ; TODO
        .push ix                        ; PUSH IX           ; 
        .pop hl                         ; POP HL            ; 
        li   de,creature1               ; LD DE,$EE60       ; end marker
@@ -463,21 +466,18 @@ h_creat_delay:                         ; >807a
        s    de,hl                      ; SBC HL,DE         ; subtract from entity address
        movb h,a                        ; LD A,H            ; 
        ; AND A                         ; AND A             ; before creature 1?
-       jeq  !                          ; RET NZ            ; return if so
-       .ret                            ;                   
-!
-       movb @l,a                       ; LD A,L            ; 
+       jeq  h_creat_delay_1            ; RET NZ            ; return if so
+       movb @l,a                       ; LD A,L            ;
        cb   a,@bytes+>30               ; CP $30            ; after creature3 (16 bytes &0eac)
-       jl   !                          ; RET NC            ; return if so
-       .ret                            ;                   
-!
+       jl   h_creat_delay_1            ; RET NC            ; return if so
        li   hl,>00c0                   ; LD HL,$00C0       ; delay to keep game speed stable
 delay_loop:                            ; >808d
        dec  hl                         ; DEC HL            ; 
        movb h,a                        ; LD A,H            ; 
        socb @l,a                       ; OR L              ; 
        jne  delay_loop                 ; JR NZ,$808D       ; 
-       .ret                            ; RET               ; 
+h_creat_delay_1:
+       .endproc                        ; RET               ;
 
 * clear screen and attrs of play area
 * 
@@ -1604,7 +1604,7 @@ pop_creature:                          ; >875f
        li   bc,>0155                   ; LD BC,$0155       ; 
        .call @add_score_bc_bcd         ; CALL $A19C        ; add 155 score
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
-       b    @set_entity_attrs2         ; JP $A01A          ; set attrs covering previous and new position
+       b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
 
 * creature death pop animation handler
 h_pop:                                 ; >8787
@@ -2337,31 +2337,32 @@ flash_score:                           ; >8c8c
        jeq  loc_8ca7                   ; JR Z,$8CA7        ; jump if so (stop flash)
        andi a,>0f00                    ; AND $0F           ; 16th frame?
        jne  !                          ; CALL Z,$A3E0      ; call if so (beep)
-       .call @start_beep               ;                   
+;      .call @start_beep               ;
 !
-       li   hl,zx_screen+>10c8         ; LD HL,$50C8       ; 
+       li   hl,>50C8                   ; LD HL,$50C8       ;
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        movb @bytes+>06,b               ; LD B,$06          ; 
 loc_8c9f:                              ; >8c9f
        movb *hl,a                      ; LD A,(HL)         ; 
        socb @bytes+>80,a               ; OR $80            ; enable flash attribute
-       movb a,*hl                      ; LD (HL),A         ; 
-       inc  hl                         ; INC HL            ; 
+       movb a,*hl+                     ; LD (HL),A         ;
+;      inc  hl                         ; INC HL            ;
        sb   one,b                      ; DJNZ $8C9F        ; 
        jne  loc_8c9f                   ;                   
-       .ret                            ; RET               ; 
+       jmp  flash_score_1              ; RET               ;
 loc_8ca7:                              ; >8ca7
-       li   hl,zx_screen+>10c8         ; LD HL,$50C8       ; 
+       li   hl,>50c8                   ; LD HL,$50C8       ;
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        movb @bytes+>06,b               ; LD B,$06          ; 
 loc_8caf:                              ; >8caf
        movb *hl,a                      ; LD A,(HL)         ; 
        andi a,>7f00                    ; AND $7F           ; disable flash attribute
-       movb a,*hl                      ; LD (HL),A         ; 
-       inc  hl                         ; INC HL            ; 
+       movb a,*hl+                     ; LD (HL),A         ;
+;      inc  hl                         ; INC HL            ;
        sb   one,b                      ; DJNZ $8CAF        ; 
        jne  loc_8caf                   ;                   
-       .ret                            ; RET               ; 
+flash_score_1:
+       .endproc                        ; RET               ;
 
 * player appear handler for game start
 h_player_appear:                       ; >8cb7
@@ -2434,14 +2435,16 @@ loc_8d20:                              ; >8d20
        .call @set_appear_w_h           ; CALL $92E2        ; set spawn appearance width/height
        .pop af                         ; POP AF            ; 
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
-       b    @appear_sound              ; JP $A45F          ; player appearance sound
+;      b    @appear_sound              ; JP $A45F          ; player appearance sound
+       jmp  h_player_appear_1
 loc_8d32:                              ; >8d32
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
        movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
        sb   @>06(ix),@>06(ix)          ; LD (IX+$06),$00   ; no x movement
        sb   @>07(ix),@>07(ix)          ; LD (IX+$07),$00   ; no y movement
        sb   @>02(ix),@>02(ix)          ; LD (IX+$02),$00   ; no auto-steps
-       .ret                            ; RET               ; 
+h_player_appear_1:                       ; >8cb7
+       .endproc                        ; RET               ;
 
 * player death animation handler
 h_death:                               ; >8d45
@@ -2655,7 +2658,7 @@ loc_8e78:                              ; >8e78
 * #R$85f7 and #R$8787.
 loc_8e8e:                              ; >8e8e
        .call @draw_entity_disp         ; CALL $9FCA        ; draw entity to display (no attrs)
-       b    @set_entity_attrs2         ; JP $A01A          ; set attrs covering previous and new position
+       b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
 loc_8e94:                              ; >8e94
        movb @e,a                       ; LD A,E            ; 
        ; AND A                         ; AND A             ; moving left?
@@ -3418,7 +3421,7 @@ set_appear_w_h:                        ; >92e2
        ab   one,a                      ; INC A             ; extra byte needed
 loc_92ef:                              ; >92ef
        movb a,@width_bytes             ; LD ($5E10),A      ; 
-       b    @set_entity_attrs2         ; JP $A01A          ; set attrs covering previous and new position
+       b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
 
 * pickup item handler
 h_pickup_item:                         ; >92f5
@@ -3655,7 +3658,7 @@ loc_943d:                              ; >943d
 prepare_player:                        ; >9443
        .proc
        movb @menu_selection,a          ; LD A,($5E00)      ; 
-       sla  a,1                        ; RLCA              ; TODO: check code. 
+       sla  a,1                        ; RLCA              ;
        andi a,>3000                    ; AND $30           ; base character graphic
        ab   @bytes+>08,a               ; ADD A,$08         ; offset to desired facing direction
        movb a,@player_template+>0007   ; LD ($9488),A      ; set spawn graphic
@@ -3678,8 +3681,7 @@ loc_9476:                              ; >9476
        movb @bytes+>f0,@player_energy  ; LD A,$F0          ; starting energy
 ;      movb a,@player_energy           ; LD ($5E28),A      ;
        .call @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
-       b    @draw_lives_branch  ; JP $A2CE          ; draw lives sprites in side panel
-
+       b    @draw_lives_branch         ; JP $A2CE          ; draw lives sprites in side panel
 
 * check for pause key, return when not paused
 * 

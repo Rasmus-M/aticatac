@@ -50,7 +50,7 @@ decor_loop:                            ; >7e35
        ai   ix,8
 loc_7ead:                              ; >7ead
 
-       b    @draw_room_item
+       b    @draw_room_item            ; TODO: use handlers
 
        li   hl,handler_table2          ; LD HL,$802A       ;
 ;      jmp  lookup_graphic             ; JR $7E82          ;
