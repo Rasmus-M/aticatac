@@ -835,6 +835,12 @@ ti_vsync_1:
 *
 * For routines that set or reset the carry flag on return
 *
+return_with_eq:
+       .pop  r11
+return_with_eq_1:
+       c    r0,r0
+       rt
+
 return_with_carry:
        .pop  r11
 return_with_carry_1:

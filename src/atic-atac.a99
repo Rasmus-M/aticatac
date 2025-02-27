@@ -2805,38 +2805,40 @@ loc_909b:                              ; >909b
 * 
 * Used by the routines at #R$91f2, #R$9222 and #R$9731.
 check_exit:                            ; >90cc
-       movb @player_contact,a          ; LD A,($EA92)      ; 
+       .proc
+check_exit_branch:
+       movb @player_contact,a          ; LD A,($EA92)      ;
        andi a,>0f00                    ; AND $0F           ; touching enemy?
-       jeq  !                          ; RET NZ            ; return if so [check]
-       .ret                            ;                   
-!
-       movb @player,a                  ; LD A,($EA90)      ; 
+       jne  check_exit_branch_3        ; RET NZ            ; return if so [check]
+       movb @player,a                  ; LD A,($EA90)      ;
        sb   one,a                      ; DEC A             ; 
        cb   a,@bytes+>30               ; CP $30            ; player active?
-       jl   !                          ; RET NC            ; return if not
-       .ret                            ;                   
-!
+       jhe  check_exit_branch_3        ; RET NC            ; return if not
        movb @>05(ix),r0                ; BIT 6,(IX+$05)    ; top/bottom door?
        andi r0,>4000                   ;                   
-       jeq  loc_90e1                   ; JR Z,$90E1        ; jump if so
-       ; SRL C                         ; SRL C             ; halve vertical distance
-loc_90e1:                              ; >90e1
+       jeq  check_exit_branch_1        ; JR Z,$90E1        ; jump if so
+       movb @c,r0
+       srl  r0,1                       ; SRL C             ; halve vertical distance
+       movb r0,@c
+check_exit_branch_1:                   ; >90e1
        movb @player_x,a                ; LD A,($EA93)      ; 
        sb   @>03(ix),a                 ; SUB (IX+$03)      ; x distance
        cb   a,@c                       ; CP C              ; within range?
-       jl   !                          ; RET NC            ; return if not
-       .ret                            ;                   
-!
+       jhe  check_exit_branch_3        ; RET NC            ; return if not
        movb @>05(ix),r0                ; BIT 6,(IX+$05)    ; left/right door?
        andi r0,>4000                   ;                   
-       jne  loc_90f1                   ; JR NZ,$90F1       ; jump if so
+       jne  check_exit_branch_2        ; JR NZ,$90F1       ; jump if so
        srl  b,1                        ; SRL B             ; halve horiztonal distance
-loc_90f1:                              ; >90f1
+check_exit_branch_2:                   ; >90f1
        movb @player_y,a                ; LD A,($EA94)      ; 
        sb   @>04(ix),a                 ; SUB (IX+$04)      ; y distance to exit
        neg a                           ; NEG               ; 
        cb   a,b                        ; CP B              ; within range?
-       .ret                            ; RET               ; return no-carry if not
+       jl   check_exit_branch_4
+check_exit_branch_3:
+       b    @return_without_carry      ; RET               ; return no-carry if not
+check_exit_branch_4:
+       b    @return_with_carry
 
 * check if player is touching entity
 * 
@@ -2869,7 +2871,7 @@ change_room:                           ; >9117
        movb @>01(ix),a                 ; LD A,(IX+$01)     ; 
        movb a,@player_room             ; LD ($EA91),A      ; move player to connected room
        movb @>02(ix),a                 ; LD A,(IX+$02)     ; bits 3-0 used for x offset
-       sla  a,1                        ; RLCA              ; TODO: check code. * 2
+       sla  a,1                        ; RLCA              ; * 2
        andi a,>1e00                    ; AND $1E           ; 
        ab   @>03(ix),a                 ; ADD A,(IX+$03)    ; add x
        movb a,@player_x                ; LD ($EA93),A      ; set player x to exit
@@ -2945,16 +2947,17 @@ loc_9193:                              ; >9193
        .push af                        ; PUSH AF           ; 
        socb @bytes+>03,a               ; OR $03            ; 
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
-       .call @draw_bgrnd_graphics             ; CALL $9213        ; undraw door
+       .call @draw_bgrnd_graphics      ; CALL $9213        ; undraw door
        movb *ix,a                      ; LD A,(IX+$00)     ; entity type
        xor  one,a                      ; XOR $01           ; toggle open/close state
        .call @set_door_type            ; CALL $9260        ; set door type for both linked entities
-       .call @draw_bgrnd_graphics             ; CALL $9213        ; redraw door
+       .call @draw_bgrnd_graphics      ; CALL $9213        ; redraw door
        .pop af                         ; POP AF            ; 
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; restore door attr
        .call @update_door              ; CALL $9546        ; update solid/passable door state
        .call @draw_room_item_call      ; CALL $91FE        ; draw room item
-       b    @door_sound                ; JP $A46E          ; door sound (short burst of white noise)
+;      b    @door_sound                ; JP $A46E          ; door sound (short burst of white noise)
+       .endproc
 
 * closed trapdoor handler
 h_trap_closed:                         ; >91bc
@@ -3006,23 +3009,22 @@ loc_91f5:                              ; >91f5
 * 
 * Used by the routines at #R$9244 and #R$9252.
 check_key_colour:                      ; >9222
-       movb *ix,a                      ; LD A,(IX+$00)     ; 
+       .proc
+       movb *ix,a                      ; LD A,(IX+$00)     ;
        andi a,>0300                    ; AND $03           ; locked door colour index
        li   hl,key_attrs               ; LD HL,$925C       ; 
        .call @add_hl_a                 ; CALL $926C        ; HL = HL + A
        movb *hl,d                      ; LD D,(HL)         ; key colour attr
        movb @bytes+>81,@e              ; LD E,$81          ; key graphic
        .call @check_carrying           ; CALL $9273        ; is player carrying the required key colour?
-       jeq  !                          ; JP NZ,$923F       ; jump if not
-       b    @loc_923f                  ;                   
-!
+       jne   loc_923f                  ; JP NZ,$923F       ; jump if not
        .call @enter_door               ; CALL $954D        ; enter linked object (door etc.)
        li   bc,>1111                   ; LD BC,$1111       ; 17x17 size
-       b    @check_exit                ; JP $90CC          ; check if player has left through a door
+       b    @check_exit_branch         ; JP $90CC          ; check if player has left through a door
 loc_923f:                              ; >923f
-       .call @loc_9565                 ; CALL $9565        ; 
+       .call @update_door_2            ; CALL $9565        ;
        ; AND A                         ; AND A             ; door locked
-       .ret                            ; RET               ; 
+       b    @return_without_carry      ; RET               ;
 
 * coloured locked door handler
 h_door_locked:                         ; >9244
@@ -3050,8 +3052,9 @@ h_cave_locked:                         ; >9252
 * 
 * Used by the routines at #R$915f and #R$9244.
 set_door_type:                         ; >9260
-       .push ix                        ; PUSH IX           ; 
-       .pop hl                         ; POP HL            ; 
+;      .push ix                        ; PUSH IX           ;
+;      .pop hl                         ; POP HL            ;
+       mov  ix,hl
        movb a,*hl                      ; LD (HL),A         ; set door graphic
        .ex_af_af_                      ; EX AF,AF'         ; 
        movb @l,a                       ; LD A,L            ; 
@@ -3066,40 +3069,41 @@ set_door_type:                         ; >9260
 * 
 * Used by the routines at #R$8906, #R$8988 and #R$9222.
 check_carrying:                        ; >9273
+       .proc
        movb @bytes+>03,b               ; LD B,$03          ; 3 inventory slots to search
        li   hl,inventory1+>0002        ; LD HL,$5E32       ; 
 loc_9278:                              ; >9278
-       movb *hl,a                      ; LD A,(HL)         ; item colour
+       movb *hl+,a                     ; LD A,(HL)         ; item colour
        cb   a,@e                       ; CP E              ; match?
-       inc  hl                         ; INC HL            ; 
+;      inc  hl                         ; INC HL            ;
        jne  loc_9280                   ; JR NZ,$9280       ; jump if not
        movb *hl,a                      ; LD A,(HL)         ; item graphic
        cb   a,d                        ; CP D              ; match?
-       jne  !                          ; RET Z             ; return if so
-       .ret                            ;                   
-!
+       b    @return_with_eq            ; RET Z             ; return if so
 loc_9280:                              ; >9280
-       equ  $
-       inc  hl                         ; INC HL            ; 
-       inc  hl                         ; INC HL            ; 
-       inc  hl                         ; INC HL            ; next inventory slot
-       sb   one,b                      ; DJNZ $9278        ; 
+;      inc  hl                         ; INC HL            ;
+;      inc  hl                         ; INC HL            ;
+;      inc  hl                         ; INC HL            ; next inventory slot
+       ai   hl,3
+       sb   one,b                      ; DJNZ $9278        ;
        jne  loc_9278                   ;                   
-       .ret                            ; RET               ; 
+       .endproc                        ; RET               ;
 
 * get connected door exit
 * 
 * Used by the routines at #R$9117 and #R$9546.
 get_linked_door:                       ; >9286
-       .push ix                        ; PUSH IX           ; 
-       .pop hl                         ; POP HL            ; 
-       movb @l,a                       ; LD A,L            ; 
+;       .push ix                        ; PUSH IX           ;
+;       .pop hl                         ; POP HL            ;
+       mov  ix,hl
+       movb @l,a                       ; LD A,L            ;
        li   r0,8*256                   ; XOR $08           ; swap 8-byte entry
        xor  r0,a                       ;                   
        movb a,@l                       ; LD L,A            ; 
-       .push hl                        ; PUSH HL           ; 
-       .pop ix                         ; POP IX            ; 
-       .ret                            ; RET               ; 
+;       .push hl                        ; PUSH HL           ;
+;       .pop ix                         ; POP IX            ;
+       mov  hl,ix
+       .ret                            ; RET               ;
 
 * draw all non-monster entities in the current room
 * 
@@ -3383,7 +3387,7 @@ loc_9433:                              ; >9433
        .call @enter_door               ; CALL $954D        ; enter linked object (door etc.)
        b    @h_door_exit               ; JP $91F2          ; door exit handler
 loc_943d:                              ; >943d
-       .call @loc_9565                 ; CALL $9565        ; 
+       .call @update_door_2                 ; CALL $9565        ;
        b    @draw_room_item            ; JP $91FE          ; draw room item
 
 * prepare player to spawn
@@ -3581,12 +3585,15 @@ loc_9542:                              ; >9542
 * 
 * Used by the routine at #R$915f.
 update_door:                           ; >9546
-       movb *ix,a                      ; LD A,(IX+$00)     ; 
+       .proc
+       movb *ix,a                      ; LD A,(IX+$00)     ;
        andi a,>0100                    ; AND $01           ; is door open?
-       jeq  loc_9565                   ; JR Z,$9565        ; jump if so
+       jeq  update_door_2_branch       ; JR Z,$9565        ; jump if so
+       jmp  !
 * This entry point is used by the routines at #R$9222, #R$9421 and #R$961b.
 enter_door:                            ; >954d
-       movb @>05(ix),a                 ; LD A,(IX+$05)     ; enter linked object (door etc.)
+       .proc
+!      movb @>05(ix),a                 ; LD A,(IX+$05)     ; enter linked object (door etc.)
        andi a,>f700                    ; AND $F7           ; object is solid
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
        .push ix                        ; PUSH IX           ; 
@@ -3595,10 +3602,12 @@ enter_door:                            ; >954d
        andi a,>f700                    ; AND $F7           ; linked object is solid
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
        .pop ix                         ; POP IX            ; 
-       .ret                            ; RET               ; 
+       jmp  update_door_1              ; RET               ;
 * This entry point is used by the routines at #R$9222, #R$9421 and #R$961b.
-loc_9565:                              ; >9565
-       movb @>05(ix),a                 ; LD A,(IX+$05)     ; 
+update_door_2:                         ; >9565
+       .proc
+update_door_2_branch:
+       movb @>05(ix),a                 ; LD A,(IX+$05)     ;
        socb @bytes+>08,a               ; OR $08            ; object can be passed through
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
        .push ix                        ; PUSH IX           ; 
@@ -3607,7 +3616,8 @@ loc_9565:                              ; >9565
        socb @bytes+>08,a               ; OR $08            ; linked object can be passed through
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
        .pop ix                         ; POP IX            ; 
-       .ret                            ; RET               ; 
+update_door_1:
+       .endproc                        ; RET               ;
 
 * check if player is standing in a doorway
 * 
@@ -3753,7 +3763,7 @@ h_acg_exit:                            ; >961b
        li   bc,>3020                   ; LD BC,$3020       ; 48x32
        b    @loc_91f5                  ; JP $91F5          ; 
 loc_963b:                              ; >963b
-       .call @loc_9565                 ; CALL $9565        ; 
+       .call @update_door_2                 ; CALL $9565        ;
        b    @draw_room_item            ; JP $91FE          ; draw room item
 
 * show game statistics

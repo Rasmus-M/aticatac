@@ -50,7 +50,7 @@ decor_loop:                            ; >7e35
        ai   ix,8
 loc_7ead:                              ; >7ead
 
-       b    @draw_room_item            ; TODO: use handlers
+;      b    @draw_room_item            ; TODO: not all handlers have been tested
 
        li   hl,handler_table2          ; LD HL,$802A       ;
        movb *ix,@c                     ; LD C,(IX+$00)     ;
@@ -61,16 +61,16 @@ draw_room_decor_1:
 
 * Data block at 802a
 handler_table2:                        ; >802a
-       data h_creat_delay,h_door_exit,h_door_exit,h_big_door_exit    ; &00
-       data h_creat_delay,h_creat_delay,h_creat_delay,h_creat_delay  ; &04 extra delay for inactive creatures
-       data h_door_locked,h_door_locked,h_door_locked,h_door_locked  ; &08
-       data h_cave_locked,h_cave_locked,h_cave_locked,h_cave_locked  ; &0c
-       data h_clock,draw_room_item,draw_room_item,h_creat_delay      ; &10
-       data h_creat_delay,draw_room_item,draw_room_item,h_bookcase   ; &14
-       data h_trap_closed,h_trap_open,h_barrel,draw_room_item        ; &18
+       data h_creat_delay,h_door_exit,h_door_exit,h_big_door_exit      ; &00
+       data h_creat_delay,h_creat_delay,h_creat_delay,h_creat_delay    ; &04
+       data h_door_locked,h_door_locked,h_door_locked,h_door_locked    ; &08
+       data h_cave_locked,h_cave_locked,h_cave_locked,h_cave_locked    ; &0c
+       data h_clock,draw_room_item,draw_room_item,h_creat_delay        ; &10
+       data h_creat_delay,draw_room_item,draw_room_item,h_bookcase     ; &14
+       data h_trap_closed,h_trap_open,h_barrel,draw_room_item          ; &18
        data draw_room_item,draw_room_item,draw_room_item,h_creat_delay ; &1c
-       data h_door_closed,h_door_open,h_door_closed,h_door_open      ; &20
-       data h_acg_exit,draw_room_item,draw_room_item,draw_room_item  ; &24
+       data h_door_closed,h_door_open,h_door_closed,h_door_open        ; &20
+       data h_acg_exit,draw_room_item,draw_room_item,draw_room_item    ; &24
 
 *********************************************************************
 *
