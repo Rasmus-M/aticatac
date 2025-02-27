@@ -414,7 +414,7 @@ ti_set_border_color:
 *
 * Upload main ZX screen buffer
 *
-upload_zx_screen:
+ti_upload_zx_screen:
        lwpi ti_wrksp
        mov  @wrksp+20,r10
        clr  r0
@@ -889,11 +889,11 @@ daa_routine:
 *
 * CPU space clear
 *
-clear:
+ti_clear:
        clr  r0
 clear_1:
        movb r0,*hl+
        dec  bc
        jne  clear_1
        rt
-*// clear
+*// ti_clear

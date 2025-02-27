@@ -1,0 +1,279 @@
+*********************************************************************
+*
+* Routine at 7e7e
+*
+* Used by the routine at #R$7dc3.
+process_action:                        ; >7e7e
+       b    *hl                        ; TODO: RM added, just return for now
+       .push hl                        ; PUSH HL           ; push return location
+**
+* This entry point is used by the routine at #R$7eb2.
+run_handler:                           ; >7e7f
+       li   hl,handler_table           ; LD HL,$7EE6       ;
+       movb *ix,@c                     ; LD C,(IX+$00)     ;
+       b    @branch_c_hl
+
+*********************************************************************
+*
+* run player, weapon, and sound handlers
+*
+* Used by the routine at #R$7dc3.
+run_player:                            ; >7eb2
+;       rt
+       .proc
+;      limi 0                          ; DI                ;
+       .push ix                        ; PUSH IX           ;
+       movb one,@in_handlers           ; LD A,$01          ;
+;      movb a,@in_handlers             ; LD ($5E04),A      ; flag set but never read
+       li   ix,player                  ; LD IX,$EA90       ;
+* This entry point is used by the routine at #R$7ec5.
+loc_7ebe:                              ; >7ebe
+       li   hl,handler_loop            ; LD HL,$7EC5       ;
+       .push hl                        ; PUSH HL           ;
+       b    @run_handler               ; JP $7E7F          ;
+* Routine at 7ec5
+handler_loop:                          ; >7ec5
+;       li   de,>0008                   ; LD DE,$0008       ; 8 bytes per entry
+;       a    de,ix                      ; ADD IX,DE         ; next entry
+;       .push ix                        ; PUSH IX           ;
+;       .pop hl                         ; POP HL            ;
+;       li   de,acg_key_1               ; LD DE,$EAA8       ; end marker
+;       ; AND A                         ; AND A             ;
+;       s    de,hl                      ; SBC HL,DE         ; end of list?
+;       joc  loc_7ebe                   ; JR C,$7EBE        ; jump if not
+       ai   ix,8
+       ci   ix,acg_key_1
+       jl   loc_7ebe
+;      .call @clock_tick               ; CALL $95DA        ; TODO advance the clock 1 frame
+       movb @zx_frames,@last_frames    ; LD A,($5C78)      ;
+;      movb a,@last_frames             ; LD ($5E03),A      ;
+       sb   a,a                        ; XOR A             ;
+       movb a,@in_handlers             ; LD ($5E04),A      ; flag set but never read
+       .pop ix                         ; POP IX            ;
+       ; EI                            ; EI                ;
+       .endproc                        ; RET               ;
+
+*********************************************************************
+*
+* Data block at 7ee6
+*
+handler_table:                         ; >7ee6
+       data h_creat_delay,h_knight,h_knight,h_knight                 ; &00
+       data h_knight,h_knight,h_knight,h_knight                      ; &04 extra delay for inactive creatures
+       data h_knight,h_knight,h_knight,h_knight                      ; &08
+       data h_knight,h_knight,h_knight,h_knight                      ; &0c
+       data h_knight,h_wizard,h_wizard,h_wizard                      ; &10
+       data h_wizard,h_wizard,h_wizard,h_wizard                      ; &14
+       data h_wizard,h_wizard,h_wizard,h_wizard                      ; &18
+       data h_wizard,h_wizard,h_wizard,h_wizard                      ; &1c
+       data h_wizard,h_serf,h_serf,h_serf                            ; &20
+       data h_serf,h_serf,h_serf,h_serf                              ; &24
+       data h_serf,h_serf,h_serf,h_serf                              ; &28
+       data h_serf,h_serf,h_serf,h_serf                              ; &2c
+       data h_serf,h_blank,h_creat_delay,h_creat_delay               ; &30
+       data h_fireball,h_fireball,h_fireball,h_fireball              ; &34
+       data h_sword,h_sword,h_sword,h_sword                          ; &38
+       data h_sword,h_sword,h_sword,h_sword                          ; &3c
+       data h_axe,h_axe,h_axe,h_axe                                  ; &40
+       data h_axe,h_axe,h_axe,h_axe                                  ; &44
+       data h_creat_delay,h_creat_delay,h_creat_delay,h_creat_delay  ; &48
+       data h_pumpkin_spider,h_pumpkin_spider,h_ghostlet,h_ghostlet  ; &4c
+       data h_food,h_food,h_food,h_food                              ; &50
+       data h_food,h_food,h_food,h_food                              ; &54
+       data h_sparkles,h_sparkles,h_sparkles,h_sparkles              ; &58
+       data h_pumpkin_spider,h_pumpkin_spider,h_spikey_ghost,h_spikey_ghost ; &5c
+       data h_blob,h_blob,h_ghoul,h_ghoul                            ; &60
+       data h_sound_effect,h_sound_effect2,h_player_appear,h_death   ; &64
+       data h_spikey_ghost,h_spikey_ghost,h_batlet,h_batlet          ; &68
+       data h_pop,h_pop,h_pop,h_pop                                  ; &6c
+       data h_mummy,h_mummy,h_mummy,h_mummy                          ; &70
+       data h_frankenstein,h_frankenstein,h_frankenstein,h_frankenstein ; &74
+       data h_devil,h_devil,h_devil,h_devil                          ; &78
+       data h_dracula,h_dracula,h_dracula,h_dracula                  ; &7c
+       data h_pickup_item,h_pickup_item,h_pickup_item,h_pickup_item  ; &80
+       data h_pickup_item,h_pickup_item,h_pickup_item,h_pickup_item  ; &84
+       data h_pickup_item,h_pickup_item,h_pickup_item,h_pickup_item  ; &88
+       data h_pickup_item,h_pickup_item,h_pickup_item,h_tombstone    ; &8c
+       data h_witch,h_witch,h_witch,h_witch                          ; &90
+       data h_monk_bat,h_monk_bat,h_monk_bat,h_monk_bat              ; &94
+       data h_monk_bat,h_monk_bat,h_monk_bat,h_monk_bat              ; &98
+       data h_hunchback,h_hunchback,h_hunchback,h_hunchback          ; &9c
+       data h_food_eaten,h_mushroom                                  ; &a0
+
+*********************************************************************
+*
+* extra delay applied to inactive creatures
+*
+h_creat_delay:                         ; >807a
+       jmp  h_creat_delay_1            ; TODO
+       .push ix                        ; PUSH IX           ;
+       .pop hl                         ; POP HL            ;
+       li   de,creature1               ; LD DE,$EE60       ; end marker
+       ; AND A                         ; AND A             ;
+       s    de,hl                      ; SBC HL,DE         ; subtract from entity address
+       movb h,a                        ; LD A,H            ;
+       ; AND A                         ; AND A             ; before creature 1?
+       jeq  h_creat_delay_1            ; RET NZ            ; return if so
+       movb @l,a                       ; LD A,L            ;
+       cb   a,@bytes+>30               ; CP $30            ; after creature3 (16 bytes &0eac)
+       jl   h_creat_delay_1            ; RET NC            ; return if so
+       li   hl,>00c0                   ; LD HL,$00C0       ; delay to keep game speed stable
+delay_loop:                            ; >808d
+       dec  hl                         ; DEC HL            ;
+       movb h,a                        ; LD A,H            ;
+       socb @l,a                       ; OR L              ;
+       jne  delay_loop                 ; JR NZ,$808D       ;
+h_creat_delay_1:
+       .endproc                        ; RET               ;
+
+*********************************************************************
+*
+* player appear handler for game start
+*
+h_player_appear:                       ; >8cb7
+       movb @flash_timer,a             ; LD A,($5E3C)      ; score flash timer (set up by prepare_player)
+       ; AND A                         ; AND A             ; score flash timer active?
+       jne  flash_score                ; JR NZ,$8C8C       ; jump if so
+       movb @zx_frames,a               ; LD A,($5C78)      ;
+       andi a,>0300                    ; AND $03           ; 0 in range 0-3?
+       jne  h_player_appear_2          ; JP NZ,$8D12       ; jump if not
+       ab   one,@>06(ix)               ; INC (IX+$06)      ; increase drawn height
+       movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
+       .call @get_sprite_addr          ; CALL $9E89        ; return address of sprite A in DE
+       movb *de,a                      ; LD A,(DE)         ; normal player sprite height
+       cb   a,@>06(ix)                 ; CP (IX+$06)       ; reached full reveal height?
+       jeq  h_player_appear_4          ; JR Z,$8D32        ; jump if so
+* This entry point is used by the routine at #R$8d45.
+h_player_appear_1:                     ; >8cd4
+       .push de                        ; PUSH DE           ;
+       .push hl                        ; PUSH HL           ;
+       movb h,b                        ; LD B,H            ;
+       movb @l,@c                      ; LD C,L            ;
+       movb @>04(ix),a                 ; LD A,(IX+$04)     ;
+       movb a,@>02(ix)                 ; LD (IX+$02),A     ;
+       sb   @>06(ix),a                 ; SUB (IX+$06)      ;
+       movb a,@>04(ix)                 ; LD (IX+$04),A     ;
+       movb @>06(ix),@l                ; LD L,(IX+$06)     ;
+       sb   h,h                        ; LD H,$00          ;
+       a    hl,hl                      ; ADD HL,HL         ;
+       a    de,hl                      ; ADD HL,DE         ;
+       movb h,a                        ; LD A,H            ;
+       movb a,*bc                      ; LD (BC),A         ;
+       dec  bc                         ; DEC BC            ;
+       movb @l,a                       ; LD A,L            ;
+       movb a,*bc                      ; LD (BC),A         ;
+       .push hl                        ; PUSH HL           ;
+       movb *hl,@c                     ; LD C,(HL)         ;
+       movb *ix,b                      ; LD B,(IX+$00)     ;
+       .push bc                        ; PUSH BC           ;
+       movb one,*hl                    ; LD (HL),$01       ;
+       movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
+       movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
+       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
+       .pop bc                         ; POP BC            ;
+       .pop hl                         ; POP HL            ;
+       movb @c,*hl                     ; LD (HL),C         ;
+       movb b,*ix                      ; LD (IX+$00),B     ;
+       movb @>02(ix),a                 ; LD A,(IX+$02)     ;
+       movb a,@>04(ix)                 ; LD (IX+$04),A     ;
+       .pop hl                         ; POP HL            ;
+       .pop de                         ; POP DE            ;
+       movb d,*hl                      ; LD (HL),D         ;
+       dec  hl                         ; DEC HL            ;
+       movb @e,*hl                     ; LD (HL),E         ;
+* This entry point is used by the routine at #R$8d45.
+h_player_appear_2:                     ; >8d12
+       movb @>05(ix),a                 ; LD A,(IX+$05)     ;
+       .push af                        ; PUSH AF           ;
+       movb @zx_frames,a               ; LD A,($5C78)      ;
+       ; RRCA                          ; RRCA              ;
+       ; RRCA                          ; RRCA              ; 1/4 colour change rate
+       sla  a,2
+       andi a,>0700                    ; AND $07           ; ink 0-7
+       jne  h_player_appear_3          ; JR NZ,$8D20       ; jump if not black
+       ab   one,a                      ; INC A             ; convert black to blue
+h_player_appear_3:                     ; >8d20
+       socb @bytes+>40,a               ; OR $40            ; add bright bit
+       movb a,@>05(ix)                 ; LD (IX+$05),A     ; set player attr
+       movb @>06(ix),a                 ; LD A,(IX+$06)     ;
+       .call @set_appear_w_h           ; CALL $92E2        ; set spawn appearance width/height
+       .pop af                         ; POP AF            ;
+       movb a,@>05(ix)                 ; LD (IX+$05),A     ;
+;      b    @appear_sound              ; JP $A45F          ; player appearance sound
+       jmp  h_player_appear_5
+h_player_appear_4:                     ; >8d32
+       movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
+       movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
+       sb   @>06(ix),@>06(ix)          ; LD (IX+$06),$00   ; no x movement
+       sb   @>07(ix),@>07(ix)          ; LD (IX+$07),$00   ; no y movement
+       sb   @>02(ix),@>02(ix)          ; LD (IX+$02),$00   ; no auto-steps
+h_player_appear_5:                       ; >8cb7
+       .endproc                        ; RET               ;
+*
+* set spawn appearance width/height
+*
+* Used by the routine at #R$8cb7.
+set_appear_w_h:                        ; >92e2
+       .proc
+       movb a,@height_lines            ; LD ($5E11),A      ;
+       movb @>03(ix),a                 ; LD A,(IX+$03)     ;
+       andi a,>0700                    ; AND $07           ; x aligned on cell boundary?
+       movb @bytes+>02,a               ; LD A,$02          ; 2 bytes wide
+       jeq  loc_92ef                   ; JR Z,$92EF        ;
+       ab   one,a                      ; INC A             ; extra byte needed
+loc_92ef:                              ; >92ef
+       movb a,@width_bytes             ; LD ($5E10),A      ;
+       b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
+*
+* flash score on game start
+*
+* Used by the routine at #R$8cb7.
+flash_score:                           ; >8c8c             ; TODO
+       sb   one,a                      ; DEC A             ; timer expired?
+       movb a,@flash_timer             ; LD ($5E3C),A      ; score flash timer
+       jeq  loc_8ca7                   ; JR Z,$8CA7        ; jump if so (stop flash)
+       andi a,>0f00                    ; AND $0F           ; 16th frame?
+       jne  !                          ; CALL Z,$A3E0      ; call if so (beep)
+;      .call @start_beep               ;
+!
+       li   hl,>50C8                   ; LD HL,$50C8       ;
+       .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       movb @bytes+>06,b               ; LD B,$06          ;
+loc_8c9f:                              ; >8c9f
+       movb *hl,a                      ; LD A,(HL)         ;
+       socb @bytes+>80,a               ; OR $80            ; enable flash attribute
+       movb a,*hl+                     ; LD (HL),A         ;
+;      inc  hl                         ; INC HL            ;
+       sb   one,b                      ; DJNZ $8C9F        ;
+       jne  loc_8c9f                   ;
+       jmp  flash_score_1              ; RET               ;
+loc_8ca7:                              ; >8ca7
+       li   hl,>50c8                   ; LD HL,$50C8       ;
+       .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       movb @bytes+>06,b               ; LD B,$06          ;
+loc_8caf:                              ; >8caf
+       movb *hl,a                      ; LD A,(HL)         ;
+       andi a,>7f00                    ; AND $7F           ; disable flash attribute
+       movb a,*hl+                     ; LD (HL),A         ;
+;      inc  hl                         ; INC HL            ;
+       sb   one,b                      ; DJNZ $8CAF        ;
+       jne  loc_8caf                   ;
+flash_score_1:
+       .endproc                        ; RET               ;
+
+*********************************************************************
+*
+* player death animation handler
+*
+h_death:                               ; >8d45
+       movb @zx_frames,a               ; LD A,($5C78)      ;
+       andi a,>0300                    ; AND $03           ; 3/4 animation rate for death
+       b   @h_player_appear_2                   ; JR Z,$8D12        ; jump if colouring this frame instead
+       sb   one,@>06(ix)               ; DEC (IX+$06)      ; reduce player visible height
+       ; JP M,$8D5B                    ; JP M,$8D5B        ; jump if after zero
+       movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
+       .call @get_sprite_addr          ; CALL $9E89        ; return address of sprite A in DE
+       b    @h_player_appear_1                  ; JP $8CD4          ;
+loc_8d5b:                              ; >8d5b
+       .call @place_tombstone          ; CALL $95A9        ; place a tombstone at the player position
+       b    @prepare_player            ; JP $9443          ; prepare player to spawn

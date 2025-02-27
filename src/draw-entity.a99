@@ -235,15 +235,17 @@ jr_2:                                  ; >9f29
        ab   one,@l                     ; INC L             ;
        jmp  draw_2_bytes               ; JR $9EF9          ;
 
-* Routine at 9f40
-draw2_entity:                          ; >9f40
-       .call @prepare_draw2_de         ; CALL $9FA2        ;
-       jmp  draw_entity_de             ; JR $9F4D          ;
-
-* Routine at 9f45
-undraw_entity_de:                      ; >9f45
-       .call @prepare_draw23_de        ; CALL $9F83        ;
-       jmp  loc_9f59                   ; JR $9F59          ;
+;*********************************************************************
+;*
+;* Routine at 9f40
+;draw2_entity:                          ; >9f40
+;       .call @prepare_draw2_de         ; CALL $9FA2        ;
+;       jmp  draw_entity_de             ; JR $9F4D          ;
+;
+;* Routine at 9f45
+;undraw_entity_de:                      ; >9f45
+;       .call @prepare_draw23_de        ; CALL $9F83        ;
+;       jmp  loc_9f59                   ; JR $9F59          ;
 
 *********************************************************************
 *
@@ -256,6 +258,7 @@ undraw_entity_de:                      ; >9f45
 *
 draw_entity:                           ; >9f4a
        .proc
+       seto @sprite_graphics_rom_bank
        .call @prepare_draw2            ; CALL $9F9F        ; prepare for 2-byte drawing
 * This entry point is used by the routine at #R$9f40.
 draw_entity_de:                        ; >9f4d
@@ -374,7 +377,9 @@ loc_9fbb:                              ; >9fbb
 * draw entity to display (no attrs)
 *
 * Used by the routine at #R$8e26.
-draw_entity_disp:                      ; >9fca
+draw_entity_23:                        ; >9fca
+       .proc
+       seto @sprite_graphics_rom_bank
        .call @prepare_draw2            ; CALL $9F9F        ; prepare for 2-byte drawing
        .exx                            ; EXX               ;
        .call @prepare_draw23           ; CALL $9F80        ; prepare for 2-3 byte drawing

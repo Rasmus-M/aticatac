@@ -53,7 +53,6 @@ loc_7ead:                              ; >7ead
        b    @draw_room_item            ; TODO: use handlers
 
        li   hl,handler_table2          ; LD HL,$802A       ;
-;      jmp  lookup_graphic             ; JR $7E82          ;
        movb *ix,@c                     ; LD C,(IX+$00)     ;
        b    @branch_c_hl
 draw_room_decor_1:

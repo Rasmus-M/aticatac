@@ -1,6 +1,7 @@
        aorg >a000
 
        copy "atic-atac.a99"
+       copy "handlers.a99"
        copy "draw-background.a99"
        copy "draw-background-attrs.a99"
        copy "draw-entity-attrs.a99"
