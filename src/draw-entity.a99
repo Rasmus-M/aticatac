@@ -420,12 +420,12 @@ loc_9fec:                              ; >9fec
 * #R$862e, #R$8672, #R$871a, #R$8787, #R$87a6, #R$8862, #R$8906, #R$8988,
 * #R$89ed, #R$8a2f, #R$8a80, #R$8aff, #R$8c63, #R$8d77, #R$92f5 and #R$988b.
 save_entity:                           ; >9ffb
-       movb @>03(ix),a                 ; LD A,(IX+$03)     ;
-       movb a,@saved_x                 ; LD ($5E16),A      ;
-       movb @>04(ix),a                 ; LD A,(IX+$04)     ;
-       movb a,@saved_y                 ; LD ($5E17),A      ;
-       movb *ix,a                      ; LD A,(IX+$00)     ;
-       movb a,@saved_graphic           ; LD ($5E15),A      ;
+       movb @>03(ix),@saved_x          ; LD A,(IX+$03)     ;
+;      movb a,@saved_x                 ; LD ($5E16),A      ;
+       movb @>04(ix),@saved_y          ; LD A,(IX+$04)     ;
+;      movb a,@saved_y                 ; LD ($5E17),A      ;
+       movb *ix,@saved_graphic         ; LD A,(IX+$00)     ;
+;      movb a,@saved_graphic           ; LD ($5E15),A      ;
        .ret                            ; RET               ;
 
 *********************************************************************

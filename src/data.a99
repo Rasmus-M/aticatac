@@ -1,15 +1,15 @@
 * Data block at 5e00
-menu_selection:                        ; >5e00
-       byte >00
 charset_addr:                          ; >5e01
        data charset_base
+rand8:                                 ; >5e05
+       data >0000                                          ; only low 8 bits are meaningfully random
+menu_selection:                        ; >5e00
+       byte >00
 last_frames:                           ; >5e03
        byte >00
 in_handlers:                           ; >5e04
-       byte >00                                                      ; flag set but never read
-rand8:                                 ; >5e05
-       data >0000                                                    ; only low 8 bits are
-                                                                     ; meaningfully random
+       byte >00                                            ; flag set but never read
+
        bss 9
 
 game_data:
@@ -23,8 +23,7 @@ counter_low:                           ; >5e12
 counter_high:                          ; >5e13
        byte >F5
 game_flags:                            ; >5e14
-       byte >AC                                                      ; b0 set if room content
-                                                                     ; drawn
+       byte >AC                                                      ; b0 set if room content drawn
 saved_graphic:                         ; >5e15
        byte >36
 saved_x:                               ; >5e16
@@ -56,8 +55,7 @@ line_counter:                          ; >5e23
 line_flags:                            ; >5e24
        byte >3A
 num_creatures:                         ; >5e25
-       byte >EF                                                      ; number of creatures
-                                                                     ; processed this frame
+       byte >EF                                            ; number of creatures processed this frame
 last_creat_room:                       ; >5e26
        byte >22
 creature_delay:                        ; >5e27
@@ -65,7 +63,7 @@ creature_delay:                        ; >5e27
 player_energy:                         ; >5e28
        byte >AF
 chicken_level:                         ; >5e29
-       byte >3A                                                      ; last drawn chicken level
+       byte >3A                                            ; last drawn chicken level
 score_bcd:                             ; >5e2a
        byte >F5,>AC,>36
 in_doorway:                            ; >5e2d
@@ -81,7 +79,7 @@ inventory2:                            ; >5e34
 inventory3:                            ; >5e38
        byte >00,>00,>00,>3A
 flash_timer:                           ; >5e3c
-       byte >EF                                                      ; score flash timer
+       byte >EF                                            ; score flash timer
 clock_hours:                           ; >5e3d
        byte >22
 clock_minutes:                         ; >5e3e
@@ -89,8 +87,8 @@ clock_minutes:                         ; >5e3e
 clock_seconds:                         ; >5e3f
        byte >AF
 visited_rooms:                         ; >5e40
-       byte >3A,>F5,>C0,>32,>33,>34,>32,>34,>0E,>00                  ; {visit rooms bit array
-       byte >00,>80,>5B,>00,>0D,>80,>EF,>22,>22,>0D                  ; }
+       byte >3A,>F5,>C0,>32,>33,>34,>32,>34,>0E,>00        ; {visit rooms bit array
+       byte >00,>80,>5B,>00,>0D,>80,>EF,>22,>22,>0D        ; }
 
 * Data block at 5e54
 visited_percent:                       ; >5e54
@@ -129,6 +127,18 @@ rnd_velocities:                        ; >83ca
        byte >01,>03
        byte >00,>03
        byte >00,>03
+
+* Data block at 8c2d
+chicken_entity:                        ; >8c2d
+       byte >13,>00,>00,>c8,>77,>00,>00,>00
+chicken_empty_addr_ram:
+       data chicken_empty_addr
+chicken_empty_size:
+       byte >06,>1E
+chicken_full_addr_ram:
+       data chicken_full_addr
+chicken_full_size:
+       byte >06,>1E
 
 * Data block at 8b6a
 creature_default:                      ; >8b6a
