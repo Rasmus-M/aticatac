@@ -4,7 +4,7 @@
 *
 * Used by the routine at #R$7dc3.
 process_action:                        ; >7e7e
-;       b    *hl                        ; TODO: RM added, just return for now
+       b    *hl                        ; TODO: RM added, just return for now
        .push hl                        ; PUSH HL           ; push return location
 **
 * This entry point is used by the routine at #R$7eb2.
@@ -19,7 +19,7 @@ run_handler:                           ; >7e7f
 *
 * Used by the routine at #R$7dc3.
 run_player:                            ; >7eb2
-       rt                              ; TODO: RM added, just return for now
+;      rt                              ; TODO: RM added, just return for now
        .proc
 ;      limi 0                          ; DI                ;
        .push ix                        ; PUSH IX           ;
@@ -105,7 +105,7 @@ handler_table:                         ; >7ee6
 * extra delay applied to inactive creatures
 *
 h_creat_delay:                         ; >807a
-       jmp  h_creat_delay_1            ; TODO
+       jmp  h_creat_delay_1            ; TODO: Deplay disabled
        .push ix                        ; PUSH IX           ;
        .pop hl                         ; POP HL            ;
        li   de,creature1               ; LD DE,$EE60       ; end marker
@@ -147,10 +147,10 @@ h_blank:                               ; >93e3
        .call @shift_inventory          ; CALL $934C        ; move items 1+2 to slots 2+3
        li   hl,inventory1
        sb   a,a                        ; LD HL,$0000       ;
-       mov  a,*hl+                     ; LD ($5E30),HL     ;
-       mov  a,*hl+                     ; LD ($5E32),HL     ;
-       mov  a,*hl+
-       mov  a,*hl
+       movb a,*hl+                     ; LD ($5E30),HL     ;
+       movb a,*hl+                     ; LD ($5E32),HL     ;
+       movb a,*hl+
+       movb a,*hl
        .call @draw_inventory           ; CALL $A13B        ; draw any items in player inventory
 h_blank_1:                             ; >940e
        movb @pickup_flags,a            ; LD A,($5E1F)      ;
@@ -272,7 +272,7 @@ loc_92ef:                              ; >92ef
 * flash score on game start
 *
 * Used by the routine at #R$8cb7.
-flash_score:                           ; >8c8c             ; TODO
+flash_score:                           ; >8c8c             ; TODO: Relies on ardware flash
        sb   one,a                      ; DEC A             ; timer expired?
        movb a,@flash_timer             ; LD ($5E3C),A      ; score flash timer
        jeq  loc_8ca7                   ; JR Z,$8CA7        ; jump if so (stop flash)
@@ -377,7 +377,7 @@ entry_from_wizard_and_serf:            ; >8e78
        .call @chk_creatures            ; CALL $83EA        ; check whether to add new room creatures
        movb @counter_low,a             ; LD A,($5E12)      ;
        andi a,>0f00                    ; AND $0F           ; 16th game loop?
-       jne  loc_8e8e                   ; JR NZ,$8E8E       ; jump if not
+       jne  draw_entity_23_and_attrs   ; JR NZ,$8E8E       ; jump if not
        movb @player_energy,a           ; LD A,($5E28)      ;
        sb   one,a                      ; DEC A             ; reduce health by 1
        jeq  player_dead                ; JR Z,$8EA0        ;
@@ -385,7 +385,7 @@ entry_from_wizard_and_serf:            ; >8e78
        .call @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
 * This entry point is used by the routines at #R$81f0, #R$8301, #R$845f,
 * #R$85f7 and #R$8787.
-loc_8e8e:                              ; >8e8e
+draw_entity_23_and_attrs:              ; >8e8e
        .call @draw_entity_23           ; CALL $9FCA        ; draw entity to display (no attrs)
        b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
 loc_8e94:                              ; >8e94
@@ -588,8 +588,8 @@ loc_8881:                              ; >8881
        jeq  loc_88b5                   ; JR Z,$88B5        ; jump if so
 loc_88a3:                              ; >88a3
        movb @counter_low,a             ; LD A,($5E12)      ;
-       srl  a,1                        ; RRA               ; TODO: check code.
-       srl  a,1                        ; RRA               ; TODO: check code.
+;      srl  a,1                        ; RRA               ;
+       srl  a,2                        ; RRA               ;
        andi a,>0300                    ; AND $03           ; 4 animation frames
        ab   @bytes+>70,a               ; ADD A,$70         ; base mummy graphic
        movb a,*ix                      ; LD (IX+$00),A     ; set animation graphic
@@ -627,7 +627,8 @@ loc_88f0:                              ; >88f0
 loc_88f9:                              ; >88f9
        socb @bits+7,@>06(ix)           ; SET 7,(IX+$06)    ; mummy now angry with player
 loc_88fd:                              ; >88fd
-       mov  @player_x,de               ; LD DE,($EA93)     ;
+       movb @player_x,@e               ; LD DE,($EA93)     ;
+       movb @player_y,d
        .call @attract_de               ; CALL $882D        ; set movement towards coords in DE
        jmp  loc_88a3                   ; JR $88A3          ;
 
@@ -645,7 +646,8 @@ h_dracula:                             ; >8906
        li   de,zx_screen+>068a         ; LD DE,$468A       ; yellow crucafix object
        .call @check_carrying           ; CALL $9273        ; is player carrying crucafix?
        jne  loc_8931                   ; JR NZ,$8931       ; jump if not
-       mov  @player_x,de               ; LD DE,($EA93)     ; current player position
+       movb @player_x,@e               ; LD DE,($EA93)     ; current player position
+       movb @player_y,d
        .call @attract_de               ; CALL $882D        ; set movement towards coords in DE
        movb @>08(ix),a                 ; LD A,(IX+$08)     ; x velocity
        neg a                           ; NEG               ; invert (run away!)
@@ -658,12 +660,13 @@ loc_8931:                              ; >8931
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; is Dracula in the player room?
        jne  loc_8952                   ; JR NZ,$8952       ; jump if not
-       mov  @player_x,de               ; LD DE,($EA93)     ;
+       movb @player_x,@e               ; LD DE,($EA93)     ;
+       movb @player_y,d
        .call @attract_de               ; CALL $882D        ; set movement towards coords in DE
 loc_8940:                              ; >8940
        movb @counter_low,a             ; LD A,($5E12)      ;
-       srl  a,1                        ; RRA               ; TODO: check code.
-       srl  a,1                        ; RRA               ; TODO: check code. 1/4 animation rate
+;      srl  a,1                        ; RRA               ;
+       srl  a,2                        ; RRA               ; 1/4 animation rate
        andi a,>0300                    ; AND $03           ; 4 animation frames
        ab   @bytes+>7c,a               ; ADD A,$7C         ; base Dracula graphic
        movb a,*ix                      ; LD (IX+$00),A     ; set animation graphic
@@ -678,6 +681,7 @@ loc_8952:                              ; >8952
        jeq  !                          ; JP NZ,$8940       ; jump if not
        b    @loc_8940                  ;
 !
+       bl   @ti_rnd
        movb r,a                        ; LD A,R            ;
        andi a,>7f00                    ; AND $7F           ; random 7-bit room number
        movb a,@c                       ; LD C,A            ;
@@ -720,21 +724,22 @@ h_fireball:                            ; >81f0
        ab   @bytes+>34,a               ; ADD A,$34         ; base fireball graphic
        movb a,*ix                      ; LD (IX+$00),A     ;
        movb @zx_frames,a               ; LD A,($5C78)      ;
-       ; RLA                           ; RLA               ;
+       sla  a,1                        ; RLA               ;
        andi a,>0200                    ; AND $02           ; two possible colours
        ab   @bytes+>45,a               ; ADD A,$45         ; bright cyan or white
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
 * This entry point is used by the routines at #R$81db and #R$82f1.
 weapon_handler:                        ; >8209
-       mov  @room_width,de             ; LD DE,($5E1D)     ;
+       movb @room_width,@e             ; LD DE,($5E1D)     ;
+       movb @room_height,d             ; LD DE,($5E1D)     ;
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; weapon in player room?
        jne  remove_entity              ; JR NZ,$827E       ; jump if not (remove)
        sb   one,@>0f(ix)               ; DEC (IX+$0F)      ; existed too long?
-       jeq  loc_826f                   ; JR Z,$826F        ; jump if so (remove)
+       jeq  undraw_and_remove_entitiy                   ; JR Z,$826F        ; jump if so (remove)
        movb @>02(ix),r0                ; BIT 0,(IX+$02)    ;
        andi r0,>0100                   ;
-       jne  loc_826f                   ; JR NZ,$826F       ;
+       jne  undraw_and_remove_entitiy                   ; JR NZ,$826F       ;
        movb @>03(ix),a                 ; LD A,(IX+$03)     ; weapon xpos
        ab   @>06(ix),a                 ; ADD A,(IX+$06)    ; add x velocity
        movb a,@c                       ; LD C,A            ;
@@ -757,7 +762,7 @@ loc_823f:                              ; >823f
 loc_8242:                              ; >8242
        movb @c,@>03(ix)                ; LD (IX+$03),C     ; set updated xpos
        movb b,@>04(ix)                 ; LD (IX+$04),B     ; set updated ypos
-       b    @loc_8e8e                  ; JP $8E8E          ;
+       b    @draw_entity_23_and_attrs                  ; JP $8E8E          ;
 loc_824b:                              ; >824b
        movb @>04(ix),b                 ; LD B,(IX+$04)     ; weapon ypos
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; y velocity
@@ -777,16 +782,16 @@ loc_825d:                              ; >825d
        .pop bc                         ; POP BC            ;
        jmp  loc_8231                   ; JR $8231          ;
 * This entry point is used by the routine at #R$8787.
-loc_826f:                              ; >826f
+undraw_and_remove_entitiy:             ; >826f
        .call @undraw_entity            ; CALL $9F56        ;
-       .call @weapon_pop_sound               ; CALL $A445        ; weapon disappearing sound
+       .call @weapon_pop_sound         ; CALL $A445        ; weapon disappearing sound
        movb @room_attr,a               ; LD A,($5E1A)      ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
        .call @set_entity_attrs2        ; CALL $A01A        ; set attrs covering previous and new position
 * This entry point is used by the routine at #R$85b2.
 remove_entity:                         ; >827e
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; clear entity graphic
-       .ret                            ; RET               ;
+       .endproc                        ; RET               ;
 
 *********************************************************************
 *
@@ -822,7 +827,8 @@ h_batlet:                              ; >8301
        b    @pop_creature              ;
 !
        sb   @>0f(ix),@>0f(ix)          ; LD (IX+$0F),$00   ; live for 256 frames in different room
-       mov  @room_width,de             ; LD DE,($5E1D)     ;
+       movb @room_width,@e             ; LD DE,($5E1D)     ;
+       movb @room_height,d             ; LD DE,($5E1D)     ;
        movb @>09(ix),a                 ; LD A,(IX+$09)     ; movement counter
        ab   one,a                      ; INC A             ;
        andi a,>0f00                    ; AND $0F           ; 16-frames between movement changes
@@ -830,6 +836,7 @@ h_batlet:                              ; >8301
        jeq  !                          ; JP NZ,$833A       ; jump if no change
        b    @loc_833a                  ;
 !
+       bl   @ti_rnd
        movb r,a                        ; LD A,R            ;
        andi a,>0700                    ; AND $07           ; 3-bit random behaviour
        movb a,@>08(ix)                 ; LD (IX+$08),A     ;
@@ -898,7 +905,7 @@ loc_8383:                              ; >8383
        jl   !                          ; JP NC,$875F       ; jump if not
        b    @pop_creature              ;
 !
-       b    @loc_8e8e                  ; JP $8E8E          ;
+       b    @draw_entity_23_and_attrs                  ; JP $8E8E          ;
 loc_83a2:                              ; >83a2
        szcb @bits+1,@>08(ix)           ; RES 1,(IX+$08)    ; move left away from room bounds
        jmp  loc_8362                   ; JR $8362          ;
@@ -916,14 +923,15 @@ loc_83b4:                              ; >83b4
 *
 * Used by the routine at #R$8301.
 get_rnd_velocity:                      ; >83ba
+       clr  bc
        movb @>09(ix),@c                ; LD C,(IX+$09)     ; movement counter
-       ; SLA C                         ; SLA C             ; * 2 bytes per entry
-       sb   b,b                        ; LD B,$00          ;
+       sla  bc,1                       ; SLA C             ; * 2 bytes per entry
+;      sb   b,b                        ; LD B,$00          ;
        li   hl,rnd_velocities          ; LD HL,$83CA       ; random velocities (0-3)
        a    bc,hl                      ; ADD HL,BC         ;
        movb @>08(ix),r0                ; BIT 2,(IX+$08)    ; decide on using first or second entry
        andi r0,>0400                   ;
-       .ret                            ; RET               ;
+       .ret                            ; RET               ; OK
 
 *********************************************************************
 *
@@ -947,44 +955,7 @@ h_pumpkin_spider:                      ; >845f
        jne  !                          ; JP Z,$85EA        ; jump if so
        b    @hurt_and_pop              ;
 !
-       mov  @room_width,de             ; LD DE,($5E1D)     ;
-       sb   @>0f(ix),@>0f(ix)          ; LD (IX+$0F),$00   ; live for 256 frames in different room
-       movb @bytes+>46,@>05(ix)        ; LD (IX+$05),$46   ; bright yellow
-       movb @>07(ix),a                 ; LD A,(IX+$07)     ;
-       andi a,>0f00                    ; AND $0F           ; 4-bit animation counter 0?
-       jne  loc_8497                   ; JR NZ,$8497       ; jump if not
-       movb r,a                        ; LD A,R            ;
-       andi a,>0300                    ; AND $03           ; 2-bit random x and y direction
-       movb a,@>06(ix)                 ; LD (IX+$06),A     ; set directions
-loc_8497:                              ; >8497
-       movb @>07(ix),r0                ; BIT 0,(IX+$07)    ; unchanged movement this frame?
-       andi r0,>0100                   ;
-       jne  loc_84bf                   ; JR NZ,$84BF       ; jump if so
-       movb @>06(ix),r0                ; BIT 0,(IX+$06)    ; move left?
-       andi r0,>0100                   ;
-       jne  !                          ; JP Z,$854A        ; jump if so
-       b    @loc_854a                  ;
-!
-       movb @>08(ix),a                 ; LD A,(IX+$08)     ;
-       cb   a,@bytes+>02               ; CP $02            ; at right speed limit?
-       jeq  loc_84ae                   ; JR Z,$84AE        ; jump if so
-       ab   one,@>08(ix)               ; INC (IX+$08)      ; faster right
-loc_84ae:                              ; >84ae
-       movb @>06(ix),r0                ; BIT 1,(IX+$06)    ; move up?
-       andi r0,>0200                   ;
-       jne  !                          ; JP Z,$8558        ; jump if so
-       b    @loc_8558                  ;
-!
-       movb @>09(ix),a                 ; LD A,(IX+$09)     ;
-       cb   a,@bytes+>02               ; CP $02            ; at down speed limit?
-       jeq  loc_84bf                   ; JR Z,$84BF        ; jump if so
-       ab   one,@>09(ix)               ; INC (IX+$09)      ; faster down
-loc_84bf:                              ; >84bf
-       ab   one,@>07(ix)               ; INC (IX+$07)      ; increase animation counter
-       movb @>07(ix),a                 ; LD A,(IX+$07)     ;
-       andi a,>0100                    ; AND $01           ; 2 animation frames
-       ; XOR (IX+$00)                  ; XOR (IX+$00)      ; combine, for 1/2 animation rate
-       movb a,*ix                      ; LD (IX+$00),A     ; set animation graphic
+       b    @monster_move_7
 
 *********************************************************************
 *
@@ -1011,11 +982,11 @@ h_sparkles:                            ; >85f7
        jl   !                          ; JP NC,$875F       ; jump if not
        b    @pop_creature              ;
 !
-       b    @loc_8e8e                  ; JP $8E8E          ;
+       b    @draw_entity_23_and_attrs                  ; JP $8E8E          ;
 to_creature:                           ; >8625
        movb @>02(ix),a                 ; LD A,(IX+$02)     ; creature graphic
        movb a,*ix                      ; LD (IX+$00),A     ; convert sparkle to creature
-       b    @loc_8e8e                  ; JP $8E8E          ;
+       b    @draw_entity_23_and_attrs                  ; JP $8E8E          ;
 
 *********************************************************************
 *
@@ -1053,7 +1024,8 @@ h_ghostlet:                            ; >862e
        andi a,>fe00                    ; AND $FE           ; strip animation bit
        ab   @c,a                       ; ADD A,C           ;
        movb a,*ix                      ; LD (IX+$00),A     ; set animation graphic
-       mov  @room_width,de             ; LD DE,($5E1D)     ;
+       movb @room_width,@e             ; LD DE,($5E1D)     ;
+       movb @room_height,d             ; LD DE,($5E1D)     ;
        sb   @>0f(ix),@>0f(ix)          ; LD (IX+$0F),$00   ; live for 256 frames in different room
        b    @monster_move              ; JP $84CD          ; common monster movement
 
@@ -1088,7 +1060,8 @@ h_spikey_ghost:                        ; >8672
        andi a,>fe00                    ; AND $FE           ; strip animation bit
        ab   @c,a                       ; ADD A,C           ;
        movb a,*ix                      ; LD (IX+$00),A     ; set graphic
-       mov  @room_width,de             ; LD DE,($5E1D)     ;
+       movb @room_width,@e             ; LD DE,($5E1D)     ;
+       movb @room_height,d             ; LD DE,($5E1D)     ;
        ab   one,@>0a(ix)               ; INC (IX+$0A)      ; bounce speed
        movb @>0a(ix),a                 ; LD A,(IX+$0A)     ;
        cb   a,@bytes+>07               ; CP $07            ; max bounce speed?
@@ -1145,14 +1118,15 @@ h_blob:                                ; >871a
        jne  !                          ; JP Z,$875F        ; jump if so
        b    @pop_creature              ;
 !
-       mov  @room_width,de             ; LD DE,($5E1D)     ;
+       movb @room_width,@e             ; LD DE,($5E1D)     ;
+       movb @room_height,d             ; LD DE,($5E1D)     ;
        sb   one,@>0d(ix)               ; DEC (IX+$0D)      ;
        jne  loc_874c                   ; JR NZ,$874C       ;
        movb @bytes+>11,@>0d(ix)        ; LD (IX+$0D),$11   ;
        .call @rnd_movement             ; CALL $86F2        ; set random movement
 loc_874c:                              ; >874c
        movb @>0d(ix),a                 ; LD A,(IX+$0D)     ;
-       srl  a,1                        ; RRA               ; TODO: check code.
+       srl  a,1                        ; RRA               ;
        andi a,>0100                    ; AND $01           ; 2 animation frames
        movb a,@c                       ; LD C,A            ;
        movb *ix,a                      ; LD A,(IX+$00)     ;
@@ -1174,17 +1148,18 @@ h_pop:                                 ; >8787
 !
        sb   one,@>0e(ix)               ; DEC (IX+$0E)      ; final animation frame?
        jne  !                          ; JP Z,$826F        ; jump if so
-       b    @loc_826f                  ;
+       b    @undraw_and_remove_entitiy ;
 !
        movb @>0e(ix),a                 ; LD A,(IX+$0E)     ;
        andi a,>0300                    ; AND $03           ; 4 animation frames
        ab   @bytes+>6c,a               ; ADD A,$6C         ; base pop graphic
        movb a,*ix                      ; LD (IX+$00),A     ; set animation graphic
-       b    @loc_8e8e                  ; JP $8E8E          ;
+       b    @draw_entity_23_and_attrs  ; JP $8E8E          ;
 
 *********************************************************************
 *
 * Ghoul handler
+*
 h_ghoul:                               ; >87a6
        .call @save_entity              ; CALL $9FFB        ; save entity position for undraw
        movb @player_room,a             ; LD A,($EA91)      ;
@@ -1204,12 +1179,14 @@ h_ghoul:                               ; >87a6
        jne  !                          ; JP Z,$85EA        ; jump if so
        b    @hurt_and_pop              ;
 !
-       mov  @room_width,de             ; LD DE,($5E1D)     ;
+       movb @room_width,@e             ; LD DE,($5E1D)     ;
+       movb @room_height,d             ; LD DE,($5E1D)     ;
        sb   @>0f(ix),@>0f(ix)          ; LD (IX+$0F),$00   ; live for 256 frames in different room
        movb @bytes+>46,@>05(ix)        ; LD (IX+$05),$46   ; bright yellow
        movb @>07(ix),a                 ; LD A,(IX+$07)     ;
        andi a,>0700                    ; AND $07           ; 3-bit animation counter 0?
        jne  loc_87de                   ; JR NZ,$87DE       ; jump if not
+       bl   @ti_rnd
        movb r,a                        ; LD A,R            ;
        andi a,>0300                    ; AND $03           ; 2-bit random direction
        movb a,@>06(ix)                 ; LD (IX+$06),A     ; set directions
@@ -1270,7 +1247,8 @@ h_frankenstein:                        ; >8988
 loc_89a2:                              ; >89a2
        .call @damage_8                 ; CALL $8A1E        ; reduce health by 8
 loc_89a5:                              ; >89a5
-       mov  @player_x,de               ; LD DE,($EA93)     ;
+       movb @player_x,@e               ; LD DE,($EA93)     ;
+       movb @player_y,d
        .call @attract_de               ; CALL $882D        ; set movement towards coords in DE
        movb @counter_low,a             ; LD A,($5E12)      ;
 ;      srl  a,1                        ; RRA               ;
@@ -1286,7 +1264,8 @@ chk_move_away:                         ; >89bb
        jhe  !                          ; JP C,$84CD        ; jump if so
        b    @monster_move              ;
 !
-       mov  @player_x,de               ; LD DE,($EA93)     ;
+       movb @player_x,@e               ; LD DE,($EA93)     ;
+       movb @player_y,d                ; LD DE,($EA93)     ;
        .call @attract_de               ; CALL $882D        ; set movement towards coords in DE
        movb @>08(ix),a                 ; LD A,(IX+$08)     ; x movement
        neg a                           ; NEG               ; away from player
@@ -1316,7 +1295,7 @@ h_devil:                               ; >89ed
        .call @damage_8                 ;
 !
        movb  @player_x,@e              ; LD DE,($EA93)     ;
-       movb  @player_x,d
+       movb  @player_y,d
        .call @attract_de               ; CALL $882D        ; set movement towards coords in DE
        movb *ix,a                      ; LD A,(IX+$00)     ;
        andi a,>fc00                    ; AND $FC           ; strip animation frame bits
@@ -1373,7 +1352,8 @@ loc_8a6a:                              ; >8a6a
        andi a,>0100                    ; AND $01           ; 2 animation frames
        ab   @c,a                       ; ADD A,C           ;
        movb a,*ix                      ; LD (IX+$00),A     ; set animation graphic
-       mov  @room_width,de             ; LD DE,($5E1D)     ;
+       movb @room_width,@e             ; LD DE,($5E1D)     ;
+       movb @room_height,d             ; LD DE,($5E1D)     ;
        movb @bytes+>43,@>05(ix)        ; LD (IX+$05),$43   ; bright magenta
        b    @monster_move              ; JP $84CD          ; common monster movement
 
@@ -1513,14 +1493,15 @@ loc_8ae3:                              ; >8ae3
 ;      inc  hl                         ; INC HL            ;
        movb *hl,d                      ; LD D,(HL)         ; item y
        movb one,@c                     ; LD C,$01          ; entry found
-       .ret                            ; RET               ;
+       jmp  chk_hunch_loot_1           ; RET               ;
 loc_8af8:                              ; >8af8
        .pop hl                         ; POP HL            ;
        a    de,hl                      ; ADD HL,DE         ; advance to next entry
        sb   one,b                      ; DJNZ $8AE3        ;
        jne  loc_8ae3                   ;
        sb   @c,@c                      ; LD C,$00          ; not found
-       .ret                            ; RET               ;
+chk_hunch_loot_1:
+       .ret                            ; RET               ; OK
 
 *********************************************************************
 *
@@ -1547,7 +1528,7 @@ loc_8c84:                              ; >8c84
        movb @bytes+>f0,a               ; LD A,$F0          ; cap energy at maximum
 loc_8c86:                              ; >8c86
        movb a,@player_energy           ; LD ($5E28),A      ;
-       b    @draw_chicken_branch ; JP $8B8A          ; draw chicken energy bar
+       b    @draw_chicken_branch       ; JP $8B8A          ; draw chicken energy bar
 
 *********************************************************************
 *
@@ -1574,6 +1555,8 @@ loc_9174:                              ; >9174
        jmp  loc_9193                   ; JR $9193          ;
 
 *********************************************************************
+*
+* Door closed handler
 *
 h_door_closed:                         ; >917d
        movb @counter_low,a             ; LD A,($5E12)      ; closed door handler
@@ -1623,6 +1606,8 @@ h_trap_closed:                         ; >91bc
 
 *********************************************************************
 *
+* Trap open handler
+*
 h_trap_open:                           ; >91c5
        movb @rand8,a                   ; LD A,($5E05)      ; open trapdoor handler
        ; AND A                         ; AND A             ; zero?
@@ -1635,15 +1620,15 @@ trap_common:                           ; >91cc
        .push af                        ; PUSH AF           ;
        socb @bytes+>03,a               ; OR $03            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       .call @draw_bgrnd_graphics             ; CALL $9213        ;
+       .call @draw_bgrnd_graphics      ; CALL $9213        ;
        movb *ix,a                      ; LD A,(IX+$00)     ;
        xor  one,a                      ; XOR $01           ; toggle open/closed state
        movb a,*ix                      ; LD (IX+$00),A     ;
-       .call @draw_bgrnd_graphics             ; CALL $9213        ;
+       .call @draw_bgrnd_graphics      ; CALL $9213        ;
        .pop af                         ; POP AF            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       .call @draw_room_item_call              ; CALL $91FE        ; draw room item
-       .call @door_sound                ; JP $A46E          ; door sound (short burst of white noise)
+       .call @draw_room_item_call      ; CALL $91FE        ; draw room item
+       .call @door_sound               ; JP $A46E          ; door sound (short burst of white noise)
        .endproc
 
 *********************************************************************
@@ -1652,7 +1637,7 @@ trap_common:                           ; >91cc
 *
 h_big_door_exit:                       ; >91ed
        li   bc,>2020                   ; LD BC,$2020       ; 32x32 size
-       jmp  h_door_exit_1                   ; JR $91F5          ;
+       jmp  h_door_exit_1              ; JR $91F5          ;
 
 *********************************************************************
 * door exit handler
@@ -1663,8 +1648,9 @@ h_door_exit:                           ; >91f2
 * This entry point is used by the routines at #R$91ed and #R$961b.
 h_door_exit_1:                         ; >91f5
        .call @check_exit               ; CALL $90CC        ; check if player has left through a door
-       ; CALL C,$9117                  ; CALL C,$9117      ; move player to room linked to entity (usually door)
-       b    @draw_room_item            ; JP $91FE          ; draw room item
+       jnc  !
+       .call @change_room              ; CALL C,$9117      ; move player to room linked to entity (usually door)
+!      b    @draw_room_item            ; JP $91FE          ; draw room item
 
 *********************************************************************
 *
@@ -1679,15 +1665,14 @@ h_door_locked:                         ; >9244
 * This entry point is used by the routine at #R$9252.
 loc_924c:                              ; >924c
        .call @set_door_type            ; CALL $9260        ; set door type for both linked entities
-       b    @change_room               ; JP $9117          ; move player to room linked to entity (usually door)
+       b    @change_room_branch        ; JP $9117          ; move player to room linked to entity (usually door)
 
 *********************************************************************
 *
 * coloured cave locked door handler
 *
 h_cave_locked:                         ; >9252
-       .call @check_key_colour         ; CALL $9222        ; return if player has required key (C if opened, NC if
-                                                           ; locked)
+       .call @check_key_colour         ; CALL $9222        ; return if player has required key (C if opened, NC if locked)
        joc  !                          ; JP NC,$91FE       ; draw room item
        b    @draw_room_item            ;
 !
@@ -1697,6 +1682,7 @@ h_cave_locked:                         ; >9252
 *********************************************************************
 *
 * pickup item handler
+*
 h_pickup_item:                         ; >92f5
        .call @save_entity              ; CALL $9FFB        ; save entity position for undraw
        movb @pickup_pressed,a          ; LD A,($5E20)      ;
@@ -1735,6 +1721,9 @@ draw_16x16:                            ; >92e0
 *********************************************************************
 *
 * Routine at 9421
+*
+* Barrel handler
+*
 h_barrel:                              ; >9421
        movb @player,a                  ; LD A,($EA90)      ;
        sb   @bytes+>21,a               ; SUB $21           ; subtract serf base graphic
@@ -1742,12 +1731,16 @@ h_barrel:                              ; >9421
 
 *********************************************************************
 *
+* Bookcase handler
+*
 h_bookcase:                            ; >9428
        movb @player,a                  ; LD A,($EA90)      ;
        sb   @bytes+>11,a               ; SUB $11           ; subtract wizard base graphic
        jmp  h_clock_1                  ; JR $9433          ;
 
 *********************************************************************
+*
+* Clock handler
 *
 h_clock:                               ; >942f
        movb @player,a                  ; LD A,($EA90)      ;
@@ -1764,6 +1757,7 @@ h_clock_2:                             ; >943d
 *********************************************************************
 *
 * ACG exit door handler
+*
 h_acg_exit:                            ; >961b
        li   hl,inventory1+>0002        ; LD HL,$5E32       ; graphic idx
        li   de,>0004                   ; LD DE,$0004       ; 4 bytes per inventory slot
@@ -1831,6 +1825,6 @@ mushroom_death:                        ; >98c8
 *********************************************************************
 *
 * Attributes: thunk
+*
 h_tombstone:                           ; >95d7
        b    @draw_16x16                ; JP $92E0          ; draw 16x16 entity
-

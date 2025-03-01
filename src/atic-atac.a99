@@ -14,7 +14,10 @@
 * or JHE for the inverse condition. If the carry flag is checked after a subtraction instead of a compare this has to be
 * turned into a compare followed by a (possible) subtraction on the TI.
 
+*********************************************************************
+*
 * Routine at 6000
+*
 start:                                 ; >6000
       limi 0
       lwpi wrksp
@@ -29,6 +32,8 @@ start:                                 ; >6000
 ;!
         b    @reset_menu                ; JP $7C19          ;
 
+*********************************************************************
+*
 * Routine at 7c19
 * 
 * Used by the routine at #R$6000.
@@ -120,6 +125,8 @@ loc_7c73:                              ; >7c73
        .call @set_menu_attrs           ; CALL $7C90        ; highlight knight/wizard/serf
        b    @menu_loop                 ; JP $7C2F          ; 
 
+*********************************************************************
+*
 * draw menu icons for controls and player characters
 *
 * Used by the routine at #R$7c19.
@@ -144,44 +151,54 @@ draw_menu_icons_1:                     ; >a31a
        jne  draw_menu_icons_1                   ;
        .endproc                        ; RET               ;
 
+*********************************************************************
+*
 * set menu attrs to reflect current selection
 * 
 * Used by the routine at #R$7c19.
 set_menu_attrs:                        ; >7c90
-       ; RRCA                          ; RRCA              ; 
-loc_7c91:                              ; >7c91
+       .proc
+       srl  a,1                        ; RRCA              ;
+set_menu_attrs_1:                      ; >7c91
        andi a,>0300                    ; AND $03           ; 
-       jeq  loc_7c9c                   ; JR Z,$7C9C        ; 
+       jeq  set_menu_attrs_3           ; JR Z,$7C9C        ;
        .call @set_flash_off            ; CALL $7CA4        ; 
-loc_7c98:                              ; >7c98
+set_menu_attrs_2:                      ; >7c98
        sb   one,a                      ; DEC A             ; 
        sb   one,b                      ; DJNZ $7C91        ; 
-       jne  loc_7c91                   ;                   
-       .ret                            ; RET               ; 
-loc_7c9c:                              ; >7c9c
+       jne  set_menu_attrs_1           ;
+       .endproc                        ; RET               ;
+set_menu_attrs_3:                      ; >7c9c
        .call @set_flash_on             ; CALL $7CAB        ; 
-       jmp  loc_7c98                   ; JR $7C98          ; 
+       jmp  set_menu_attrs_2           ; JR $7C98          ;
        socb @bits+7,*hl                ; SET 7,(HL)        ; flash on
        inc  hl                         ; INC HL            ; 
+       jmp  set_flash_off_branch
 
+*********************************************************************
+*
 * Routine at 7ca4
 * 
 * Used by the routine at #R$7c90.
 set_flash_off:                         ; >7ca4
+       .proc
+set_flash_off_branch
        szcb @bits+7,*hl                ; RES 7,(HL)        ; clear flash attribute
        inc  hl                         ; INC HL            ; 
-       .ret                            ; RET               ; 
-       szcb @bits+7,*hl                ; RES 7,(HL)        ; clear flash attribute
-       inc  hl                         ; INC HL            ; 
+       .endproc                        ; RET               ;
 
+*********************************************************************
+*
 * Routine at 7cab
 * 
 * Used by the routine at #R$7c90.
 set_flash_on:                          ; >7cab
        socb @bits+7,*hl                ; SET 7,(HL)        ; set flash attribute
        inc  hl                         ; INC HL            ; 
-       .ret                            ; RET               ; 
+       .ret                            ; RET               ; OK
 
+*********************************************************************
+*
 * Routine at 7caf
 * 
 * Used by the routine at #R$7c19.
@@ -322,6 +339,8 @@ loop2_return:                          ; >7e13
 ;      ; AND A                         ; AND A             ;
        ci   ix,linked_items            ; SBC HL,DE         ;
        jl  main_loop_2                 ; JR C,$7E03         ;
+
+*********************************************************************
 *
 draw_room:
        .call @draw_room_decor
@@ -360,6 +379,8 @@ loc_7e55:                              ; >7e55
        bl   @ti_upload_zx_screen
        b    @main_loop                 ; JP $7DC3          ;
 
+*********************************************************************
+*
 * clear screen and attrs of play area
 * 
 * Used by the routines at #R$8c35, #R$9117 and #R$9731.
@@ -391,6 +412,8 @@ loc_809f:                              ; >809f
        jne  -!                         ; JR NZ,$809A       ; fill C rows of B columns of value A at address HL
        .endproc                        ; RET               ;
 
+*********************************************************************
+*
 * clear display, attributes, and set black border
 * 
 * Used by the routines at #R$7c19 and #R$7d9a.
@@ -403,6 +426,8 @@ clear_screen:                          ; >80aa
        ; OUT ($FE),A                   ; OUT ($FE),A       ; black border
        .endproc                        ; RET               ;
 
+*********************************************************************
+*
 * clear display file
 * 
 * Used by the routine at #R$80aa.
@@ -427,6 +452,8 @@ clear_display_1:
 ;       jne  loc_80bb                   ; JR NZ,$80BB       ;
 ;       .ret                            ; RET               ;
 
+*********************************************************************
+*
 * clear attribute file
 * 
 * Used by the routine at #R$80aa.
@@ -439,6 +466,8 @@ clear_attrs:                           ; >80c2
        li   bc,>300
        jmp  clear_display_1
 
+*********************************************************************
+*
 * clear 5E10-5FFF
 * 
 * Used by the routine at #R$7d9a.
@@ -449,663 +478,6 @@ clear_game_data:                       ; >80cb
 ;      jmp  loc_80b9                   ; JR $80B9          ;
        li   bc,game_data_end-game_data
        jmp  clear_display_1
-
-*********************************************************************
-*
-* fire knight weapon
-* 
-* Used by the routine at #R$8e26.
-knight_fire:                           ; >8134
-       .proc
-       movb @weapon,a                  ; LD A,($EA98)      ;
-       ; AND A                         ; AND A             ; weapon active?
-       jne  knight_fire_1              ; RET NZ            ; return if so (only one allowed)
-       movb @in_doorway,a              ; LD A,($5E2D)      ;
-       ; AND A                         ; AND A             ; standing in doorway?
-       jne  knight_fire_1              ; RET NZ            ; return if so (can't fire)
-       .call @axe_sound                ; CALL $A41B        ; play axe throw sound
-       .call @throw_weapon             ; CALL $817C        ; throw the current character's weapon
-       li   hl,weapon                  ; LD HL,$EA98       ; 
-       movb @bytes+>40,*hl             ; LD (HL),$40       ; base axe graphic
-       jmp  wizard_fire_1                   ; JR $8160          ;
-knight_fire_1:
-       .endproc
-
-*********************************************************************
-*
-* fire wizard weapon
-* 
-* Used by the routine at #R$80d2.
-wizard_fire:                           ; >814b
-       .proc
-       movb @weapon,a                  ; LD A,($EA98)      ;
-       ; AND A                         ; AND A             ; weapon active?
-       jne  wizard_fire_2              ; RET NZ            ; return if so
-       movb @in_doorway,a              ; LD A,($5E2D)      ;
-       ; AND A                         ; AND A             ; standing in doorway?
-       jne  wizard_fire_2              ; RET NZ            ; return if so (can't fire)
-       .call @fireball_sound           ; CALL $A438        ; play fireball throw sound
-       .call @throw_weapon             ; CALL $817C        ; throw the current character's weapon
-       li   hl,weapon                  ; LD HL,$EA98       ; 
-       movb @bytes+>34,*hl             ; LD (HL),$34       ; base fireball graphic
-* This entry point is used by the routines at #R$8134 and #R$8283.
-wizard_fire_1:                         ; >8160
-       inc  hl                         ; INC HL            ; 
-       movb @>01(ix),a                 ; LD A,(IX+$01)     ; player room
-       movb a,*hl                      ; LD (HL),A         ; set weapon room
-       inc  hl                         ; INC HL            ; 
-       inc  hl                         ; INC HL            ; 
-       movb @>03(ix),a                 ; LD A,(IX+$03)     ; player xpos
-       movb a,*hl                      ; LD (HL),A         ; set weapon xpos
-       inc  hl                         ; INC HL            ; 
-       movb @>04(ix),a                 ; LD A,(IX+$04)     ; player ypos
-       movb a,*hl                      ; LD (HL),A         ; set weapon ypos
-       .push ix                        ; PUSH IX           ; 
-       li   ix,weapon                  ; LD IX,$EA98       ; 
-       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
-       .pop ix                         ; POP IX            ; 
-wizard_fire_2:
-       .endproc                        ; RET               ;
-
-*********************************************************************
-*
-* fire serf weapon, if not active
-*
-* Used by the routine at #R$8dc4.
-serf_fire:                             ; >8283
-       .proc
-       movb @weapon,a                  ; LD A,($EA98)      ;
-       ; AND A                         ; AND A             ; weapon active?
-       jne  serf_fire_1                ; RET NZ            ; return if so
-       movb @in_doorway,a              ; LD A,($5E2D)      ;
-       ; AND A                         ; AND A             ; standing in doorway?
-       jne  serf_fire_1                ; RET NZ            ; return if so
-       .call @sword_sound              ; CALL $A427        ; play sword throw sound
-       .call @throw_weapon             ; CALL $817C        ; throw the current character's weapon
-       sb   @c,@c                      ; LD C,$00          ;
-       movb *hl,a                      ; LD A,(HL)         ;
-       ; AND A                         ; AND A             ; y velocity zero?
-       jeq  loc_82b6                   ; JR Z,$82B6        ; jump if so
-       jgt  loc_829e                   ; JP P,$829E        ; jump if down
-       movb @bytes+>04,@c              ; LD C,$04          ; offset to up graphic
-loc_829e:                              ; >829e
-       dec  hl                         ; DEC HL            ;
-       movb *hl,a                      ; LD A,(HL)         ;
-       ; AND A                         ; AND A             ; x velocity zero?
-       jeq  loc_82a7                   ; JR Z,$82A7        ; jump if so
-       jgt  loc_82b3                   ; JP P,$82B3        ; jump if right
-       sb   one,@c                     ; DEC C             ; up/left or down/left
-loc_82a7:                              ; >82a7
-       movb @c,a                       ; LD A,C            ;
-       andi a,>0700                    ; AND $07           ; 8 possible directions
-       ab   @bytes+>38,a               ; ADD A,$38         ; base sword graphic
-       li   hl,weapon                  ; LD HL,$EA98       ;
-       movb a,*hl                      ; LD (HL),A         ;
-       b    @wizard_fire_1                  ; JP $8160          ;
-loc_82b3:                              ; >82b3
-       ab   one,@c                     ; INC C             ;
-       jmp  loc_82a7                   ; JR $82A7          ;
-loc_82b6:                              ; >82b6
-       dec  hl                         ; DEC HL            ;
-       movb *hl,r0                     ; BIT 7,(HL)        ;
-       andi r0,>8000                   ;
-       jeq  loc_82bf                   ; JR Z,$82BF        ;
-       movb @bytes+>06,@c              ; LD C,$06          ;
-       jmp  loc_82a7                   ; JR $82A7          ;
-loc_82bf:                              ; >82bf
-       movb @bytes+>02,@c              ; LD C,$02          ;
-       jmp  loc_82a7                   ; JR $82A7          ;
-serf_fire_1:
-       .endproc
-
-*********************************************************************
-*
-* throw the current character's weapon
-* 
-* Used by the routines at #R$8134, #R$814b and #R$8283.
-throw_weapon:                          ; >817c
-       li   hl,weapon+>0006            ; LD HL,$EA9E       ; 
-       movb @bytes+>30,a               ; LD A,$30          ; 
-       movb a,@sound+>0007             ; LD ($EAA7),A      ; 
-       sb   a,a                        ; LD A,$00          ; 
-       movb a,@weapon+>0002            ; LD ($EA9A),A      ; 
-       movb @>06(ix),a                 ; LD A,(IX+$06)     ; 
-       socb @>07(ix),a                 ; OR (IX+$07)       ; 
-       jeq  loc_81b3                   ; JR Z,$81B3        ; 
-       movb @>06(ix),a                 ; LD A,(IX+$06)     ; 
-       ; AND A                         ; AND A             ; 
-       jeq  loc_81a0                   ; JR Z,$81A0        ; 
-       jlt  loc_819e                    ; JP M,$819E        ;
-       movb @bytes+>04,a               ; LD A,$04          ; 
-       jmp  loc_81a0                   ; JR $81A0          ; 
-loc_819e:                              ; >819e
-       movb @bytes+>fc,a               ; LD A,$FC          ; 
-loc_81a0:                              ; >81a0
-       movb a,*hl                      ; LD (HL),A         ; 
-       inc  hl                         ; INC HL            ; 
-       movb @>07(ix),a                 ; LD A,(IX+$07)     ; 
-       ; AND A                         ; AND A             ; 
-       jeq  loc_81b1                   ; JR Z,$81B1        ; 
-       jlt  loc_81af                    ; JP M,$81AF        ;
-       movb @bytes+>04,a               ; LD A,$04          ; 
-       jmp  loc_81b1                   ; JR $81B1          ; 
-loc_81af:                              ; >81af
-       movb @bytes+>fc,a               ; LD A,$FC          ; 
-loc_81b1:                              ; >81b1
-       movb a,*hl                      ; LD (HL),A         ; 
-       .ret                            ; RET               ; 
-loc_81b3:                              ; >81b3
-       movb *ix,a                      ; LD A,(IX+$00)     ; 
-       sb   one,a                      ; DEC A             ; 
-       andi a,>0c00                    ; AND $0C           ; 
-       jeq  loc_81c9                   ; JR Z,$81C9        ; 
-       cb   a,@bytes+>04               ; CP $04            ; 
-       jeq  loc_81cf                   ; JR Z,$81CF        ; 
-       cb   a,@bytes+>08               ; CP $08            ; 
-       jne  loc_81d5                   ; JR NZ,$81D5       ; 
-       sb   *hl,*hl                    ; LD (HL),$00       ; x velocity
-       inc  hl                         ; INC HL            ; 
-       movb @bytes+>fc,*hl             ; LD (HL),$FC       ; y velocity (up)
-       .ret                            ; RET               ; 
-loc_81c9:                              ; >81c9
-       movb @bytes+>fc,*hl             ; LD (HL),$FC       ; x velocity (left)
-       inc  hl                         ; INC HL            ; 
-       sb   *hl,*hl                    ; LD (HL),$00       ; y velocity
-       .ret                            ; RET               ; 
-loc_81cf:                              ; >81cf
-       movb @bytes+>04,*hl             ; LD (HL),$04       ; set x velocity (right)
-       inc  hl                         ; INC HL            ; 
-       sb   *hl,*hl                    ; LD (HL),$00       ; set y velocity
-       .ret                            ; RET               ; 
-loc_81d5:                              ; >81d5
-       sb   *hl,*hl                    ; LD (HL),$00       ; set x velocity (none)
-       inc  hl                         ; INC HL            ; 
-       movb @bytes+>04,*hl             ; LD (HL),$04       ; set y velocity (down)
-       .ret                            ; RET               ; 
-
-*********************************************************************
-*
-* set sword direction to match player direction
-* 
-* Used by the routine at #R$82f1.
-set_sword_dir:                         ; >82c3
-       sb   @c,@c                      ; LD C,$00          ; down
-       movb *hl,a                      ; LD A,(HL)         ; 
-       ; AND A                         ; AND A             ; 
-       jeq  loc_82e4                   ; JR Z,$82E4        ; 
-       jgt  loc_82CE                   ; JP P,$82CE        ;
-       movb @bytes+>04,@c              ; LD C,$04          ; up
-loc_82ce:                              ; >82ce
-       dec  hl                         ; DEC HL            ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-       ; AND A                         ; AND A             ; 
-       jeq  loc_82d7                   ; JR Z,$82D7        ; 
-       jgt  loc_82e1                   ; JP P,$82E1        ;
-       sb   one,@c                     ; DEC C             ; up-left or down-left
-loc_82d7:                              ; >82d7
-       movb @c,a                       ; LD A,C            ; 
-       andi a,>0700                    ; AND $07           ; 8 positions
-       ab   @bytes+>38,a               ; ADD A,$38         ; base sword graphic
-       li   hl,weapon                  ; LD HL,$EA98       ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       .ret                            ; RET               ; 
-loc_82e1:                              ; >82e1
-       ab   one,@c                     ; INC C             ; up-right or down-right
-       jmp  loc_82d7                   ; JR $82D7          ; 
-loc_82e4:                              ; >82e4
-       dec  hl                         ; DEC HL            ; 
-       movb *hl,r0                     ; BIT 7,(HL)        ; 
-       andi r0,>8000                   ;                   
-       jeq  loc_82ed                   ; JR Z,$82ED        ; 
-       movb @bytes+>06,@c              ; LD C,$06          ; facing left
-       jmp  loc_82d7                   ; JR $82D7          ; 
-loc_82ed:                              ; >82ed
-       movb @bytes+>02,@c              ; LD C,$02          ; facing right
-       jmp  loc_82d7                   ; JR $82D7          ; 
-
-*********************************************************************
-*
-* check whether to add new room creatures
-* 
-* Used by the routine at #R$8e26.
-chk_creatures:                         ; >83ea
-       .proc
-       movb @last_creat_room,a         ; LD A,($5E26)      ; last room creature created in
-       movb a,@c                       ; LD C,A            ; 
-       movb @player_room,a             ; LD A,($EA91)      ; 
-       cb   a,@c                       ; CP C              ; player in different room?
-       jne  loc_844f                   ; JR NZ,$844F       ; jump if so
-       li   hl,creature_delay          ; LD HL,$5E27       ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-       ; AND A                         ; AND A             ; time to appear?
-       jeq  loc_8458                   ; JR Z,$8458        ; jump if so
-       sb   one,*hl                    ; DEC (HL)          ; reduce delay timer
-       jeq  !                          ; RET NZ            ; return if not yet time
-       .ret                            ;                   
-!
-add_creature:                          ; >83fd
-       equ  $
-       li   hl,creature1               ; LD HL,$EE60       ; first creature slot
-       li   de,>0010                   ; LD DE,$0010       ; 16 bytes per creature
-       movb @bytes+>03,b               ; LD B,$03          ; 3 room creatures
-loc_8405:                              ; >8405
-       movb *hl,a                      ; LD A,(HL)         ; 
-       ; AND A                         ; AND A             ; free slot?
-       jeq  loc_840d                   ; JR Z,$840D        ; jump if so
-       a    de,hl                      ; ADD HL,DE         ; 
-       sb   one,b                      ; DJNZ $8405        ; 
-       jne  loc_8405                   ;                   
-       .ret                            ; RET               ; no free slots
-loc_840d:                              ; >840d
-       .ex_de_hl                       ; EX DE,HL          ; 
-       li   hl,creature_default        ; LD HL,$8B6A       ; default entity data for creature
-       li   bc,>0010                   ; LD BC,$0010       ; 16 bytes of entity data
-       .push de                        ; PUSH DE           ; 
-       .ldir                           ; LDIR              ; copy template
-       .pop hl                         ; POP HL            ; 
-       .push hl                        ; PUSH HL           ; 
-       inc  hl                         ; INC HL            ; 
-       movb @player_room,a             ; LD A,($EA91)      ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       inc  hl                         ; INC HL            ; 
-       .push hl                        ; PUSH HL           ; 
-       li   hl,creatures               ; LD HL,$8B7A       ; creature table
-       movb @zx_frames,a               ; LD A,($5C78)      ; 
-       andi a,>0f00                    ; AND $0F           ; 16 creatures entries to choose from
-       movb a,@e                       ; LD E,A            ; 
-       sb   d,d                        ; LD D,$00          ; 
-       a    de,hl                      ; ADD HL,DE         ; 
-       movb *hl,a                      ; LD A,(HL)         ; new creature graphic
-       .pop hl                         ; POP HL            ; 
-       movb a,*hl                      ; LD (HL),A         ; set graphic
-       mov  @room_width,de             ; LD DE,($5E1D)     ; 
-       movb @e,b                       ; LD B,E            ; 
-       .call @rnd_coord                ; CALL $8598        ; random coord less than interior size B
-       movb a,*hl                      ; LD (HL),A         ; set x
-       movb d,b                        ; LD B,D            ; 
-       .call @rnd_coord                ; CALL $8598        ; random coord less than interior size B
-       movb a,*hl                      ; LD (HL),A         ; set y
-       .pop de                         ; POP DE            ; 
-       .push ix                        ; PUSH IX           ; 
-       li   ix,>0000                   ; LD IX,$0000       ; 
-       a    de,ix                      ; ADD IX,DE         ; 
-       .call @rnd_movement             ; CALL $86F2        ; set random movement
-       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
-       .pop ix                         ; POP IX            ; 
-       .ret                            ; RET               ; 
-loc_844f:                              ; >844f
-       movb a,@last_creat_room         ; LD ($5E26),A      ; 
-       movb @bytes+>20,a               ; LD A,$20          ; delay 32 frames before next creature
-       movb a,@creature_delay          ; LD ($5E27),A      ; 
-       .ret                            ; RET               ; 
-loc_8458:                              ; >8458
-       movb r,a                        ; LD A,R            ; 
-       andi a,>0f00                    ; AND $0F           ; 1/16 chance of appearing
-       jeq  !                          ; RET NZ            ; return if not
-       .ret                            ;                   
-!
-       jmp  add_creature               ; JR $83FD          ; add creature
-
-*********************************************************************
-*
-* This entry point is used by the routines at #R$862e, #R$8672, #R$871a,
-* #R$87a6, #R$8988, #R$8a2f, #R$8a80 and #R$8aff.
-*
-monster_move:                          ; >84cd
-       movb @>03(ix),a                 ; LD A,(IX+$03)     ; xpos
-       ab   @>08(ix),a                 ; ADD A,(IX+$08)    ; add x velocity
-       movb a,@c                       ; LD C,A            ; save new xpos
-       sb   @bytes+>58,a               ; SUB $58           ; subtract room centre x
-       jno  !
-       jmp  loc_84e8                   ; JR C,$84E8        ; jump if negative (left half)
-!      cb   a,@e                       ; CP E              ; within room width?
-       jl   loc_84f8                   ; JR C,$84F8        ; jump if so
-       szcb @bits+0,@>06(ix)           ; RES 0,(IX+$06)    ; set direction to left
-       movb @b254,@>08(ix)             ; LD (IX+$08),$FE   ; bounce left away from wall
-       movb @>03(ix),@c                ; LD C,(IX+$03)     ; current xpos
-       jmp  loc_84f8                   ; JR $84F8          ; 
-loc_84e8:                              ; >84e8
-       neg a                           ; NEG               ; abs
-       cb   a,@e                       ; CP E              ; within room width?
-       jl   loc_84f8                   ; JR C,$84F8        ; jump if so
-       socb @bits+0,@>06(ix)           ; SET 0,(IX+$06)    ; set direction to right
-       movb @>03(ix),@c                ; LD C,(IX+$03)     ; current xpos
-       movb @bytes+>02,@>08(ix)        ; LD (IX+$08),$02   ; bounce right away from wall
-loc_84f8:                              ; >84f8
-       movb @>04(ix),a                 ; LD A,(IX+$04)     ; ypos
-       ab   @>09(ix),a                 ; ADD A,(IX+$09)    ; add y velocity
-       movb a,b                        ; LD B,A            ; save new ypos
-       sb   @bytes+>68,a               ; SUB $68           ; subtract room centre y
-       jno  !
-       jmp  loc_8513                   ; JR C,$8513        ; jump if negative (top half)
-!      cb   a,d                        ; CP D              ; within screen height?
-       jl   loc_8523                   ; JR C,$8523        ; jump if so
-       szcb @bits+1,@>06(ix)           ; RES 1,(IX+$06)    ; set direction to up
-       movb @b254,@>09(ix)             ; LD (IX+$09),$FE   ; bounce up away from wall
-       movb @>04(ix),b                 ; LD B,(IX+$04)     ; current ypos
-       jmp  loc_8523                   ; JR $8523          ; 
-loc_8513:                              ; >8513
-       neg a                           ; NEG               ; abs
-       cb   a,d                        ; CP D              ; within screen height?
-       jl   loc_8523                   ; JR C,$8523        ; jump if so
-       socb @bits+1,@>06(ix)           ; SET 1,(IX+$06)    ; set direction to down
-       movb @>04(ix),b                 ; LD B,(IX+$04)     ; 
-       movb @bytes+>02,@>09(ix)        ; LD (IX+$09),$02   ; bounce down away from wall
-loc_8523:                              ; >8523
-       movb @c,@>03(ix)                ; LD (IX+$03),C     ; set new xpos
-       movb b,@>04(ix)                 ; LD (IX+$04),B     ; set new ypos
-       movb @player_room,a             ; LD A,($EA91)      ; 
-       cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
-       jeq  !                          ; RET NZ            ; return if not
-       .ret                            ;                   
-!
-       movb *ix,a                      ; LD A,(IX+$00)     ; entity graphic
-       andi a,>fc00                    ; AND $FC           ; strip 2 animation bits
-       cb   a,@bytes+>9c               ; CP $9C            ; is it hunchback?
-       jeq  keep_special               ; JR Z,$8547        ; jump if so
-       andi a,>f000                    ; AND $F0           ; 
-       cb   a,@bytes+>70               ; CP $70            ; is it mummy/frankenstein/devil/dracula?
-       jeq  keep_special               ; JR Z,$8547        ; jump if so
-       movb @player,a                  ; LD A,($EA90)      ; 
-       cb   a,@bytes+>31               ; CP $31            ; is player active?
-       jl   !                          ; JP NC,$875F       ; jump if not (pop non-special creature types)
-       b    @pop_creature              ;                   
-!
-keep_special:                          ; >8547
-       equ  $
-       b    @loc_8e8e                  ; JP $8E8E          ; 
-loc_854a:                              ; >854a
-       movb @>08(ix),a                 ; LD A,(IX+$08)     ; 
-       cb   a,@b254                    ; CP $FE            ; at left speed limit?
-       jne  !                          ; JP Z,$84AE        ; jump if so
-       b    @loc_84ae                  ;                   
-!
-       sb   one,@>08(ix)               ; DEC (IX+$08)      ; faster left
-       b    @loc_84ae                  ; JP $84AE          ; 
-loc_8558:                              ; >8558
-       movb @>09(ix),a                 ; LD A,(IX+$09)     ; 
-       cb   a,@b254                    ; CP $FE            ; at up speed limit?
-       jne  !                          ; JP Z,$84BF        ; jump if so
-       b    @loc_84bf                  ;                   
-!
-       sb   one,@>09(ix)               ; DEC (IX+$09)      ; faster up
-       b    @loc_84bf                  ; JP $84BF          ; 
-
-*********************************************************************
-*
-* check if weapon has hit entity
-* 
-* Used by the routines at #R$8301, #R$845f, #R$862e, #R$8672, #R$871a, #R$87a6,
-* #R$8a2f and #R$8a80.
-chk_weapon_hit:                        ; >8566
-       .proc
-       movb @weapon+>0001,a            ; LD A,($EA99)      ; weapon room
-       sb   @e,@e                      ; LD E,$00          ; no weapon hit detected
-       cb   a,@>01(ix)                 ; CP (IX+$01)       ; in entity room?
-       jne  chk_weapon_hit_3           ; RET NZ            ; return if not
-       movb @weapon,a                  ; LD A,($EA98)      ;
-       ; AND A                         ; AND A             ; is weapon active?
-       jeq  chk_weapon_hit_3           ; RET Z             ; return if not
-       movb @weapon+>0003,a            ; LD A,($EA9B)      ; weapon xpos
-       sb   @>03(ix),a                 ; SUB (IX+$03)      ; subtract entity x
-       jgt  chk_weapon_hit_1           ; JP P,$857F        ; jump if postive
-       neg a                           ; NEG               ; abs
-chk_weapon_hit_1:                      ; >857f
-       cb   a,@bytes+>0c               ; CP $0C            ; within weapon x size?
-       jhe  chk_weapon_hit_3           ; RET NC            ; return if not
-       movb @weapon+>0004,a            ; LD A,($EA9C)      ; weapon ypos
-       sb   @>04(ix),a                 ; SUB (IX+$04)      ; subtract entity y
-       jgt chk_weapon_hit_2            ; JP P,$858D        ; jump if positive
-       neg a                           ; NEG               ; abs
-chk_weapon_hit_2:                      ; >858d
-       cb   a,@bytes+>0c               ; CP $0C            ; within weapon y size?
-       jhe  chk_weapon_hit_3           ; RET NC            ; return if not
-       movb one,a                      ; LD A,$01          ; 1 frame before removal
-       movb a,@weapon+>0002            ; LD ($EA9A),A      ; set weapon frames left
-       movb one,@e                     ; LD E,$01          ; weapon hit detected
-chk_weapon_hit_3:
-       .endproc                        ; RET               ;
-
-*********************************************************************
-*
-* random coord less than interior size B
-* 
-* Used by the routine at #R$83ea.
-rnd_coord:                             ; >8598
-       movb b,a                        ; LD A,B            ; 
-       sb   @bytes+>08,a               ; SUB $08           ; 
-       movb a,b                        ; LD B,A            ; 
-       movb r,a                        ; LD A,R            ; 
-       inc  hl                         ; INC HL            ; 
-loc_859f:                              ; >859f
-       cb   a,b                        ; CP B              ; 
-       jl   loc_85a5                   ; JR C,$85A5        ; 
-       sb   b,a                        ; SUB B             ; 
-       jmp  loc_859f                   ; JR $859F          ; 
-loc_85a5:                              ; >85a5
-       movb a,@c                       ; LD C,A            ; 
-       movb r,a                        ; LD A,R            ; 
-       movb a,r0                       ; BIT 1,A           ; 
-       andi r0,>0200                   ;                   
-       movb @bytes+>60,a               ; LD A,$60          ; 
-       jeq  loc_85b0                   ; JR Z,$85B0        ; 
-       ab   @c,a                       ; ADD A,C           ; 
-       .ret                            ; RET               ; 
-loc_85b0:                              ; >85b0
-       sb   @c,a                       ; SUB C             ; 
-       .ret                            ; RET               ; 
-
-*********************************************************************
-*
-* check if enemy is touching player (returns E=1)
-* 
-* Used by the routines at #R$8301, #R$845f, #R$862e, #R$8672, #R$871a, #R$87a6,
-* #R$8862, #R$8906, #R$8988, #R$89ed, #R$8a2f, #R$8a80 and #R$8aff.
-enemy_touching:                        ; >85b2
-       .proc
-       movb @player_room,a             ; LD A,($EA91)      ;
-       sb   @e,@e                      ; LD E,$00          ; is not touching player
-       cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
-       jne  enemy_touching_1           ; RET NZ            ; return if not
-       movb @player,a                  ; LD A,($EA90)      ;
-       ; AND A                         ; AND A             ; does player exist?
-       jeq  enemy_touching_1           ; RET Z             ; return if not
-       cb   a,@bytes+>31               ; CP $31            ; active player?
-       jhe  enemy_touching_1           ; RET NC            ; return if not
-       movb @player_x,a                ; LD A,($EA93)      ;
-       sb   @>03(ix),a                 ; SUB (IX+$03)      ; right of player?
-       jgt  loc_85CE                   ; JP P,$85CE        ; jump if not
-       neg a                           ; NEG               ; abs
-loc_85ce:                              ; >85ce
-       cb   a,@bytes+>0c               ; CP $0C            ; too far from player?
-       jhe  enemy_touching_1           ; RET NC            ; return if so
-       movb @player_y,a                ; LD A,($EA94)      ;
-       sb   @>04(ix),a                 ; SUB (IX+$04)      ; below player?
-       jgt  loc_85DC                   ; JP P,$85DC        ; jump if not
-       neg a                           ; NEG               ; abs
-loc_85dc:                              ; >85dc
-       cb   a,@bytes+>0c               ; CP $0C            ; too far from player?
-       jhe  enemy_touching_1           ; RET NC            ; return if so
-       movb one,a                      ; LD A,$01          ;
-       movb a,@player_contact          ; LD ($EA92),A      ; 
-       .call @touching_sound           ; CALL $A3E5        ; play monster touched sound
-       movb one,@e                     ; LD E,$01          ; is touching player
-enemy_touching_1:
-       .endproc
-
-*********************************************************************
-* This entry point is used by the routines at #R$8301, #R$845f, #R$862e,
-* #R$8672, #R$871a, #R$87a6, #R$8a2f and #R$8a80.
-hurt_and_pop:                          ; >85ea
-       .call @damage_32                ; CALL $8ED7        ; reduce health by 32
-       b    @pop_creature              ; JP $875F          ; 
-
-*********************************************************************
-*
-* This entry point is used by the routines at #R$8301, #R$845f, #R$85b2,
-* #R$85f7, #R$862e, #R$8672, #R$87a6, #R$8988, #R$8a2f and #R$8a80.
-pop_creature:                          ; >875f
-       movb @>05(ix),a                 ; LD A,(IX+$05)     ; save creature attr
-       .push af                        ; PUSH AF           ;
-       movb @room_attr,a               ; LD A,($5E1A)      ;
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ; undraw to room attr
-       .call @undraw_entity            ; CALL $9F56        ;
-       .call @set_entity_attrs2        ; CALL $A01A        ; set attrs covering previous and new position
-       .pop af                         ; POP AF            ;
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       movb @bytes+>6c,*ix             ; LD (IX+$00),$6C   ; base pop graphic
-       movb @bytes+>10,@>0e(ix)        ; LD (IX+$0E),$10   ; 16 animation frames (4 loops of 4)
-       li   bc,>0155                   ; LD BC,$0155       ;
-       .call @add_score_bc_bcd         ; CALL $A19C        ; add 155 score
-       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
-       b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
-
-*********************************************************************
-* This entry point is used by the routines at #R$8301, #R$845f, #R$85f7,
-* #R$862e, #R$8672, #R$871a, #R$8787, #R$87a6, #R$8a2f and #R$8a80.
-delay_remove:                          ; >85f0
-       sb   one,@>0f(ix)               ; DEC (IX+$0F)      ; auto-remove timer for monsters
-       jne  delay_remove_1             ; RET NZ            ; return if still alive
-       sb   *ix,*ix                    ; LD (IX+$00),$00   ; clear entity graphic
-delay_remove_1:
-       .endproc
-
-*********************************************************************
-*
-* set random movement
-* 
-* Used by the routines at #R$83ea, #R$862e, #R$8672, #R$871a, #R$8a2f and
-* #R$8a80.
-rnd_movement:                          ; >86f2
-       movb r,a                        ; LD A,R            ; 
-       movb a,r0                       ; BIT 0,A           ; use x speed of 1?
-       andi r0,>0100                   ;                   
-       jeq  rnd_move_y1                ; JR Z,$870E        ; jump if so
-       andi a,>0400                    ; AND $04           ; 
-       sb   @bytes+>02,a               ; SUB $02           ; y velocity is +/- 2
-rnd_movement_1:                        ; >86fc
-       movb a,@>09(ix)                 ; LD (IX+$09),A     ; set y something?
-       movb r,a                        ; LD A,R            ; TODO
-       srl  a,1                        ; RRA               ;
-       movb a,r0                       ; BIT 0,A           ; use y speed of 1?
-       andi r0,>0100                   ;                   
-       jeq  rnd_move_x1                ; JR Z,$8714        ; jump if so
-       andi a,>0400                    ; AND $04           ; 
-       sb   @bytes+>02,a               ; SUB $02           ; x velocity is +/- 2
-rnd_movement_2:                        ; >870a
-       movb a,@>08(ix)                 ; LD (IX+$08),A     ; set x something?
-       .ret                            ; RET               ; 
-rnd_move_y1:                           ; >870e
-       andi a,>0200                    ; AND $02           ; 
-       sb   one,a                      ; SUB $01           ; y velocity is +/- 1
-       jmp  rnd_movement_1             ; JR $86FC          ;
-rnd_move_x1:                           ; >8714
-       andi a,>0200                    ; AND $02           ; 
-       sb   one,a                      ; SUB $01           ; x velocity is +/- 1
-       jmp  rnd_movement_2             ; JR $870A          ;
-
-*********************************************************************
-*
-* set movement towards coords in DE
-* 
-* Used by the routines at #R$8862, #R$8906, #R$8988, #R$89ed and #R$8aff.
-attract_de:                            ; >882d
-       .proc
-       sb   @c,@c                      ; LD C,$00          ; 
-       movb d,a                        ; LD A,D            ; 
-       cb   a,@>04(ix)                 ; CP (IX+$04)       ; ypos match?
-       jeq  loc_8848                   ; JR Z,$8848        ; jump if so
-       jh   loc_8850                   ; JR NC,$8850       ; jump if greater (move down)
-       movb @b255,@>09(ix)             ; LD (IX+$09),$FF   ; move up
-loc_883b:                              ; >883b
-       movb @e,a                       ; LD A,E            ; 
-       cb   a,@>03(ix)                 ; CP (IX+$03)       ; same xpos?
-       jeq  loc_8856                   ; JR Z,$8856        ; jump if so
-       jh   loc_885d                   ; JR NC,$885D       ; jump if greater (move right)
-       movb @b255,@>08(ix)             ; LD (IX+$08),$FF   ; move left
-       jmp  attract_de_1               ; RET               ;
-loc_8848:                              ; >8848
-       sb   @>09(ix),@>09(ix)          ; LD (IX+$09),$00   ; no y movement
-       socb @bits+0,@c                 ; SET 0,C           ; flag same ypos
-       jmp  loc_883b                   ; JR $883B          ; 
-loc_8850:                              ; >8850
-       movb one,@>09(ix)               ; LD (IX+$09),$01   ; move down
-       jmp  loc_883b                   ; JR $883B          ; 
-loc_8856:                              ; >8856
-       sb   @>08(ix),@>08(ix)          ; LD (IX+$08),$00   ; no x movement
-       socb @bits+1,@c                 ; SET 1,C           ; flag same xpos
-       jmp  attract_de_1               ; RET               ;
-loc_885d:                              ; >885d
-       movb one,@>08(ix)               ; LD (IX+$08),$01   ; move right
-attract_de_1:
-       .endproc
-
-*********************************************************************
-*
-* get style of room in A, returns style (0-B)
-* 
-* Used by the routine at #R$8906.
-get_room_style:                        ; >897d
-       movb a,@l                       ; LD L,A            ; 
-       sb   h,h                        ; LD H,$00          ; 
-       li   de,room_attrs              ; LD DE,$A854       ; room attr colour and style (0-B)
-       a    hl,hl                      ; ADD HL,HL         ; 
-       a    de,hl                      ; ADD HL,DE         ; 
-       inc  hl                         ; INC HL            ; 
-       movb *hl,a                      ; LD A,(HL)         ; first byte is room style (0-C)
-       .ret                            ; RET               ; 
-
-*********************************************************************
-*
-* reduce health by 32
-*
-* Used by the routine at #R$85b2.
-*
-damage_32:                             ; >8ed7
-       .proc
-       movb @player_energy,a           ; LD A,($5E28)      ;
-       sb   @bytes+>20,a               ; SUB $20           ; lose 32 health
-       jeq  loc_8ee1                   ; JR Z,$8EE1        ;
-       jno  update_energy              ; JR NC,$8EE9       ; jump if positive
-       sb   a,a                        ; XOR A             ;
-loc_8ee1:                              ; >8ee1
-       movb a,@player_energy           ; LD ($5E28),A      ;
-       .call @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
-       b    @player_dead               ; JR $8EA0          ;
-;loc_8ee9:                              ; >8ee9
-;       movb a,@player_energy           ; LD ($5E28),A      ;
-;       b    @draw_chicken_branch       ; JP $8B8A          ; draw chicken energy bar
-
-*********************************************************************
-* reduce health by 16
-* 
-* Used by the routine at #R$8aff.
-damage_16:                             ; >8a15
-       movb @player_energy,a           ; LD A,($5E28)      ; 
-       sb   @bytes+>10,a               ; SUB $10           ;
-       jno  update_energy
-       jmp  player_dead_pop            ; JR C,$8A2B        ;
-;      jmp  loc_8a25                   ; JR $8A25          ; OK
-
-*********************************************************************
-* reduce health by 8
-* 
-* Used by the routines at #R$8862, #R$8906, #R$8988 and #R$89ed.
-damage_8:                              ; >8a1e
-       .proc
-       movb @player_energy,a           ; LD A,($5E28)      ; 
-       sb   @bytes+>08,a               ; SUB $08           ; 
-       jno  update_energy
-       jmp  player_dead_pop            ; JR C,$8A2B        ;
-* This entry point is used by the routine at #R$8a15.
-update_energy:                         ; >8a25
-       movb a,@player_energy           ; LD ($5E28),A      ; 
-       b    @draw_chicken_branch       ; JP $8B8A          ; draw chicken energy bar
-
-* This entry point is used by the routine at #R$8a15.
-player_dead_pop:                       ; >8a2b
-       .pop hl                         ; POP HL            ; don't return to entity handler
-       b    @player_dead               ; JP $8EA0          ; 
 
 *********************************************************************
 *
@@ -1264,495 +636,7 @@ reset_game_state:                      ; >8d61
        li   de,linked_items
        li   bc,linked_items_size
        .ldir
-       .ret                            ; RET               ;
-
-*********************************************************************
-*
-* reduce auto-walk counter
-* 
-* Used by the routine at #R$8d77.
-auto_walk_step:                        ; >8d6d
-       movb @>02(ix),a                 ; LD A,(IX+$02)     ; 
-       andi a,>0f00                    ; AND $0F           ; auto-walk active?
-       jne  !                          ; RET Z             ; return if not
-       .ret                            ;                   
-!
-       sb   one,@>02(ix)               ; DEC (IX+$02)      ; take a step
-       .ret                            ; RET               ; 
-
-*********************************************************************
-*
-* read controls and apply player movement
-* 
-* Used by the routines at #R$80d2, #R$8dc4 and #R$8e26.
-control_player:                        ; >8d77
-       .proc
-       movb @player_room,a             ; LD A,($EA91)      ; 
-       movb a,@some_room+>0001         ; LD ($EE59),A      ; blank entity?
-       .push bc                        ; PUSH BC           ; 
-       .push de                        ; PUSH DE           ; 
-       .push hl                        ; PUSH HL           ; 
-       .call @auto_walk_step           ; CALL $8D6D        ; reduce auto-walk counter
-       movb @>02(ix),a                 ; LD A,(IX+$02)     ; 
-       socb @bytes+>30,a               ; OR $30            ; can move left/right or up/down
-       movb a,@>02(ix)                 ; LD (IX+$02),A     ; 
-       .call @save_entity              ; CALL $9FFB        ; save entity position for undraw
-       .call @read_controls            ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
-       movb a,@c                       ; LD C,A            ; FUDLR
-       .pop hl                         ; POP HL            ; 
-       li   de,>0000                   ; LD DE,$0000       ; no movement yet
-       movb @c,r0                      ; BIT 1,C           ; left pressed?
-       andi r0,>0200                   ;                   
-       jne  loc_8d9e                   ; JR NZ,$8D9E       ; jump if not
-       movb b,a                        ; LD A,B            ; 
-       neg a                           ; NEG               ; negate for left
-       movb a,@e                       ; LD E,A            ; 
-loc_8d9e:                              ; >8d9e
-       movb @c,r0                      ; BIT 0,C           ; right pressed?
-       andi r0,>0100                   ;                   
-       jne  loc_8da3                   ; JR NZ,$8DA3       ; jump if not
-       movb b,@e                       ; LD E,B            ; 
-loc_8da3:                              ; >8da3
-       movb @c,r0                      ; BIT 2,C           ; down pressed?
-       andi r0,>0400                   ;                   
-       jne  loc_8da8                   ; JR NZ,$8DA8       ; jump if not
-       movb b,d                        ; LD D,B            ; 
-loc_8da8:                              ; >8da8
-       movb @c,r0                      ; BIT 3,C           ; up pressed?
-       andi r0,>0800                   ;                   
-       jne  loc_8db0                   ; JR NZ,$8DB0       ; jump if not
-       movb b,a                        ; LD A,B            ; 
-       neg a                           ; NEG               ; negate for up
-       movb a,d                        ; LD D,A            ; 
-loc_8db0:                              ; >8db0
-       .pop hl                         ; POP HL            ; DE value from function entry
-       .call @slow_player              ; CALL $8F96        ; decelerate player movement
-       .pop hl                         ; POP HL            ; BC value from function entry
-       .call @move_player              ; CALL $8EEF        ; apply player movement, including auto-walk
-       .call @chk_wall_move            ; CALL $8FCA        ; check if walls are blocking movement in DE
-       .call @check_doorway            ; CALL $957D        ; check if player is standing in a doorway
-       .call @chk_decor_move           ; CALL $900A        ; check if decor is blocking movement in DE
-       b    @apply_move                ; JP $8F66          ; apply movement in DE
-
-*********************************************************************
-*
-* apply player movement, including auto-walk
-* 
-* Used by the routine at #R$8d77.
-move_player:                           ; >8eef
-       .proc
-       movb @>02(ix),a                 ; LD A,(IX+$02)     ; 
-       andi a,>0f00                    ; AND $0F           ; auto-walk active?
-       jne  auto_walk                  ; JR NZ,$8F35       ; jump if so
-       movb @e,a                       ; LD A,E            ; x acceleration
-       ab   @>06(ix),a                 ; ADD A,(IX+$06)    ; add x velocity
-       jlt  loc_8F21                   ; JP M,$8F21        ; jump if moving left
-       cb   a,@l                       ; CP L              ; max x velocity?
-       jl   loc_8f01                   ; JR C,$8F01        ; jump if not
-       movb @l,a                       ; LD A,L            ; limit velocity to max
-loc_8f01:                              ; >8f01
-       movb a,@>06(ix)                 ; LD (IX+$06),A     ; update x velocity
-       movb d,a                        ; LD A,D            ; y acceleration
-       ab   @>07(ix),a                 ; ADD A,(IX+$07)    ; add y velocity
-       jlt loc_8F2B                    ; JP M,$8F2B        ; jump if moving up
-       cb   a,h                        ; CP H              ; max y velocity?
-       jl   loc_8f0f                   ; JR C,$8F0F        ; jump if not
-       movb h,a                        ; LD A,H            ; limit velocity to max
-loc_8f0f:                              ; >8f0f
-       movb a,@>07(ix)                 ; LD (IX+$07),A     ; update y velocity
-       movb @>06(ix),a                 ; LD A,(IX+$06)     ; 
-       .call @get_signed_b7_4          ; CALL $8F80        ; return signed top nibble
-       movb a,@e                       ; LD E,A            ; x offset
-       movb @>07(ix),a                 ; LD A,(IX+$07)     ; 
-       .call @get_signed_b7_4          ; CALL $8F80        ; return signed top nibble
-       movb a,d                        ; LD D,A            ; y move offset
-       jmp  move_player_1              ; RET               ;
-loc_8f21:                              ; >8f21
-       neg a                           ; NEG               ; abs
-       cb   a,@l                       ; CP L              ; max x velocity?
-       jl   loc_8f27                   ; JR C,$8F27        ; jump if not
-       movb @l,a                       ; LD A,L            ; limit velocity to max
-loc_8f27:                              ; >8f27
-       neg a                           ; NEG               ; re-negate
-       jmp  loc_8f01                   ; JR $8F01          ; 
-loc_8f2b:                              ; >8f2b
-       neg a                           ; NEG               ; abs
-       cb   a,h                        ; CP H              ; max y velocity?
-       jl   loc_8f31                   ; JR C,$8F31        ; jump if not
-       movb h,a                        ; LD A,H            ; limit velocity to max
-loc_8f31:                              ; >8f31
-       neg a                           ; NEG               ; re-negate
-       jmp  loc_8f0f                   ; JR $8F0F          ; 
-auto_walk:                             ; >8f35
-       movb @>06(ix),a                 ; LD A,(IX+$06)     ; x velocity
-       ; AND A                         ; AND A             ; x movement?
-       jlt  loc_8F52                   ; JP M,$8F52        ; jump if left
-       andi a,>f000                    ; AND $F0           ; any non-fractional movement?
-       jeq  loc_8f42                   ; JR Z,$8F42        ; jump if not
-       movb @bytes+>02,a               ; LD A,$02          ; walk right 2 pixels
-loc_8f42:                              ; >8f42
-       movb a,@e                       ; LD E,A            ; x walk in e
-       movb @>07(ix),a                 ; LD A,(IX+$07)     ; 
-       ; AND A                         ; AND A             ; auto-walk up/down?
-       jlt loc_8F5C                    ; JP M,$8F5C        ; jump if up
-       andi a,>f000                    ; AND $F0           ; any non-fractional movement?
-       jeq  loc_8f50                   ; JR Z,$8F50        ; jump if not
-       movb @bytes+>02,a               ; LD A,$02          ; walk down 2 pixels
-loc_8f50:                              ; >8f50
-       movb a,d                        ; LD D,A            ; y walk in d
-       jmp  move_player_1              ; RET               ;
-loc_8f52:                              ; >8f52
-       neg a                           ; NEG               ; negate for left
-       andi a,>f000                    ; AND $F0           ; any non-fractional movement?
-       jeq  loc_8f42                   ; JR Z,$8F42        ; jump if not
-       movb @b254,a                    ; LD A,$FE          ; walk left 2 pixels
-       jmp  loc_8f42                   ; JR $8F42          ; 
-loc_8f5c:                              ; >8f5c
-       neg a                           ; NEG               ; negate for up
-       andi a,>f000                    ; AND $F0           ; any non-fractional movement?
-       jeq  loc_8f50                   ; JR Z,$8F50        ; jump if not
-       movb @b254,a                    ; LD A,$FE          ; walk up 2 pixels
-       jmp  loc_8f50                   ; JR $8F50          ; 
-* This entry point is used by the routine at #R$8d77.
-apply_move:                            ; >8f66
-       movb @>02(ix),r0                ; BIT 4,(IX+$02)    ; x movement allowed?
-       andi r0,>1000                   ;                   
-       jne  loc_8f73                   ; JR NZ,$8F73       ; jump if not
-       movb @e,a                       ; LD A,E            ; delta x
-       ab   @>03(ix),a                 ; ADD A,(IX+$03)    ; apply x movement
-       movb a,@>03(ix)                 ; LD (IX+$03),A     ; 
-loc_8f73:                              ; >8f73
-       movb @>02(ix),r0                ; BIT 5,(IX+$02)    ; y movement allowed?
-       andi r0,>2000                   ;                   
-       jne  move_player_1              ; RET NZ            ; return if not
-       movb d,a                        ; LD A,D            ; delta y
-       ab   @>04(ix),a                 ; ADD A,(IX+$04)    ; apply y movement
-       movb a,@>04(ix)                 ; LD (IX+$04),A     ; 
-move_player_1:
-       .endproc                        ; RET               ;
-
-*********************************************************************
-*
-* decelerate player movement
-* 
-* Used by the routine at #R$8d77.
-slow_player:                           ; >8f96
-       movb @>02(ix),a                 ; LD A,(IX+$02)     ; 
-       andi a,>0f00                    ; AND $0F           ; is auto-walk active?
-       jne  slow_player_1              ; RET NZ            ; return if so
-       movb @>06(ix),a                 ; LD A,(IX+$06)     ;
-       ; AND A                         ; AND A             ; x movement?
-       jeq  loc_8fad                   ; JR Z,$8FAD        ; jump if not
-       jlt loc_8Fbe                    ; JP M,$8FBE        ; jump if left
-       sb   @l,a                       ; SUB L             ; decelerate
-       jgt  loc_8faa                   ; JP P,$8FAA        ; jump if still positive
-stop_x:                                ; >8fa9
-       sb   a,a                        ; XOR A             ; stopped on x axis
-loc_8faa:                              ; >8faa
-       movb a,@>06(ix)                 ; LD (IX+$06),A     ; update x velocity
-loc_8fad:                              ; >8fad
-       movb @>07(ix),a                 ; LD A,(IX+$07)     ; 
-       ; AND A                         ; AND A             ; y movement?
-       jeq slow_player_1                           ; RET Z             ; return if not
-       jlt  loc_8fc4                   ; JP M,$8FC4        ; jump if moving up
-       sb   h,a                        ; SUB H             ; decelerate
-       jgt  loc_8FBA                   ; JP P,$8FBA        ; jump if still positive
-stop_y:                                ; >8fb9
-       sb   a,a                        ; XOR A             ; clear auto-walk up/down
-loc_8fba:                              ; >8fba
-       movb a,@>07(ix)                 ; LD (IX+$07),A     ; update y velocity
-       jmp  slow_player_1                            ; RET               ;
-loc_8fbe:                              ; >8fbe
-       ab   @l,a                       ; ADD A,L           ; decelerate
-       jlt  loc_8faa                   ; JP M,$8FAA        ; jump if still negative
-       jmp  stop_x                     ; JR $8FA9          ; stopped on x axis
-loc_8fc4:                              ; >8fc4
-       ab   h,a                        ; ADD A,H           ; decelerate
-       jlt loc_8fba                    ; JP M,$8FBA        ; jump if negative
-       jmp  stop_y                     ; JR $8FB9          ; stopped on y axis
-slow_player_1:
-       .ret
-
-*********************************************************************
-*
-* check if walls are blocking movement in DE
-* 
-* Used by the routine at #R$8d77.
-chk_wall_move:                         ; >8fca
-       .proc
-       .push de                        ; PUSH DE           ; 
-       movb @e,a                       ; LD A,E            ; 
-       ab   @>03(ix),a                 ; ADD A,(IX+$03)    ; apply x movement
-       movb a,@e                       ; LD E,A            ; 
-       movb @>04(ix),d                 ; LD D,(IX+$04)     ; apply y movement
-       movb @bytes+>10,b               ; LD B,$10          ; x bit mask
-       .call @chk_walls                ; CALL $8FE9        ; check if position is within room interior
-       .pop de                         ; POP DE            ; 
-       .push de                        ; PUSH DE           ; 
-       movb @>03(ix),@e                ; LD E,(IX+$03)     ; 
-       movb d,a                        ; LD A,D            ; 
-       ab   @>04(ix),a                 ; ADD A,(IX+$04)    ; 
-       movb a,d                        ; LD D,A            ; 
-       movb @bytes+>20,b               ; LD B,$20          ; 
-       .call @chk_walls                ; CALL $8FE9        ; check if position is within room interior
-       .pop de                         ; POP DE            ; 
-       .endproc                        ; RET               ;
-
-*********************************************************************
-*
-* check if position is within room interior
-* 
-* Used by the routine at #R$8fca.
-chk_walls:                             ; >8fe9
-       li   hl,room_width              ; LD HL,$5E1D       ; 
-       movb @e,a                       ; LD A,E            ; player x
-       sb   @bytes+>58,a               ; SUB $58           ; subtract room centre x
-       jgt  loc_8ff4                    ; JP P,$8FF4        ;
-       neg a                           ; NEG               ; abs
-loc_8ff4:                              ; >8ff4
-       cb   a,*hl                      ; CP (HL)           ; within room width?
-       jhe  chk_walls_1                ; RET NC            ; return if so
-       inc  hl                         ; INC HL            ;
-       movb d,a                        ; LD A,D            ; player y
-       sb   @bytes+>68,a               ; SUB $68           ; subtract room centre y
-       jgt  loc_8fff                   ; JP P,$8FFF        ;
-       neg a                           ; NEG               ; abs
-loc_8fff:                              ; >8fff
-       cb   a,*hl                      ; CP (HL)           ; within room height?
-       jhe  chk_walls_1                ; RET NC            ; return if so
-       movb b,a                        ; LD A,B            ;
-       inv  a                          ; CPL               ;
-       movb @2(ix),r0
-       inv  r0
-       szcb r0,a                       ; AND (IX+$02)      ; clear bit in B
-       movb a,@>02(ix)                 ; LD (IX+$02),A     ;
-chk_walls_1:
-       .ret                            ; RET               ;
-
-*********************************************************************
-*
-* check if decor is blocking movement in DE
-* 
-* Used by the routine at #R$8d77.
-chk_decor_move:                        ; >900a
-       .proc
-       .push de                        ; PUSH DE           ; 
-       movb @e,a                       ; LD A,E            ; 
-       ab   @>03(ix),a                 ; ADD A,(IX+$03)    ; 
-       movb a,@e                       ; LD E,A            ; 
-       movb @>04(ix),d                 ; LD D,(IX+$04)     ; 
-       movb @bytes+>10,a               ; LD A,$10          ; bit for x movement allowed
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       .call @chk_decor                ; CALL $902B        ; check if room decor is blocking movement
-       .pop de                         ; POP DE            ; 
-       .push de                        ; PUSH DE           ; 
-       movb @>03(ix),@e                ; LD E,(IX+$03)     ; 
-       movb d,a                        ; LD A,D            ; 
-       ab   @>04(ix),a                 ; ADD A,(IX+$04)    ; 
-       movb a,d                        ; LD D,A            ; 
-       movb @bytes+>20,a               ; LD A,$20          ; bit for y movement allowed
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       .call @chk_decor                ; CALL $902B        ; check if room decor is blocking movement
-       .pop de                         ; POP DE            ; 
-       .endproc                        ; RET               ;
-
-*********************************************************************
-*
-* check if room decor is blocking movement
-* 
-* Used by the routine at #R$900a.
-chk_decor:                             ; >902b
-       movb @>01(ix),@c                ; LD C,(IX+$01)     ; 
-       sb   b,b                        ; LD B,$00          ; 
-       li   hl,room_table              ; LD HL,$757D       ; 
-       ; SLA C                         ; SLA C             ; 
-       sla  b,1                        ; RL B              ; TODO: check code. * 2 (bytes per entry)
-       a    bc,hl                      ; ADD HL,BC         ; 
-       movb *hl+,@c                    ; LD C,(HL)         ;
-;      inc  hl                         ; INC HL            ;
-       movb *hl,b                      ; LD B,(HL)         ; 
-loc_903b:                              ; >903b
-       movb *bc+,a                     ; LD A,(BC)         ; room item LSB
-;      inc  bc                         ; INC BC            ;
-       movb a,@l                       ; LD L,A            ; 
-       movb *bc+,a                     ; LD A,(BC)         ; room item MSB
-;      inc  bc                         ; INC BC            ;
-       movb a,h                        ; LD H,A            ; 
-       socb @l,a                       ; OR L              ; 
-       jne  !                          ; RET Z             ; 
-       .ret                            ;                   
-!
-       .push bc                        ; PUSH BC           ; 
-       li   bc,room_table              ; LD BC,$757D       ; 
-       ; AND A                         ; AND A             ; 
-       s    bc,hl                      ; SBC HL,BC         ; 
-       inc  hl                         ; INC HL            ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-       cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
-       jeq  loc_9055                   ; JR Z,$9055        ; jump if so
-       li   bc,>0008                   ; LD BC,$0008       ; 8 bytes per entry
-       a    bc,hl                      ; ADD HL,BC         ; next (linked) entry
-loc_9055:                              ; >9055
-;      inc  hl                         ; INC HL            ;
-       inct hl                         ; INC HL            ;
-       movb *hl+,@c                    ; LD C,(HL)         ; x
-;      inc  hl                         ; INC HL            ;
-       movb *hl+,b                     ; LD B,(HL)         ; y
-;      inc  hl                         ; INC HL            ;
-       movb *hl+,a                     ; LD A,(HL)         ; flags
-;      inc  hl                         ; INC HL            ;
-       movb a,r0                       ; BIT 2,A           ; 
-       andi r0,>0400                   ;                   
-       jne  loc_909b                   ; JR NZ,$909B       ; 
-       movb a,r0                       ; BIT 3,A           ; 
-       andi r0,>0800                   ;                   
-       jne  loc_9098                   ; JR NZ,$9098       ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-;      sra  a,1                        ; SRA A             ;
-       sra  a,2                        ; SRA A             ;
-       andi a,>fc00                    ; AND $FC           ; 
-       ab   @c,a                       ; ADD A,C           ; 
-       sb   @e,a                       ; SUB E             ; 
-       neg a                           ; NEG               ; 
-       movb a,@c                       ; LD C,A            ; 
-       movb *hl,a                      ; LD A,(HL)         ;
-;      sla  a,1                        ; RLCA              ;
-       sla  a,2                        ; RLCA              ;
-       andi a,>3c00                    ; AND $3C           ; 
-       inc  hl                         ; INC HL            ; 
-       cb   a,@c                       ; CP C              ; 
-       jl   loc_9098                   ; JR C,$9098        ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-;      sra  a,1                        ; SRA A             ;
-       sra  a,2                        ; SRA A             ;
-       andi a,>fc00                    ; AND $FC           ; 
-       ab   b,a                        ; ADD A,B           ; 
-       sb   d,a                        ; SUB D             ; 
-       movb a,b                        ; LD B,A            ; 
-       movb *hl+,a                     ; LD A,(HL)         ;
-;      inc  hl                         ; INC HL            ;
-;      sla  a,1                        ; RLCA              ;
-       sla  a,2                        ; RLCA              ;
-       andi a,>3c00                    ; AND $3C           ; 
-       cb   a,b                        ; CP B              ; 
-       jl   loc_9098                   ; JR C,$9098        ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       movb a,@c                       ; LD C,A            ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       movb @c,a                       ; LD A,C            ; 
-       inv  a                          ; CPL               ;
-       movb @2(ix),r0
-       inv r0
-       szcb r0,a                       ; AND (IX+$02)      ; disallow movement bit
-loc_9095:                              ; >9095
-       movb a,@>02(ix)                 ; LD (IX+$02),A     ; 
-loc_9098:                              ; >9098
-       .pop bc                         ; POP BC            ; 
-       jmp  loc_903b                   ; JR $903B          ; 
-loc_909b:                              ; >909b
-       movb *hl,a                      ; LD A,(HL)         ; 
-;      sra  a,1                        ; SRA A             ;
-       sra  a,2                        ; SRA A             ;
-       andi a,>fc00                    ; AND $FC           ; 
-       ab   @c,a                       ; ADD A,C           ; 
-       sb   @e,a                       ; SUB E             ; 
-       neg a                           ; NEG               ; 
-       movb a,@c                       ; LD C,A            ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-;      sla  a,1                        ; RLCA              ;
-       sla  a,2                        ; RLCA              ;
-       andi a,>3c00                    ; AND $3C           ; 
-       inc  hl                         ; INC HL            ; 
-       cb   a,@c                       ; CP C              ; 
-       jl   loc_9098                   ; JR C,$9098        ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-;      sra  a,1                        ; SRA A             ;
-       sra  a,2                        ; SRA A             ;
-       andi a,>fc00                    ; AND $FC           ; 
-       ab   b,a                        ; ADD A,B           ; 
-       sb   d,a                        ; SUB D             ; 
-       movb a,b                        ; LD B,A            ; 
-       movb *hl+,a                     ; LD A,(HL)         ;
-;      inc  hl                         ; INC HL            ;
-;      sla  a,1                        ; RLCA              ;
-       sla  a,2                        ; RLCA              ;
-       andi a,>3c00                    ; AND $3C           ; 
-       cb   a,b                        ; CP B              ; 
-       jl   loc_9098                   ; JR C,$9098        ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       movb a,@c                       ; LD C,A            ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       movb @c,a                       ; LD A,C            ; 
-       socb @>02(ix),a                 ; OR (IX+$02)       ; allow movement bit
-       jmp  loc_9095                   ; JR $9095          ; 
-
-*********************************************************************
-*
-* check if player has left through a door
-* 
-* Used by the routines at #R$91f2, #R$9222 and #R$9731.
-check_exit:                            ; >90cc
-       .proc
-check_exit_branch:
-       movb @player_contact,a          ; LD A,($EA92)      ;
-       andi a,>0f00                    ; AND $0F           ; touching enemy?
-       jne  check_exit_branch_3        ; RET NZ            ; return if so [check]
-       movb @player,a                  ; LD A,($EA90)      ;
-       sb   one,a                      ; DEC A             ; 
-       cb   a,@bytes+>30               ; CP $30            ; player active?
-       jhe  check_exit_branch_3        ; RET NC            ; return if not
-       movb @>05(ix),r0                ; BIT 6,(IX+$05)    ; top/bottom door?
-       andi r0,>4000                   ;                   
-       jeq  check_exit_branch_1        ; JR Z,$90E1        ; jump if so
-       movb @c,r0
-       srl  r0,1                       ; SRL C             ; halve vertical distance
-       movb r0,@c
-check_exit_branch_1:                   ; >90e1
-       movb @player_x,a                ; LD A,($EA93)      ; 
-       sb   @>03(ix),a                 ; SUB (IX+$03)      ; x distance
-       cb   a,@c                       ; CP C              ; within range?
-       jhe  check_exit_branch_3        ; RET NC            ; return if not
-       movb @>05(ix),r0                ; BIT 6,(IX+$05)    ; left/right door?
-       andi r0,>4000                   ;                   
-       jne  check_exit_branch_2        ; JR NZ,$90F1       ; jump if so
-       srl  b,1                        ; SRL B             ; halve horiztonal distance
-check_exit_branch_2:                   ; >90f1
-       movb @player_y,a                ; LD A,($EA94)      ; 
-       sb   @>04(ix),a                 ; SUB (IX+$04)      ; y distance to exit
-       neg a                           ; NEG               ; 
-       cb   a,b                        ; CP B              ; within range?
-       jl   check_exit_branch_4
-check_exit_branch_3:
-       b    @return_without_carry      ; RET               ; return no-carry if not
-check_exit_branch_4:
-       b    @return_with_carry
-
-*********************************************************************
-*
-* check if player is touching entity
-* 
-* Used by the routines at #R$8c63, #R$92f5 and #R$988b.
-check_touching:                        ; >90fb
-       .proc
-       movb @player_x,a                ; LD A,($EA93)      ;
-       sb   @>03(ix),a                 ; SUB (IX+$03)      ; x distance
-       jh   loc_9106                   ; JP P,$9106        ;
-       neg a                           ; NEG               ; abs
-loc_9106:                              ; >9106
-       cb   a,@bytes+>0c               ; CP $0C            ; within range?
-       jl   !                          ; RET NC            ; return if not
-       jmp  check_touching_1           ;
-!
-       movb @player_y,a                ; LD A,($EA94)      ; 
-       sb   @>04(ix),a                 ; SUB (IX+$04)      ; y distance
-       jgt  loc_9114                   ; JP P,$9114        ;
-       neg a                           ; NEG               ; abs
-loc_9114:                              ; >9114
-       cb   a,@bytes+>0c               ; CP $0C            ; within range?
-       jl   !
-check_touching_1:
-       b    @return_without_carry      ; RET               ; return no-carry if not
-!      b    @return_with_carry
+       .ret                            ; RET               ; OK
 
 *********************************************************************
 *
@@ -1760,6 +644,8 @@ check_touching_1:
 * 
 * Used by the routines at #R$91f2, #R$9244 and #R$9731.
 change_room:                           ; >9117
+       .proc
+change_room_branch:
        .call @get_linked_door          ; CALL $9286        ; get connected door exit
        movb @>01(ix),a                 ; LD A,(IX+$01)     ; 
        movb a,@player_room             ; LD ($EA91),A      ; move player to connected room
@@ -1796,92 +682,6 @@ enter_room:                            ; >9147
        .call @draw_inventory           ; CALL $A13B        ; draw any items in player inventory
        .call @entry_sound              ; CALL $A403        ; room entry sound effect
        b    @main_loop                 ; JP $7DC3          ; 
-
-*********************************************************************
-*
-* return if player has required key (C if opened, NC if locked)
-* 
-* Used by the routines at #R$9244 and #R$9252.
-check_key_colour:                      ; >9222
-       .proc
-       movb *ix,a                      ; LD A,(IX+$00)     ;
-       andi a,>0300                    ; AND $03           ; locked door colour index
-       li   hl,key_attrs               ; LD HL,$925C       ; 
-       .call @add_hl_a                 ; CALL $926C        ; HL = HL + A
-       movb *hl,d                      ; LD D,(HL)         ; key colour attr
-       movb @bytes+>81,@e              ; LD E,$81          ; key graphic
-       .call @check_carrying           ; CALL $9273        ; is player carrying the required key colour?
-       jne   loc_923f                  ; JP NZ,$923F       ; jump if not
-       .call @enter_door               ; CALL $954D        ; enter linked object (door etc.)
-       li   bc,>1111                   ; LD BC,$1111       ; 17x17 size
-       b    @check_exit_branch         ; JP $90CC          ; check if player has left through a door
-loc_923f:                              ; >923f
-       .call @update_door_2            ; CALL $9565        ;
-       ; AND A                         ; AND A             ; door locked
-       b    @return_without_carry      ; RET               ;
-
-*********************************************************************
-*
-* set door type for both linked entities
-* 
-* Used by the routines at #R$915f and #R$9244.
-set_door_type:                         ; >9260
-;      .push ix                        ; PUSH IX           ;
-;      .pop hl                         ; POP HL            ;
-       mov  ix,hl
-       movb a,*hl                      ; LD (HL),A         ; set door graphic
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       movb @l,a                       ; LD A,L            ; 
-       li   r0,8*256                   ; XOR $08           ; linked entry
-       xor  r0,a                       ;                   
-       movb a,@l                       ; LD L,A            ; 
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       movb a,*hl                      ; LD (HL),A         ; set linked door graphic
-       .ret                            ; RET               ; 
-
-*********************************************************************
-*
-* check if player is carrying object E with colour D
-* 
-* Used by the routines at #R$8906, #R$8988 and #R$9222.
-check_carrying:                        ; >9273
-       .proc
-       movb @bytes+>03,b               ; LD B,$03          ; 3 inventory slots to search
-       li   hl,inventory1+>0002        ; LD HL,$5E32       ; 
-loc_9278:                              ; >9278
-       movb *hl+,a                     ; LD A,(HL)         ; item colour
-       cb   a,@e                       ; CP E              ; match?
-;      inc  hl                         ; INC HL            ;
-       jne  loc_9280                   ; JR NZ,$9280       ; jump if not
-       movb *hl,a                      ; LD A,(HL)         ; item graphic
-       cb   a,d                        ; CP D              ; match?
-       b    @return_with_eq            ; RET Z             ; return if so
-loc_9280:                              ; >9280
-;      inc  hl                         ; INC HL            ;
-;      inc  hl                         ; INC HL            ;
-;      inc  hl                         ; INC HL            ; next inventory slot
-       ai   hl,3
-       sb   one,b                      ; DJNZ $9278        ;
-       jne  loc_9278                   ;                   
-       .endproc                        ; RET               ;
-
-*********************************************************************
-*
-* get connected door exit
-* 
-* Used by the routines at #R$9117 and #R$9546.
-get_linked_door:                       ; >9286
-;       .push ix                        ; PUSH IX           ;
-;       .pop hl                         ; POP HL            ;
-       mov  ix,hl
-       movb @l,a                       ; LD A,L            ;
-       li   r0,8*256                   ; XOR $08           ; swap 8-byte entry
-       xor  r0,a                       ;                   
-       movb a,@l                       ; LD L,A            ; 
-;       .push hl                        ; PUSH HL           ;
-;       .pop ix                         ; POP IX            ;
-       mov  hl,ix
-       .ret                            ; RET               ;
 
 *********************************************************************
 *
@@ -1931,219 +731,6 @@ draw_entities_4:                       ; >92c7
 
 *********************************************************************
 *
-* add item to inventory slot 1
-* 
-* Used by the routine at #R$92f5.
-add_inventory:                         ; >9326
-       .proc
-       li   hl,inventory1              ; LD HL,$5E30       ; 
-;      .push ix                        ; PUSH IX           ;
-;      .pop de                         ; POP DE            ;
-       mov  ix,de
-       movb @e,*hl+                    ; LD (HL),E         ; entity LSB
-;      inc  hl                         ; INC HL            ;
-       movb d,*hl+                     ; LD (HL),D         ; entity MSB
-;      inc  hl                         ; INC HL            ;
-       movb *ix,*hl+                   ; LD A,(IX+$00)     ;
-;      movb a,*hl                      ; LD (HL),A         ; graphic
-;      inc  hl                         ; INC HL            ;
-       movb @>05(ix),*hl               ; LD A,(IX+$05)     ;
-;      movb a,*hl                      ; LD (HL),A         ;
-       .call @undraw_entity            ; CALL $9F56        ; 
-       movb @room_attr,@>05(ix)        ; LD A,($5E1A)      ;
-;      movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       .call @set_entity_attrs2        ; CALL $A01A        ; set attrs covering previous and new position
-       sb   *ix,*ix                    ; LD (IX+$00),$00   ; 
-       .call @inventory_sound          ; JP $A3BD          ;
-       .endproc
-
-*********************************************************************
-*
-* move items 1+2 to slots 2+3
-* 
-* Used by the routines at #R$92f5 and #R$93e3.
-shift_inventory:                       ; >934c
-       li   hl,inventory2+>0003        ; LD HL,$5E37       ; 
-       li   de,inventory3+>0003        ; LD DE,$5E3B       ; 
-       li   bc,>0008                   ; LD BC,$0008       ; 2 items * 4 bytes
-       .lddr                           ; LDDR              ; shift up items
-       .ret                            ; RET               ; 
-
-*********************************************************************
-*
-* drop last item in inventory
-* 
-* Used by the routines at #R$92f5 and #R$93e3.
-drop_item:                             ; >9358
-       .proc
-       li   hl,inventory3              ; LD HL,$5E38       ;
-       movb *hl+,@e                    ; LD E,(HL)         ;
-;      inc  hl                         ; INC HL            ;
-       movb *hl+,d                     ; LD D,(HL)         ;
-;      inc  hl                         ; INC HL            ;
-       movb d,a                        ; LD A,D            ; 
-       socb @e,a                       ; OR E              ; 
-       jeq  drop_item_1                ; RET Z             ; return if no item to drop
-       .push de                        ; PUSH DE           ;
-       movb *hl+,a                     ; LD A,(HL)         ; graphic idx
-;      inc  hl                         ; INC HL            ;
-       movb a,*de+                     ; LD (DE),A         ;
-;      inc  de                         ; INC DE            ;
-       movb @player_room,a             ; LD A,($EA91)      ; 
-       movb a,*de+                     ; LD (DE),A         ; set item room
-;      inc  de                         ; INC DE            ;
-       movb @bytes+>80,a               ; LD A,$80          ; 
-       movb a,*de+                     ; LD (DE),A         ;
-;      inc  de                         ; INC DE            ;
-       movb @player_x,a                ; LD A,($EA93)      ; 
-       movb a,*de+                     ; LD (DE),A         ; set item xpos
-;      inc  de                         ; INC DE            ;
-       movb @player_y,a                ; LD A,($EA94)      ; 
-       movb a,*de+                     ; LD (DE),A         ; set item ypos
-;      inc  de                         ; INC DE            ;
-       movb *hl,a                      ; LD A,(HL)         ; inventory colour
-       movb a,*de                      ; LD (DE),A         ; set item attr
-       .pop de                         ; POP DE            ; 
-       .call @drop_sound               ; CALL $A3C2        ;
-       .push ix                        ; PUSH IX           ;
-;      .push de                        ; PUSH DE           ;
-;      .pop ix                         ; POP IX            ;
-       mov  de,ix
-       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
-       .pop ix                         ; POP IX            ; 
-drop_item_1:
-       .endproc                        ; RET               ;
-
-*********************************************************************
-*
-* check whether pick-up key has been pressed
-* 
-* Used by the routine at #R$7e13.
-check_pickup_key:                      ; >938b             ;
-       .proc
-;      movb @bytes+>7e,a               ; LD A,$7E          ; read V/C/X/Z/Shift and B/N/M/Sym/Space rows
-;      ; OUT ($FD),A                   ; OUT ($FD),A       ;
-;      ; IN A,($FE)                    ; IN A,($FE)        ;
-;      inv  a                          ; CPL               ;
-;      andi a,>0200                    ; AND $02           ; non-zero if Symbol Shift or Z pressed
-       clr  a
-       li   r0,KEY_G
-       bl   @ti_check_key
-       jeq  check_pickup_key_1
-       movb @bytes+2,a
-check_pickup_key_1:
-       movb a,@pickup_pressed          ; LD ($5E20),A      ;
-       .endproc                        ; RET               ;
-
-*********************************************************************
-*
-read_keyboard:                         ; >93cd
-;       movb @bytes+>fb,a               ; LD A,$FB          ;
-;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
-;       ; IN A,($FE)                    ; IN A,($FE)        ; xxxTREWQ
-;       movb a,@c                       ; LD C,A            ;
-;       srl  a,1                        ; RRA               ; TODO: check code.
-;       andi a,>0100                    ; AND $01           ; W key
-;       movb a,@e                       ; LD E,A            ;
-;       movb @c,a                       ; LD A,C            ;
-;       ; RLA                           ; RLA               ;
-;       andi a,>0200                    ; AND $02           ; Q key
-;       socb @e,a                       ; OR E              ;
-;       movb a,@e                       ; LD E,A            ;
-;       movb @c,a                       ; LD A,C            ;
-;       andi a,>1c00                    ; AND $1C           ; ___TRE__
-;       socb @e,a                       ; OR E              ; ___TREQW
-;       .ret                            ; RET               ;
-       li   r1,keys_keyboard
-       jmp  read_controls_1
-
-* return controls in A (FUDLR order, negative logic)
-* 
-* Used by the routines at #R$80d2, #R$8d77, #R$8dc4 and #R$8e26.
-*
-* >10 = fire
-* >08 = up
-* >04 = down
-* >02 = left
-* >01 = right
-*
-read_controls:                         ; >93be
-       .proc
-       movb @menu_selection,a          ; LD A,($5E00)      ;
-       andi a,>0600                    ; AND $06           ; 
-       jeq  read_keyboard              ; JR Z,$93CD        ; 
-       cb   a,@bytes+>04               ; CP $04            ; 
-       jeq  read_cursor                ; JR Z,$9398        ; 
-;       ; IN A,($1F)                    ; IN A,($1F)        ; read Kempston joystick
-;       inv  a                          ; CPL               ;
-       li   r1,keys_joystick
-read_controls_1:
-       li   r2,>1000
-       clr  a
-read_controls_2:
-       mov  *r1+,r0
-       bl   @ti_check_key
-       jeq  !
-       socb r2,a
-!      srl  r2,1
-       ci   r2,>0080
-       jne  read_controls_2
-       .endproc                        ; RET               ;
-
-* This entry point is used by the routine at #R$93be.
-read_cursor:                           ; >9398
-;       .proc
-;       movb @bytes+>ef,a               ; LD A,$EF          ;
-;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
-;       ; IN A,($FE)                    ; IN A,($FE)        ; xxx67890
-;       movb a,@c                       ; LD C,A            ;
-;       andi a,>0800                    ; AND $08           ; 7 key
-;       movb a,@e                       ; LD E,A            ;
-;       movb @c,a                       ; LD A,C            ;
-;       ; RRCA                          ; RRCA              ; 0xxx6789
-;       ; RRCA                          ; RRCA              ; 90xxx678
-;       andi a,>4500                    ; AND $45           ; ?+6+8 keys
-;       socb @e,a                       ; OR E              ;
-;       movb a,@e                       ; LD E,A            ;
-;       ; RRCA                          ; RRCA              ; 890xxx67
-;       ; RRCA                          ; RRCA              ; 7890xxx6
-;       andi a,>1000                    ; AND $10           ; 0 key
-;       socb @e,a                       ; OR E              ;
-;       andi a,>1f00                    ; AND $1F           ;
-;       movb a,@e                       ; LD E,A            ;
-;       movb @bytes+>f7,a               ; LD A,$F7          ; xxx54321
-;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
-;       ; IN A,($FE)                    ; IN A,($FE)        ;
-;       srl  a,1                        ; RRA               ; 1xxx5432
-;       srl  a,1                        ; RRA               ; 21xxx543
-;       srl  a,1                        ; RRA               ; 321xxx54
-;       andi a,>0200                    ; AND $02           ; 5 key
-;       socb @e,a                       ; OR E              ;
-;      .ret                            ; RET               ;
-       li   r1,keys_cursor
-       jmp  read_controls_1
-
-keys_keyboard:
-       data KEY_SP
-       data KEY_Q
-       data KEY_A
-       data KEY_O
-       data KEY_P
-keys_cursor:
-       data KEY_EN
-       data KEY_E
-       data KEY_X
-       data KEY_S
-       data KEY_D
-keys_joystick:
-       data KEY_EN
-       data KEY_E
-       data KEY_X
-       data KEY_S
-       data KEY_D
-
-*********************************************************************
-*
 * prepare player to spawn
 * 
 * Used by the routines at #R$7d9a and #R$8d45.
@@ -2160,7 +747,7 @@ prepare_player:                        ; >9443
        li   de,player                  ; LD DE,$EA90       ; 
        li   bc,>0008                   ; LD BC,$0008       ; player entity size
        .ldir                           ; LDIR              ; copy to live player
-       movb @bytes+>8,@flash_timer     ; LD A,$68          ; flash score for 104 frames TODO
+       movb @bytes+>8,@flash_timer     ; LD A,$68          ; flash score for 104 frames TODO: Chaged to 8
 ;      movb a,@flash_timer             ; LD ($5E3C),A      ; score flash timer
        movb @lives,a                   ; LD A,($5E21)      ; 
        cb   a,@bytes+>03               ; CP $03            ; first game spawn? (full lives)
@@ -2343,184 +930,6 @@ loc_9542:                              ; >9542
 
 *********************************************************************
 *
-* update solid/passable door state
-* 
-* Used by the routine at #R$915f.
-update_door:                           ; >9546
-       .proc
-       movb *ix,a                      ; LD A,(IX+$00)     ;
-       andi a,>0100                    ; AND $01           ; is door open?
-       jeq  update_door_2_branch       ; JR Z,$9565        ; jump if so
-       jmp  !
-* This entry point is used by the routines at #R$9222, #R$9421 and #R$961b.
-enter_door:                            ; >954d
-       .proc
-!      movb @>05(ix),a                 ; LD A,(IX+$05)     ; enter linked object (door etc.)
-       andi a,>f700                    ; AND $F7           ; object is solid
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
-       .push ix                        ; PUSH IX           ; 
-       .call @get_linked_door          ; CALL $9286        ; get connected door exit
-       movb @>05(ix),a                 ; LD A,(IX+$05)     ; 
-       andi a,>f700                    ; AND $F7           ; linked object is solid
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
-       .pop ix                         ; POP IX            ; 
-       jmp  update_door_1              ; RET               ;
-* This entry point is used by the routines at #R$9222, #R$9421 and #R$961b.
-update_door_2:                         ; >9565
-       .proc
-update_door_2_branch:
-       movb @>05(ix),a                 ; LD A,(IX+$05)     ;
-       socb @bytes+>08,a               ; OR $08            ; object can be passed through
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
-       .push ix                        ; PUSH IX           ; 
-       .call @get_linked_door          ; CALL $9286        ; get connected door exit
-       movb @>05(ix),a                 ; LD A,(IX+$05)     ; 
-       socb @bytes+>08,a               ; OR $08            ; linked object can be passed through
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ; 
-       .pop ix                         ; POP IX            ; 
-update_door_1:
-       .endproc                        ; RET               ;
-
-*********************************************************************
-*
-* check if player is standing in a doorway
-* 
-* Used by the routine at #R$8d77.
-check_doorway:                         ; >957d
-       .push de                        ; PUSH DE           ; 
-       sb   b,b                        ; LD B,$00          ; 
-       mov  @room_width,hl             ; LD HL,($5E1D)     ; 
-       ab   one,@l                     ; INC L             ; increase interior width
-       ab   one,h                      ; INC H             ; increase interior height
-       movb @>03(ix),@e                ; LD E,(IX+$03)     ; player x
-       movb @>04(ix),d                 ; LD D,(IX+$04)     ; player y
-       movb @e,a                       ; LD A,E            ; 
-       sb   @bytes+>58,a               ; SUB $58           ; subtract room centre x
-       jgt  loc_9593                   ; JP P,$9593        ;
-       neg a                           ; NEG               ; abs
-loc_9593:                              ; >9593
-       cb   a,@l                       ; CP L              ; within interior width?
-       jl   loc_9597                   ; JR C,$9597        ; jump if so
-       ab   one,b                      ; INC B             ; mark as in left/right doorway
-loc_9597:                              ; >9597
-       movb d,a                        ; LD A,D            ; 
-       sb   @bytes+>68,a               ; SUB $68           ; subtract room centre y
-       jgt  loc_959F                   ; JP P,$959F        ;
-       neg a                           ; NEG               ; abs
-loc_959f:                              ; >959f
-       cb   a,h                        ; CP H              ; within interior height?
-       jl   loc_95a3                   ; JR C,$95A3        ; jump if so
-       ab   one,b                      ; INC B             ; mark as in top/bottom doorway
-loc_95a3:                              ; >95a3
-       movb b,a                        ; LD A,B            ; 
-       movb a,@in_doorway              ; LD ($5E2D),A      ; non-zero if in a doorway
-       .pop de                         ; POP DE            ; 
-       .ret                            ; RET               ; 
-
-*********************************************************************
-*
-* place a tombstone at the player position
-* 
-* Used by the routine at #R$8d45.
-place_tombstone:                       ; >95a9
-       li   hl,tombstone1              ; LD HL,$EAE8       ; tombstone entities
-       li   de,>0008                   ; LD DE,$0008       ; 8 bytes per entity
-       movb @bytes+>04,b               ; LD B,$04          ; 4 tombstone slots
-loc_95b1:                              ; >95b1
-       movb *hl,a                      ; LD A,(HL)         ; 
-       ; AND A                         ; AND A             ; free slot?
-       jeq  loc_95b9                   ; JR Z,$95B9        ; jump if so
-       a    de,hl                      ; ADD HL,DE         ; next slot
-       sb   one,b                      ; DJNZ $95B1        ; 
-       jne  loc_95b1                   ;                   
-       .ret                            ; RET               ; 
-loc_95b9:                              ; >95b9
-       movb @bytes+>45,a               ; LD A,$45          ; bright cyan
-       movb a,@player_attr             ; LD ($EA95),A      ; 
-       .push hl                        ; PUSH HL           ; 
-       movb @bytes+>8f,*hl             ; LD (HL),$8F       ; tombstone graphic
-       .ex_de_hl                       ; EX DE,HL          ; 
-       inc  de                         ; INC DE            ; 
-       li   hl,player_room             ; LD HL,$EA91       ; copy remaining details from player entity
-       li   bc,>0007                   ; LD BC,$0007       ; 8 bytes minus the graphic we've written
-       .ldir                           ; LDIR              ; 
-       .pop hl                         ; POP HL            ; jump return address (?)
-;      Continue into draw_entity_hl
-
-*********************************************************************
-*
-* draw entity in HL
-* 
-* Used by the routine at #R$96c9.
-draw_entity_hl:                        ; >95cc
-       .proc
-       .push ix                        ; PUSH IX           ;
-;      .push hl                        ; PUSH HL           ;
-;      .pop ix                         ; POP IX            ;
-       mov  hl,ix
-       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
-       .pop ix                         ; POP IX            ; 
-       .endproc                        ; RET               ;
-
-*********************************************************************
-*
-* advance the clock 1 frame
-*
-* Used by the routine at #R$7ec5.
-clock_tick:                            ; >95da
-       rt                              ; TODO
-
-       .proc
-       movb @zx_frames,a               ; LD A,($5C78)      ;
-       cb   a,@bytes+>32               ; CP $32            ; 1 second elapsed?
-       jhe  !                          ; RET C             ; return if not
-       .endproc                        ;
-!
-       sb   @bytes+>32,a               ; SUB $32           ; subtract 1 second
-       movb a,@zx_frames               ; LD ($5C78),A      ; store back [this keeps LSB in 0-49 range!]
-       li   hl,clock_seconds           ; LD HL,$5E3F       ;
-       movb *hl,a                      ; LD A,(HL)         ;
-       ab   one,a                      ; INC A             ; add a second
-       .daa                            ; DAA               ;
-       movb a,*hl                      ; LD (HL),A         ;
-       cb   a,@bytes+>60               ; CP $60            ; 60 seconds?
-       jne  loc_9604                   ; JR NZ,$9604       ; jump if not
-       sb   *hl,*hl                    ; LD (HL),$00       ; reset seconds
-       dec  hl                         ; DEC HL            ;
-       movb *hl,a                      ; LD A,(HL)         ;
-       ab   one,a                      ; INC A             ; add a minute
-       .daa                            ; DAA               ;
-       movb a,*hl                      ; LD (HL),A         ;
-       cb   a,@bytes+>60               ; CP $60            ; 60 minutes?
-       jne  loc_9604                   ; JR NZ,$9604       ; jump if not
-       sb   *hl,*hl                    ; LD (HL),$00       ; reset minutes
-       dec  hl                         ; DEC HL            ;
-       movb *hl,a                      ; LD A,(HL)         ;
-       ab   one,a                      ; INC A             ; add an hour
-       .daa                            ; DAA               ;
-       andi a,>0f00                    ; AND $0F           ; clip hours to 0-15
-       movb a,*hl                      ; LD (HL),A         ;
-loc_9604:                              ; >9604
-       li   hl,zx_screen+>00c8         ; LD HL,$40C8       ; time coords
-;      Continue into print_clock
-
-*********************************************************************
-*
-* print clock time at position HL
-* 
-* Used by the routine at #R$9641.
-print_clock:                           ; >9607
-       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       li   de,clock_hours             ; LD DE,$5E3D       ; 
-       movb @bytes+>02,b               ; LD B,$02          ; 
-       .call @print_bcd_digit          ; CALL $A1C9        ; print a single BCD digit
-       li   de,clock_seconds           ; LD DE,$5E3F       ; 
-       inc  hl                         ; INC HL            ; 
-       movb one,b                      ; LD B,$01          ; 
-       b    @print_bcd_bytes           ; JP $A1BF          ; print B BCD bytes at DE
-
-*********************************************************************
-*
 * show game statistics
 * 
 * Used by the routines at #R$8c35 and #R$96c9.
@@ -2576,7 +985,7 @@ visit_room:                            ; >96af
        mov  r0,@loc_96c6+2
 loc_96c6:                              ; >96c6
        socb @bits+0,*hl                ; SET 0,(HL)        ; mark room as visited
-       .ret                            ; RET               ; 
+       .ret                            ; RET               ; OK
 
 *********************************************************************
 *
@@ -2597,7 +1006,7 @@ loc_96d2:                              ; >96d2
 loc_96d5:                              ; >96d5
        mov  de,r0
        srl  r0,1                       ; RR E              ;
-       mov  @r0lb,@e
+       movb @r0lb,@e
        jnc  loc_96e1                   ; JR NC,$96E1       ;
        sb   one,d                      ; DEC D             ; counter zero?
        jne  loc_96e1                   ; JR NZ,$96E1       ; jump if not
@@ -2633,109 +1042,6 @@ game_complete:                         ; >96ec
 
 *********************************************************************
 *
-* Routine at 9731
-* 
-* Used by the routine at #R$91bc.
-*
-chk_trap_exit:                         ; >9731
-       li   bc,>1818                   ; LD BC,$1818       ; 24x24
-       .call @check_exit               ; CALL $90CC        ; fallen into trap door?
-       joc  !                          ; JP NC,$91FE       ; jump if not
-       b    @draw_room_item            ;
-!
-       .call @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
-       movb @bytes+>96,a               ; LD A,$96          ; room 150 is trap door tunnel
-       .push ix                        ; PUSH IX           ; 
-       .call @draw_room_a              ; CALL $9BF1        ; draw trap door lines
-       .pop ix                         ; POP IX            ; 
-       movb @bytes+>80,b               ; LD B,$80          ; 128 frames of tunnel animation
-loc_9748:                              ; >9748
-       movb @zx_frames,a               ; LD A,($5C78)      ; 
-       movb a,@c                       ; LD C,A            ; 
-loc_974c:                              ; >974c
-       .push bc                        ; PUSH BC           ; 
-       movb b,a                        ; LD A,B            ; 
-       inv  a                          ; CPL               ; ~frame counter is effect frequency
-       movb a,b                        ; LD B,A            ; 
-       .call @click_sound                    ; CALL $A3A8        ; short beep
-       .pop bc                         ; POP BC            ; 
-       movb @zx_frames,a               ; LD A,($5C78)      ; 
-       cb   a,@c                       ; CP C              ; same frame?
-       jeq  loc_974c                   ; JR Z,$974C        ; loop back to continue sound effect
-       andi a,>0700                    ; AND $07           ; frame 1-7?
-       sb   a,a                        ; LD A,$00          ; black
-       jne  loc_9762                   ; JR NZ,$9762       ; jump if so (use black)
-       movb @bytes+>47,a               ; LD A,$47          ; bright white
-loc_9762:                              ; >9762
-       movb a,@l                       ; LD L,A            ; 
-       movb a,h                        ; LD H,A            ; 
-       mov  hl,@zx_attrs+>016b         ; LD ($596B),HL     ; TODO
-       mov  hl,@zx_attrs+>018b         ; LD ($598B),HL     ; TODO
-       .push bc                        ; PUSH BC           ; 
-       .call @draw_tunnel_attrs        ; CALL $9774        ; 
-       .pop bc                         ; POP BC            ; 
-       sb   one,b                      ; DJNZ $9748        ; loop until end of effect
-       jne  loc_9748                   ;                   
-       b    @change_room               ; JP $9117          ; move player to room linked to entity (usually door)
-
-*********************************************************************
-*
-* Routine at 9774
-* 
-* Used by the routine at #R$9731.
-*
-draw_tunnel_attrs:                     ; >9774
-       li   bc,>170b                   ; LD BC,$170B       ; 23x11 (for 24x24 final area)
-       li   hl,zx_attrs+>02e0          ; LD HL,$5AE0       ; 
-       li   de,>0020                   ; LD DE,$0020       ; line pitch is 32 bytes
-loc_977d:                              ; >977d
-       .push hl                        ; PUSH HL           ; 
-       ; AND A                         ; AND A             ; 
-       s    de,hl                      ; SBC HL,DE         ; 
-       ab   one,@l                     ; INC L             ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-       .pop hl                         ; POP HL            ; 
-       .push bc                        ; PUSH BC           ; 
-loc_9785:                              ; >9785
-       movb a,*hl                      ; LD (HL),A         ; draw horizontal bar
-       ab   one,@l                     ; INC L             ; forwards
-       sb   one,b                      ; DJNZ $9785        ; 
-       jne  loc_9785                   ;                   
-       .pop bc                         ; POP BC            ; 
-       .push bc                        ; PUSH BC           ; 
-loc_978b:                              ; >978b
-       movb a,*hl                      ; LD (HL),A         ; draw vertical bar
-       ; AND A                         ; AND A             ; backwards
-       s    de,hl                      ; SBC HL,DE         ; 
-       sb   one,b                      ; DJNZ $978B        ; 
-       jne  loc_978b                   ;                   
-       .pop bc                         ; POP BC            ; 
-       .push bc                        ; PUSH BC           ; 
-loc_9793:                              ; >9793
-       movb a,*hl                      ; LD (HL),A         ; draw horizontal bar
-       sb   one,@l                     ; DEC L             ; backwards
-       sb   one,b                      ; DJNZ $9793        ; 
-       jne  loc_9793                   ;                   
-       .pop bc                         ; POP BC            ; 
-       .push bc                        ; PUSH BC           ; 
-loc_9799:                              ; >9799
-       movb a,*hl                      ; LD (HL),A         ; draw vertical bar
-       a    de,hl                      ; ADD HL,DE         ; forwards
-       sb   one,b                      ; DJNZ $9799        ; 
-       jne  loc_9799                   ;                   
-       movb a,*hl                      ; LD (HL),A         ; 
-       ; AND A                         ; AND A             ; 
-       s    de,hl                      ; SBC HL,DE         ; 
-       ab   one,@l                     ; INC L             ; 
-       .pop bc                         ; POP BC            ; 
-       sb   one,b                      ; DEC B             ; 
-       sb   one,b                      ; DEC B             ; 
-       sb   one,@c                     ; DEC C             ; 
-       jne  loc_977d                   ; JR NZ,$977D       ; 
-       .ret                            ; RET               ; 
-
-*********************************************************************
-*
 * auto-walk into the room
 * 
 * Used by the routine at #R$9117.
@@ -2756,7 +1062,7 @@ set_entry_walk:                        ; >986a
        movb a,@player_steps_x          ; LD ($EA96),A      ; 
 ;      movb *hl,a                      ; LD A,(HL)         ;
        movb *hl,@player_steps_y        ; LD ($EA97),A      ;
-       .ret                            ; RET               ; 
+       .ret                            ; RET               ; OK
 
 *********************************************************************
 *
@@ -2807,7 +1113,7 @@ get_key_room:                          ; >9904
        sb   b,b                        ; LD B,$00          ; 
        a    bc,hl                      ; ADD HL,BC         ; 
        movb *hl,a                      ; LD A,(HL)         ; 
-       .ret                            ; RET               ; 
+       .ret                            ; RET               ; OK
 
 *********************************************************************
 *
@@ -2847,7 +1153,7 @@ replenish_food_1:                      ; >995b
        li   hl,food_items              ; LD HL,$EB58       ; 
        mov  hl,@food_ptr               ; LD ($5E55),HL     ; 
 replenish_food_2:
-       .ret                            ; RET               ;
+       .ret                            ; RET               ; OK
 
 *********************************************************************
 *
@@ -2905,35 +1211,6 @@ loc_a15e:                              ; >a15e
        .pop de                         ; POP DE            ; 
        .pop bc                         ; POP BC            ; 
        .endproc                        ; RET               ;
-
-*********************************************************************
-*
-* add BC to current score
-* 
-* Used by the routines at #R$871a and #R$8988.
-add_score_bc_bcd:                      ; >a19c
-       .proc
-       li   hl,score_bcd+>0002         ; LD HL,$5E2C       ; end of score is 1s
-       movb *hl,a                      ; LD A,(HL)         ; 
-       ab   @c,a                       ; ADD A,C           ; add 10s and 1s
-       .daa                            ; DAA               ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       dec  hl                         ; DEC HL            ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-       ab   b,a                        ; ADC A,B           ; add 1000s and 100s
-       .daa                            ; DAA               ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       dec  hl                         ; DEC HL            ; 
-       movb *hl,a                      ; LD A,(HL)         ; 
-       ab   @zero,a                    ; ADC A,$00         ; carry 10000s
-       .daa                            ; DAA               ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-* This entry point is used by the routine at #R$a219.
-loc_a1ae:                              ; >a1ae
-       li   hl,digit_charset           ; LD HL,$BFCC       ; 
-       mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
-       li   hl,>50C8                   ; LD HL,$50C8       ;
-       jmp  print_score_branch
 
 *********************************************************************
 *
@@ -3009,7 +1286,7 @@ loc_a1e5:                              ; >a1e5
        sb   @bytes+>08,h               ; SUB $08           ; back to start address
 ;      movb a,h                        ; LD H,A            ;
        ab   one,@l                     ; INC L             ; next position to the right
-       .ret                            ; RET               ; 
+       .ret                            ; RET               ; OK
 
 *********************************************************************
 *
@@ -3022,9 +1299,8 @@ loc_a1e5:                              ; >a1e5
 *
 colour_text:                           ; >a1f3
        .proc
-       jmp  !
 colour_text_jump_target:
-!      .push hl                        ; PUSH HL           ;
+       .push hl                        ; PUSH HL           ;
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        movb *de,a                      ; LD A,(DE)         ; text attr colour
        .ex_af_af_                      ; EX AF,AF'         ; 
@@ -3068,24 +1344,24 @@ draw_side_panel:                       ; >a219
        li   hl,>00c0                   ; LD HL,$00C0       ; 
        li   de,panel_data              ; LD DE,$B32A       ; 
        li   bc,>0818                   ; LD BC,$0818       ; 8x24
-loc_a228:                              ; >a228
+draw_side_panel_1:                     ; >a228
        .push bc                        ; PUSH BC           ; 
        .push hl                        ; PUSH HL           ; 
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-loc_a22d:                              ; >a22d
+draw_side_panel_2:                     ; >a22d
        movb *de+,a                     ; LD A,(DE)         ;
 ;      inc  de                         ; INC DE            ;
        .call @print_char               ; CALL $A1D3        ; print a single character
        sb   one,b                      ; DJNZ $A22D        ; 
-       jne  loc_a22d                   ;                   
+       jne  draw_side_panel_2          ;
        .pop hl                         ; POP HL            ; 
        movb h,a                        ; LD A,H            ; 
        ab   @bytes+>08,a               ; ADD A,$08         ; 
        movb a,h                        ; LD H,A            ; 
        .pop bc                         ; POP BC            ; 
        sb   one,@c                     ; DEC C             ; 
-       jne  loc_a228                   ; JR NZ,$A228       ;
-       b    @loc_a1ae                  ; JP $A1AE          ;
+       jne  draw_side_panel_1          ; JR NZ,$A228       ;
+       b    @add_score_bc_bcd_1        ; JP $A1AE          ;
 
 *********************************************************************
 *
@@ -3200,8 +1476,8 @@ loc_a2fd:                              ; >a2fd
        cb   @c,@zero
        jeq  loc_a30c
        sb   one,@c                     ; DEC C             ;
-;       jlt  loc_a30c                   ; JP P,$A30C        ;
-;       sb   @c,@c                      ; LD C,$00          ; min lives is zero
+       jgt  loc_a30c                   ; JP P,$A30C        ;
+       sb   @c,@c                      ; LD C,$00          ; min lives is zero
 loc_a30c:                              ; >a30c
        sb   one,b                      ; DJNZ $A2F2        ; draw remaining slots
        jne  loc_a2f2                   ;                   
