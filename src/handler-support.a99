@@ -213,7 +213,7 @@ loc_82ed:                              ; >82ed
 
 *********************************************************************
 *
-* check whether to add new room creatures
+* check whether to add/create/spawn new room creatures
 *
 * Used by the routine at #R$8e26.
 chk_creatures:                         ; >83ea
@@ -222,28 +222,27 @@ chk_creatures:                         ; >83ea
        movb a,@c                       ; LD C,A            ;
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@c                       ; CP C              ; player in different room?
-       jne  loc_844f                   ; JR NZ,$844F       ; jump if so
+       jne  add_creature_3             ; JR NZ,$844F       ; jump if so
        li   hl,creature_delay          ; LD HL,$5E27       ;
        movb *hl,a                      ; LD A,(HL)         ;
        ; AND A                         ; AND A             ; time to appear?
-       jeq  loc_8458                   ; JR Z,$8458        ; jump if so
+       jeq  add_creature_4             ; JR Z,$8458        ; jump if so
        sb   one,*hl                    ; DEC (HL)          ; reduce delay timer
        jeq  add_creature               ; RET NZ            ; return if not yet time
        .endproc                        ;
 add_creature:                          ; >83fd
-       equ  $
        li   hl,creature1               ; LD HL,$EE60       ; first creature slot
        li   de,>0010                   ; LD DE,$0010       ; 16 bytes per creature
        movb @bytes+>03,b               ; LD B,$03          ; 3 room creatures
-loc_8405:                              ; >8405
+add_creature_1:                        ; >8405
        movb *hl,a                      ; LD A,(HL)         ;
        ; AND A                         ; AND A             ; free slot?
-       jeq  loc_840d                   ; JR Z,$840D        ; jump if so
+       jeq  add_creature_2             ; JR Z,$840D        ; jump if so
        a    de,hl                      ; ADD HL,DE         ;
        sb   one,b                      ; DJNZ $8405        ;
-       jne  loc_8405                   ;
-       jmp  add_creature_1             ; RET               ; no free slots
-loc_840d:                              ; >840d
+       jne  add_creature_1             ;
+       jmp  add_creature_end           ; RET               ; no free slots
+add_creature_2:                        ; >840d
        .ex_de_hl                       ; EX DE,HL          ;
        li   hl,creature_default        ; LD HL,$8B6A       ; default entity data for creature
        li   bc,>0010                   ; LD BC,$0010       ; 16 bytes of entity data
@@ -280,18 +279,18 @@ loc_840d:                              ; >840d
        .call @rnd_movement             ; CALL $86F2        ; set random movement
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
        .pop ix                         ; POP IX            ;
-       jmp add_creature_1              ; RET               ;
-loc_844f:                              ; >844f
+       jmp add_creature_end            ; RET               ;
+add_creature_3:                        ; >844f
        movb a,@last_creat_room         ; LD ($5E26),A      ;
        movb @bytes+>20,a               ; LD A,$20          ; delay 32 frames before next creature
        movb a,@creature_delay          ; LD ($5E27),A      ;
-       jmp add_creature_1              ; RET               ;
-loc_8458:                              ; >8458
+       jmp add_creature_end            ; RET               ;
+add_creature_4:                        ; >8458
        bl   @ti_rnd
        movb r,a                        ; LD A,R            ;
        andi a,>0f00                    ; AND $0F           ; 1/16 chance of appearing
        jeq  add_creature               ; JR $83FD          ; add creature
-add_creature_1:
+add_creature_end:
        .endproc                        ; RET NZ            ; return if not
 
 *********************************************************************

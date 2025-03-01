@@ -327,7 +327,7 @@ main_loop_1:                           ; >7ddc
        jeq  !                          ; CALL NZ,$7EB2     ; call if not
        .call @run_player               ;
 !
-*      Process items from acg_key_1 to creature1
+*      Process entities from acg_key_1 to creature1
        movb @player_room,a             ; LD A,($EA91)      ; 
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; entity in player room?
        jne  !                          ; JP Z,$7E7E        ; jump if so
@@ -354,7 +354,7 @@ main_loop_2:                           ; >7e03
        jeq  !                          ; CALL NZ,$7EB2     ; call if not
       .call @run_player                ;
 !                                      ;
-*      Process items from creature1 to linked_items
+*      Process entities from creature1 to linked_items
        li   hl,loop2_return            ; LD HL,$7E13       ;
        b    @process_action            ; JR $7E7E          ;
 * Routine at 7e13
@@ -373,9 +373,12 @@ loop2_return:                          ; >7e13
 *
 draw_room:
 *      Draw room, or only attributes if room already drawn
+       movb @game_flags,r0             ; TODO: Prevent redrawng attributes for now
+       andi r0,>0100
+       jne  !
        .call @draw_room_decor
 *      Advance counter
-       movb @counter_low,@l            ; LD HL,($5E12)     ;
+!      movb @counter_low,@l            ; LD HL,($5E12)     ;
        movb @counter_high,h
        inc  hl                         ; INC HL            ; advance game loop counter
        movb @l,@counter_low            ; LD ($5E12),HL     ;
