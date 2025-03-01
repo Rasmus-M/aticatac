@@ -154,9 +154,9 @@ entity_y:
        equ  4
 entity_flags:
        equ  5
-entity_door_timing:
+entity_vx:
        equ  6
-entity_unknown_2:
+entity_vy:
        equ  7
 
        copy "sound-defs.a99"

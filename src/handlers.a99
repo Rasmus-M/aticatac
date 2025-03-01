@@ -184,69 +184,71 @@ h_player_appear:                       ; >8cb7
        jeq  h_player_appear_4          ; JR Z,$8D32        ; jump if so
 * This entry point is used by the routine at #R$8d45.
 h_player_appear_1:                     ; >8cd4
-       .push de                        ; PUSH DE           ;
-       .push hl                        ; PUSH HL           ;
-       movb h,b                        ; LD B,H            ;
-       movb @l,@c                      ; LD C,L            ;
-       movb @>04(ix),a                 ; LD A,(IX+$04)     ;
-       movb a,@>02(ix)                 ; LD (IX+$02),A     ;
-       sb   @>06(ix),a                 ; SUB (IX+$06)      ;
-       movb a,@>04(ix)                 ; LD (IX+$04),A     ;
-       movb @>06(ix),@l                ; LD L,(IX+$06)     ;
-       sb   h,h                        ; LD H,$00          ;
-       a    hl,hl                      ; ADD HL,HL         ;
-       a    de,hl                      ; ADD HL,DE         ;
-       movb h,a                        ; LD A,H            ;
-       movb a,*bc                      ; LD (BC),A         ;
-       dec  bc                         ; DEC BC            ;
-       movb @l,a                       ; LD A,L            ;
-       movb a,*bc                      ; LD (BC),A         ;
-       .push hl                        ; PUSH HL           ;
-       movb *hl,@c                     ; LD C,(HL)         ;
-       movb *ix,b                      ; LD B,(IX+$00)     ;
+       .push de                        ; PUSH DE           ; Address of sprite graphics
+       .push hl                        ; PUSH HL           ; Address in sprite graphics lookup table
+;      movb h,b                        ; LD B,H            ;
+;      movb @l,@c                      ; LD C,L            ;
+       mov  hl,bc
+       movb @entity_y(ix),a            ; LD A,(IX+$04)     ; y
+       movb a,@>02(ix)                 ; LD (IX+$02),A     ; Save y
+       sb   @>06(ix),a                 ; SUB (IX+$06)      ; y - drawn height
+;      movb a,@entity_y(ix)            ; LD (IX+$04),A     ; y = y - drawn height. TODO: Disabled
+       movb @>06(ix),@l                ; LD L,(IX+$06)     ; Drawn height
+       sb   h,h                        ; LD H,$00          ; h = 0
+       a    hl,hl                      ; ADD HL,HL         ; Drawn height * 2
+       a    de,hl                      ; ADD HL,DE         ; Sprite graphics addr + drawn height * 2
+;      movb h,a                        ; LD A,H            ; Write back into lookup table.
+;      movb a,*bc                      ; LD (BC),A         ; TODO: in ROM
+;      dec  bc                         ; DEC BC            ;
+;      movb @l,a                       ; LD A,L            ;
+;      movb a,*bc                      ; LD (BC),A         ; TODO: in ROM
+       .push hl                        ; PUSH HL           ; Push altered graphics address
+       movb *hl,@c                     ; LD C,(HL)         ; Save the data that was there
+       movb *ix,b                      ; LD B,(IX+$00)     ; Save the graphics index
        .push bc                        ; PUSH BC           ;
-       movb one,*hl                    ; LD (HL),$01       ;
+       movb one,*hl                    ; LD (HL),$01       ; Set width? to one
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
        movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
        .pop bc                         ; POP BC            ;
        .pop hl                         ; POP HL            ;
-       movb @c,*hl                     ; LD (HL),C         ;
-       movb b,*ix                      ; LD (IX+$00),B     ;
-       movb @>02(ix),a                 ; LD A,(IX+$02)     ;
-       movb a,@>04(ix)                 ; LD (IX+$04),A     ;
-       .pop hl                         ; POP HL            ;
-       .pop de                         ; POP DE            ;
-       movb d,*hl                      ; LD (HL),D         ;
+;      movb @c,*hl                     ; LD (HL),C         ; Restore data that was there. TODO: in ROM
+       movb b,*ix                      ; LD (IX+$00),B     ; Restore graphics index
+       movb @>02(ix),a                 ; LD A,(IX+$02)     ; Saved y
+       movb a,@entity_y(ix)            ; LD (IX+$04),A     ; Restore y
+       .pop hl                         ; POP HL            ; Address in sprite graphics lookup table
+       .pop de                         ; POP DE            ; Address of sprite graphics
+;      movb d,*hl                      ; LD (HL),D         ; Restore lookup table. TODO: in ROM
        dec  hl                         ; DEC HL            ;
-       movb @e,*hl                     ; LD (HL),E         ;
+;      movb @e,*hl                     ; LD (HL),E         ; Restore lookup table. TODO: in ROM
 * This entry point is used by the routine at #R$8d45.
 h_player_appear_2:                     ; >8d12
-       movb @>05(ix),a                 ; LD A,(IX+$05)     ;
+       movb @entity_flags(ix),a        ; LD A,(IX+$05)     ; Flags
        .push af                        ; PUSH AF           ;
        movb @zx_frames,a               ; LD A,($5C78)      ;
        ; RRCA                          ; RRCA              ;
        ; RRCA                          ; RRCA              ; 1/4 colour change rate
-       sla  a,2
+       sra  a,2
        andi a,>0700                    ; AND $07           ; ink 0-7
        jne  h_player_appear_3          ; JR NZ,$8D20       ; jump if not black
        ab   one,a                      ; INC A             ; convert black to blue
 h_player_appear_3:                     ; >8d20
        socb @bytes+>40,a               ; OR $40            ; add bright bit
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ; set player attr
+       movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; set player attr
        movb @>06(ix),a                 ; LD A,(IX+$06)     ;
        .call @set_appear_w_h           ; CALL $92E2        ; set spawn appearance width/height
        .pop af                         ; POP AF            ;
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ;
+       movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; Restore flagfs
 ;      b    @appear_sound              ; JP $A45F          ; player appearance sound
        jmp  h_player_appear_5
 h_player_appear_4:                     ; >8d32
-       movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
-       movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
-       sb   @>06(ix),@>06(ix)          ; LD (IX+$06),$00   ; no x movement
-       sb   @>07(ix),@>07(ix)          ; LD (IX+$07),$00   ; no y movement
-       sb   @>02(ix),@>02(ix)          ; LD (IX+$02),$00   ; no auto-steps
-h_player_appear_5:                       ; >8cb7
+       movb @>07(ix),*ix               ; LD A,(IX+$07)     ; player spawn sprite
+;      movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
+       clr  af
+       movb a,@entity_vx(ix)           ; LD (IX+$06),$00   ; no x movement
+       movb a,@entity_vy(ix)           ; LD (IX+$07),$00   ; no y movement
+       movb a,@>02(ix)                 ; LD (IX+$02),$00   ; no auto-steps
+h_player_appear_5:                     ; >8cb7
        .endproc                        ; RET               ;
 
 *********************************************************************

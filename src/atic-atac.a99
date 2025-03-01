@@ -339,6 +339,7 @@ loop2_return:                          ; >7e13
 ;      ; AND A                         ; AND A             ;
        ci   ix,linked_items            ; SBC HL,DE         ;
        jl  main_loop_2                 ; JR C,$7E03         ;
+*      Continue into draw_room
 
 *********************************************************************
 *
