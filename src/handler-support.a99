@@ -1420,15 +1420,16 @@ read_controls:                         ; >93be
        li   r1,keys_joystick
 read_controls_1:
        li   r2,>1000
-       clr  a
+       seto af
 read_controls_2:
        mov  *r1+,r0
        bl   @ti_check_key
        jeq  !
-       socb r2,a
+       szcb r2,a
 !      srl  r2,1
        ci   r2,>0080
        jne  read_controls_2
+       andi af,>ff00
        .endproc                        ; RET               ;
 
 * This entry point is used by the routine at #R$93be.

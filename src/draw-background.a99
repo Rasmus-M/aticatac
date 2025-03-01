@@ -479,7 +479,7 @@ get_gfx_data:                          ; >9995
 ;      inc  hl                         ; INC HL            ;
 ;      movb *hl,h                      ; LD H,(HL)         ;
 ;      movb a,@l                       ; LD L,A            ;
-       ci   hl,g_chicken_empty
+       ci   hl,chicken_empty_addr
        jne  get_gfx_data_1
        mov  @chicken_empty_addr_ram,hl
        inct hl
@@ -487,7 +487,7 @@ get_gfx_data:                          ; >9995
        movb @chicken_empty_size+1,@c   ; Height
        jmp  get_gfx_data_3
 get_gfx_data_1:
-       ci   hl,g_chicken_full
+       ci   hl,chicken_full_addr
        jne  get_gfx_data_2
        mov  @chicken_full_addr_ram,hl
        inct hl

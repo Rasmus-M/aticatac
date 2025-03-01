@@ -511,13 +511,13 @@ draw_chicken_branch:
        li   ix,chicken_entity          ; LD IX,$8C2D       ; Entity to draw
        .push de                        ; PUSH DE           ; Save original heights
        cb   a,@c                                           ; Compare last drawn to desired height again
-       jle   loc_8c12                   ; JR C,$8C12       ; Jump if last drawn height was lower or equal
+       jle   draw_chicken_4            ; JR C,$8C12        ; Jump if last drawn height was lower or equal
        movb @g_chicken_empty,@e        ; LD A,($C48C)      ; e = width
 ;      movb a,@e                       ; LD E,A            ;
        sb   d,d                        ; LD D,$00          ; de = width
        movb @c,a                       ; LD A,C            ; a = desired height
 ;      .push bc                        ; PUSH BC           ;
-       .call @mpy_de_a                ; CALL $9AAD        ; HL = DE * A = width * desired height
+       .call @mpy_de_a                 ; CALL $9AAD        ; HL = DE * A = width * desired height
 ;      .pop bc                         ; POP BC            ;
        mov  @chicken_empty_addr,de     ; LD DE,($A626)     ; de = address of empty chicken graphics
        .push de                        ; PUSH DE           ; Save address
@@ -528,7 +528,7 @@ draw_chicken_branch:
        movb @chicken_empty_size+1,d    ; LD D,(HL)         ; Get the graphics data at the offset
        movb @g_chicken_empty+1,a       ; LD A,($C48D)      ; Original height
        sb   @c,a                       ; SUB C             ; Minus desired height
-       jeq  loc_8bfc                   ; JR Z,$8BFC        ; Return if they are the same
+       jeq  draw_chicken_2             ; JR Z,$8BFC        ; Return if they are the same
        .push de                        ; PUSH DE           ; Save the graphics data at the offset
        movb a,@chicken_empty_size+1    ; LD (HL),A         ; Update graphics height at offset with modified value.
        movb @g_chicken_empty,a         ; LD A,($C48C)      ; Original width
@@ -551,31 +551,31 @@ draw_chicken_branch:
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        movb @g_chicken_empty,a         ; LD A,($C48C)      ; a = Width
        movb a,b                        ; LD B,A            ; b = width
-loc_8bf2:                              ; >8bf2
+draw_chicken_1:                        ; >8bf2
        sb   *hl,*hl                    ; LD (HL),$00       ; Clear screen byte
        ab   one,@l                     ; INC L             ; Next byte
        sb   one,b                      ; DJNZ $8BF2        ; Clear width bytes
-       jne  loc_8bf2                   ;                   
+       jne  draw_chicken_1             ;
 ;      .pop hl                         ; POP HL            ; Restore address at the offset
        .pop de                         ; POP DE            ; Restore data at offset
        movb @e,@chicken_empty_size     ; LD (HL),E         ; Restore first byte
 ;      inc  hl                         ; INC HL            ;
        movb d,@chicken_empty_size+1    ; LD (HL),D         ; Restore second byte
-loc_8bfc:                              ; >8bfc
+draw_chicken_2:                        ; >8bfc
        .pop hl                         ; POP HL            ; Restore original address of empty chicken
        mov  hl,@chicken_empty_addr_ram ; LD ($A626),HL     ; Write it to the graphics table.
-loc_8c00:                              ; >8c00
+draw_chicken_3:                        ; >8c00
        .pop de                         ; POP DE            ; Restore original heights
 ;      movb @e,a                       ; LD A,E            ;
-       movb @e,@chicken_full_size+1   ; LD ($C543),A       ; Restore height.
+       movb @e,@chicken_full_size+1    ; LD ($C543),A       ; Restore height.
 ;      movb d,a                        ; LD A,D            ;
-       movb d,@chicken_empty_size+1   ; LD ($C48D),A       ; Restore height.
+       movb d,@chicken_empty_size+1    ; LD ($C48D),A       ; Restore height.
        .pop ix                         ; POP IX            ; 
        movb @player_energy,@chicken_level ; LD A,($5E28)   ; Save new level
 ;      movb a,@chicken_level           ; LD ($5E29),A      ; last drawn chicken height
 draw_chicken_end:
        .endproc                        ; RET               ;
-loc_8c12:                              ; >8c12
+draw_chicken_4:                        ; >8c12
        movb @c,a                       ; LD A,C            ; Desired height
        movb a,@chicken_full_size+1     ; LD ($C543),A      ; Set height of graphics.
        movb @bytes+>13,*ix             ; LD A,$13          ; full chicken graphic
@@ -584,14 +584,14 @@ loc_8c12:                              ; >8c12
 ;      mov  hl,@chicken_entity+>0003   ; LD ($8C30),HL     ; coords
        movb @l,@chicken_entity+entity_x
        movb h,@chicken_entity+entity_y
-       .call @draw_bgrnd_graphics             ; CALL $9213        ;
+       .call @draw_bgrnd_graphics      ; CALL $9213        ;
        movb @bytes+>06,b               ; LD B,$06          ; Width
-loc_8c26:                              ; >8c26
+draw_chicken_5:                        ; >8c26
        sb   *hl,*hl                    ; LD (HL),$00       ; Clear screen byte
        ab   one,@l                     ; INC L             ; Next byte
        sb   one,b                      ; DJNZ $8C26        ; Clear width bytes
-       jne  loc_8c26                   ;                   
-       jmp  loc_8c00                   ; JR $8C00          ; Jump to return
+       jne  draw_chicken_5             ;
+       jmp  draw_chicken_3             ; JR $8C00          ; Jump to return
 *// draw_chicken
 
 *********************************************************************
