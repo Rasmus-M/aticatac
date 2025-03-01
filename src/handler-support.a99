@@ -1612,14 +1612,12 @@ draw_entity_hl:                        ; >95cc
 *
 * Used by the routine at #R$7ec5.
 clock_tick:                            ; >95da
-       rt                              ; TODO: Disabled for now
-
-       .proc
        movb @zx_frames,a               ; LD A,($5C78)      ;
        cb   a,@bytes+>32               ; CP $32            ; 1 second elapsed?
        jhe  !                          ; RET C             ; return if not
-       .endproc                        ;
-!
+       .ret                            ;
+*
+!      .proc
        sb   @bytes+>32,a               ; SUB $32           ; subtract 1 second
        movb a,@zx_frames               ; LD ($5C78),A      ; store back [this keeps LSB in 0-49 range!]
        li   hl,clock_seconds           ; LD HL,$5E3F       ;
@@ -1628,7 +1626,7 @@ clock_tick:                            ; >95da
        .daa                            ; DAA               ;
        movb a,*hl                      ; LD (HL),A         ;
        cb   a,@bytes+>60               ; CP $60            ; 60 seconds?
-       jne  loc_9604                   ; JR NZ,$9604       ; jump if not
+       jne  clock_tick_1               ; JR NZ,$9604       ; jump if not
        sb   *hl,*hl                    ; LD (HL),$00       ; reset seconds
        dec  hl                         ; DEC HL            ;
        movb *hl,a                      ; LD A,(HL)         ;
@@ -1636,7 +1634,7 @@ clock_tick:                            ; >95da
        .daa                            ; DAA               ;
        movb a,*hl                      ; LD (HL),A         ;
        cb   a,@bytes+>60               ; CP $60            ; 60 minutes?
-       jne  loc_9604                   ; JR NZ,$9604       ; jump if not
+       jne  clock_tick_1               ; JR NZ,$9604       ; jump if not
        sb   *hl,*hl                    ; LD (HL),$00       ; reset minutes
        dec  hl                         ; DEC HL            ;
        movb *hl,a                      ; LD A,(HL)         ;
@@ -1644,7 +1642,7 @@ clock_tick:                            ; >95da
        .daa                            ; DAA               ;
        andi a,>0f00                    ; AND $0F           ; clip hours to 0-15
        movb a,*hl                      ; LD (HL),A         ;
-loc_9604:                              ; >9604
+clock_tick_1:                          ; >9604
        li   hl,>40c8                   ; LD HL,$40C8       ; time coords
 ;      Continue into print_clock
 

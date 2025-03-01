@@ -7,7 +7,7 @@ ti_setup_environment:
        li   one,>0100
        li   r0,>fffe
        mov  r0,@b255
-       clr  @frame
+       seto @frame
        li   sp,stack
        .proc
        bl   @init_bits

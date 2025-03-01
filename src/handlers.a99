@@ -4,7 +4,7 @@
 *
 * Used by the routine at #R$7dc3.
 process_action:                        ; >7e7e
-       b    *hl                        ; TODO: RM added, just return for now
+;      b    *hl                        ; TODO: RM added, just return for now
        .push hl                        ; PUSH HL           ; push return location
 **
 * This entry point is used by the routine at #R$7eb2.

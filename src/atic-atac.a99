@@ -22,13 +22,13 @@ start:                                 ; >6000
       limi 0
       lwpi wrksp
       bl   @ti_setup_environment
-;       limi 0                          ; DI                ;
-;       li   sp,menu_selection          ; LD SP,$5E00       ;
+;     limi 0                          ; DI                ;
+;     li   sp,menu_selection          ; LD SP,$5E00       ;
 ;_6004:                                 ; >6004
-;       movb @zx_frames+>0001,a         ; LD A,($5C79)      ;
-;       cb   a,@bytes+>25               ; CP $25            ; is frames MSB as expected?
-;       jeq  !                          ; RET NZ            ;
-;       .ret                            ;
+;      movb @zx_frames+>0001,a         ; LD A,($5C79)      ;
+;      cb   a,@bytes+>25               ; CP $25            ; is frames MSB as expected?
+;      jeq  !                          ; RET NZ            ;
+;      .ret                            ;
 ;!
         b    @reset_menu                ; JP $7C19          ;
 
@@ -54,67 +54,87 @@ main_menu:                             ; >7c29
 menu_loop:                             ; >7c2f
        .call @draw_menu_text           ; CALL $7CAF        ; 
 
-       bl   @ti_upload_zx_screen
-!      li   r0,KEY_0
-       bl   @ti_check_key
-       jeq  -!
-       b    @start_game
+;       movb @bytes+>f7,a               ; LD A,$F7          ; xxx54321
+;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
+;       ; IN A,($FE)                    ; IN A,($FE)        ;
+;       inv  a                          ; CPL               ; set bits now mean pressed keys
+;       movb a,@e                       ; LD E,A            ;
 
-       movb @bytes+>f7,a               ; LD A,$F7          ; xxx54321
-       ; OUT ($FD),A                   ; OUT ($FD),A       ; 
-       ; IN A,($FE)                    ; IN A,($FE)        ; 
-       inv  a                          ; CPL               ; set bits now mean pressed keys
-       movb a,@e                       ; LD E,A            ; 
-       movb @menu_selection,a          ; LD A,($5E00)      ; 
-       movb @e,r0                      ; BIT 0,E           ; 1 pressed?
-       andi r0,>0100                   ;                   
+       movb @menu_selection,a          ; LD A,($5E00)      ;
+
+;       movb @e,r0                      ; BIT 0,E           ; 1 pressed?
+;       andi r0,>0100                   ;
+       li   r0,KEY_1
+       bl   @ti_check_key
        jeq  loc_7c43                   ; JR Z,$7C43        ; jump if not
        andi a,>f900                    ; AND $F9           ; select Keyboard
 loc_7c43:                              ; >7c43
-       movb @e,r0                      ; BIT 1,E           ; 2 pressed?
-       andi r0,>0200                   ;                   
+
+;       movb @e,r0                      ; BIT 1,E           ; 2 pressed?
+;       andi r0,>0200                   ;
+       li   r0,KEY_2
+       bl   @ti_check_key
        jeq  loc_7c4b                   ; JR Z,$7C4B        ; jump if not
        andi a,>f900                    ; AND $F9           ; 
        socb @bytes+>02,a               ; OR $02            ; select Kempston joystick
 loc_7c4b:                              ; >7c4b
-       movb @e,r0                      ; BIT 2,E           ; 3 pressed?
-       andi r0,>0400                   ;                   
+
+;       movb @e,r0                      ; BIT 2,E           ; 3 pressed?
+;       andi r0,>0400                   ;
+       li   r0,KEY_3
+       bl   @ti_check_key
        jeq  loc_7c53                   ; JR Z,$7C53        ; jump if not
        andi a,>f900                    ; AND $F9           ; 
        socb @bytes+>04,a               ; OR $04            ; select Cursor joystick
 loc_7c53:                              ; >7c53
-       movb @e,r0                      ; BIT 3,E           ; 4 pressed?
-       andi r0,>0800                   ;                   
+
+;       movb @e,r0                      ; BIT 3,E           ; 4 pressed?
+;       andi r0,>0800                   ;
+       li   r0,KEY_4
+       bl   @ti_check_key
        jeq  loc_7c59                   ; JR Z,$7C59        ; jump if not
        andi a,>e700                    ; AND $E7           ; select Knight
 loc_7c59:                              ; >7c59
-       movb @e,r0                      ; BIT 4,E           ; 5 pressed?
-       andi r0,>1000                   ;                   
+
+;       movb @e,r0                      ; BIT 4,E           ; 5 pressed?
+;       andi r0,>1000                   ;
+       li   r0,KEY_5
+       bl   @ti_check_key
        jeq  loc_7c61                   ; JR Z,$7C61        ; jump if not
        andi a,>e700                    ; AND $E7           ; 
        socb @bytes+>08,a               ; OR $08            ; select Wizard
 loc_7c61:                              ; >7c61
-       movb a,d                        ; LD D,A            ; 
-       movb @bytes+>ef,a               ; LD A,$EF          ; xxx67890
-       ; OUT ($FD),A                   ; OUT ($FD),A       ; 
-       ; IN A,($FE)                    ; IN A,($FE)        ; 
-       inv  a                          ; CPL               ; set bits now mean pressed keys
-       movb a,@e                       ; LD E,A            ; 
-       movb d,a                        ; LD A,D            ; 
-       movb @e,r0                      ; BIT 4,E           ; 6 pressed?
-       andi r0,>1000                   ;                   
+
+;       movb a,d                        ; LD D,A            ;
+;       movb @bytes+>ef,a               ; LD A,$EF          ; xxx67890
+;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
+;       ; IN A,($FE)                    ; IN A,($FE)        ;
+;       inv  a                          ; CPL               ; set bits now mean pressed keys
+;       movb a,@e                       ; LD E,A            ;
+;       movb d,a                        ; LD A,D            ;
+
+;       movb @e,r0                      ; BIT 4,E           ; 6 pressed?
+;       andi r0,>1000                   ;
+       li   r0,KEY_6
+       bl   @ti_check_key
        jeq  loc_7c73                   ; JR Z,$7C73        ; jump if not
        andi a,>e700                    ; AND $E7           ; 
        socb @bytes+>10,a               ; OR $10            ; select Serf
 loc_7c73:                              ; >7c73
-       movb a,@menu_selection          ; LD ($5E00),A      ; 
+
+       movb a,@menu_selection          ; LD ($5E00),A      ;
        movb a,@c                       ; LD C,A            ; 
-       movb @e,r0                      ; BIT 0,E           ; 0 pressed?
-       andi r0,>0100                   ;                   
+
+;       movb @e,r0                      ; BIT 0,E           ; 0 pressed?
+;       andi r0,>0100                   ;
+       li   r0,KEY_0
+       bl   @ti_check_key
        jeq  !                          ; JP NZ,$7D9A       ; jump if so
+       bl   @ti_display_off
        b    @start_game                ;                   
 !
-       li   hl,menu_attrs              ; LD HL,$7CEA       ; 
+
+       li   hl,menu_attrs              ; LD HL,$7CEA       ;
        movb @bytes+>03,b               ; LD B,$03          ; 
        movb @c,a                       ; LD A,C            ; 
        .call @set_menu_attrs           ; CALL $7C90        ; highlight keyboard/kempston/cursor
@@ -122,8 +142,11 @@ loc_7c73:                              ; >7c73
        movb @c,a                       ; LD A,C            ; 
        ; RRCA                          ; RRCA              ; 
        ; RRCA                          ; RRCA              ; 
+       srl  a,2
        .call @set_menu_attrs           ; CALL $7C90        ; highlight knight/wizard/serf
-       b    @menu_loop                 ; JP $7C2F          ; 
+
+       bl   @ti_upload_zx_screen
+       b    @menu_loop                 ; JP $7C2F          ;
 
 *********************************************************************
 *
@@ -263,6 +286,8 @@ start_game:                            ; >7d9a
        li   hl,food_items              ; LD HL,$EB58       ; 
        mov  hl,@food_ptr               ; LD ($5E55),HL     ; 
        .call @clear_screen             ; CALL $80AA        ; clear display, attributes, and set black border
+       bl   @ti_upload_zx_screen
+       bl   @ti_display_on
        .call @draw_side_panel          ; CALL $A219        ; draw side panel background scroll
        .call @draw_lives               ; CALL $A2CE        ; draw lives sprites in side panel
 ;      .call @place_key_pieces         ; CALL $94B6        ; set locations of ACG key pieces (moved)
@@ -282,17 +307,19 @@ start_game:                            ; >7d9a
 main_loop:                             ; >7dc3
        li   sp,stack                   ; LD SP,$5E00       ;
        ; EI                            ; EI                ; 
-       sb   a,a                        ; XOR A             ; 
-loc_7dc8:                              ; >7dc8
+       ab   one,@zx_frames             ;                   ; RM added
+       sb   a,a                        ; XOR A             ;
        movb a,@num_creatures           ; LD ($5E25),A      ; number of creatures processed this frame
        li   ix,acg_key_1               ; LD IX,$EAA8       ; first entity
+*      Draw room if not already done
        movb @game_flags,r0             ; LD A,($5E14)      ; b0 set if room content drawn
 ;      movb a,r0                       ; BIT 0,A           ; room content drawn?
        andi r0,>0100                   ;                   
        jne  main_loop_1                ; JR NZ,$7DDC       ; jump if so
        li   ix,linked_items            ; LD IX,$EEE0       ; pairs of linked items, including doors
-       jmp  draw_room                  ; JR $7E23          ;
+       jmp  draw_room                  ; JR $7E23          ; Draw room and restart main_loop
 main_loop_1:                           ; >7ddc
+*      Process player if a frame has passed
        movb @zx_frames,a               ; LD A,($5C78)      ;
        movb a,@c                       ; LD C,A            ; 
        movb @last_frames,a             ; LD A,($5E03)      ; 
@@ -300,6 +327,7 @@ main_loop_1:                           ; >7ddc
        jeq  !                          ; CALL NZ,$7EB2     ; call if not
        .call @run_player               ;
 !
+*      Process items from acg_key_1 to creature1
        movb @player_room,a             ; LD A,($EA91)      ; 
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; entity in player room?
        jne  !                          ; JP Z,$7E7E        ; jump if so
@@ -308,7 +336,7 @@ main_loop_1:                           ; >7ddc
 !
 loop_return_1:                         ; >7df3
 ;      li   de,>0008                   ; LD DE,$0008       ; entity size
-       ai    ix,8                       ; ADD IX,DE         ; next entity
+       ai    ix,8                      ; ADD IX,DE         ; next entity
 ;      .push ix                        ; PUSH IX           ;
 ;      .pop hl                         ; POP HL            ;
 ;      li   de,creature1               ; LD DE,$EE60       ; end marker
@@ -316,17 +344,18 @@ loop_return_1:                         ; >7df3
 ;       c    de,hl                     ; SBC HL,DE         ; end of list?
        ci   ix,creature1
        jl   main_loop_1                ; JR C,$7DDC        ; jump if not
-**
 * This entry point is used by the routine at #R$7e13.
 main_loop_2:                           ; >7e03
-       movb @zx_frames,a               ; LD A,($5C78)      ; 
+*      Process player if a frame has passed
+       movb @zx_frames,a               ; LD A,($5C78)      ;
        movb a,@c                       ; LD C,A            ; 
        movb @last_frames,a             ; LD A,($5E03)      ; 
        cb   a,@c                       ; CP C              ; same frame as last time?
        jeq  !                          ; CALL NZ,$7EB2     ; call if not
-      .call @run_player               ;
-!
-       li   hl,loop2_return            ; LD HL,$7E13       ; 
+      .call @run_player                ;
+!                                      ;
+*      Process items from creature1 to linked_items
+       li   hl,loop2_return            ; LD HL,$7E13       ;
        b    @process_action            ; JR $7E7E          ;
 * Routine at 7e13
 loop2_return:                          ; >7e13
@@ -339,17 +368,19 @@ loop2_return:                          ; >7e13
 ;      ; AND A                         ; AND A             ;
        ci   ix,linked_items            ; SBC HL,DE         ;
        jl  main_loop_2                 ; JR C,$7E03         ;
-*      Continue into draw_room
-
-*********************************************************************
+**
+* Second part of main loop
 *
 draw_room:
+*      Draw room, or only attributes if room already drawn
        .call @draw_room_decor
+*      Advance counter
        movb @counter_low,@l            ; LD HL,($5E12)     ;
        movb @counter_high,h
        inc  hl                         ; INC HL            ; advance game loop counter
        movb @l,@counter_low            ; LD ($5E12),HL     ;
        movb h,@counter_high
+*      Draw entities from player to linked_items if not already drawn
 ;      li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
        movb @game_flags,r0             ; BIT 0,(HL)        ; room drawn yet?
        andi r0,>0100                   ;                   
@@ -368,6 +399,7 @@ loc_7e55:                              ; >7e55
 ;       mov  hl,@rand8                  ; LD ($5E05),HL     ; only low 8 bits are meaningfully random
        bl   @ti_rnd
        mov  r0,@rand8
+*      Final actions
        .call @check_pickup_key         ; CALL $938B        ; check whether pick-up key has been pressed
        .call @check_pause              ; CALL $9489        ; check for pause key, return when not paused
        .call @replenish_food           ; CALL $9924        ; periodically replenish consumed food
@@ -376,7 +408,6 @@ loc_7e55:                              ; >7e55
        jne  !                          ; JP Z,$96EC        ; congratulate player on completion
        b    @game_complete             ;                   
 !
-       ab   one,@zx_frames
        bl   @ti_upload_zx_screen
        b    @main_loop                 ; JP $7DC3          ;
 
@@ -691,13 +722,14 @@ enter_room:                            ; >9147
 * Used by the routine at #R$7e13.
 draw_entities:                         ; >9291
        .proc
+*      From player to creature1
        li   ix,player                  ; LD IX,$EA90       ;
 draw_entities_1:                       ; >9295
        movb *ix,a                      ; LD A,(IX+$00)     ; 
        ; AND A                         ; AND A             ; slot used?
        jeq  draw_entities_2            ; JR Z,$92A6        ; jump if not
 ;      movb @player_room,a             ; LD A,($EA91)      ;
-       cb   @player_room,@entity_screen(ix)                ; CP (IX+$01)       ; in player room?
+       cb   @player_room,@entity_screen(ix) ; CP (IX+$01)       ; in player room?
        jne  draw_entities_2            ; JR NZ,$92A6       ; jump if not
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
 draw_entities_2:                       ; >92a6
@@ -710,12 +742,13 @@ draw_entities_2:                       ; >92a6
 ;      s    de,hl                      ; SBC HL,DE         ; more 8-byte entries to process?
        ci   ix,creature1
        jl  draw_entities_1             ; JR C,$9295        ; jump back if so
+*      From creature1 to linked_items
 draw_entities_3:                       ; >92b6
        movb *ix,a                      ; LD A,(IX+$00)     ; 
        ; AND A                         ; AND A             ; slot used?
        jeq  draw_entities_4            ; JR Z,$92C7        ; jump if not
 ;      movb @player_room,a             ; LD A,($EA91)      ;
-       cb   @player_room,@entity_screen(ix)                ; CP (IX+$01)       ; in player room?
+       cb   @player_room,@entity_screen(ix) ; CP (IX+$01)       ; in player room?
        jne  draw_entities_4            ; JR NZ,$92C7       ; jump if not
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
 draw_entities_4:                       ; >92c7
@@ -1234,6 +1267,7 @@ print_bcd_bytes:                       ; >a1bf
        srl  a,4
        andi a,>0f00                    ; AND $0F           ;
        .call @print_char               ; CALL $A1D3        ; print a single character
+       jmp  print_bcd_digit_branch
 
 *********************************************************************
 *
@@ -1241,7 +1275,9 @@ print_bcd_bytes:                       ; >a1bf
 * 
 * Used by the routine at #R$9607.
 print_bcd_digit:                       ; >a1c9
-       movb *de,a                      ; LD A,(DE)         ; 
+       .proc
+print_bcd_digit_branch:
+       movb *de,a                      ; LD A,(DE)         ;
        andi a,>0f00                    ; AND $0F           ; 
        .call @print_char               ; CALL $A1D3        ; print a single character
        inc  de                         ; INC DE            ; 
