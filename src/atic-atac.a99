@@ -373,9 +373,9 @@ loop2_return:                          ; >7e13
 *
 draw_room:
 *      Draw room, or only attributes if room already drawn
-       movb @game_flags,r0             ; TODO: Prevent redrawng attributes for now
-       andi r0,>0100
-       jne  !
+;       movb @game_flags,r0             ; TODO: Prevent redrawng attributes for now
+;       andi r0,>0100
+;       jne  !
        .call @draw_room_decor
 *      Advance counter
 !      movb @counter_low,@l            ; LD HL,($5E12)     ;

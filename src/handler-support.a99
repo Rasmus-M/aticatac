@@ -1623,24 +1623,24 @@ clock_tick:                            ; >95da
        movb *hl,a                      ; LD A,(HL)         ;
        ab   one,a                      ; INC A             ; add a second
        .daa                            ; DAA               ;
-       movb a,*hl                      ; LD (HL),A         ;
+       movb a,*hl                      ; LD (HL),A         ; store second
        cb   a,@bytes+>60               ; CP $60            ; 60 seconds?
        jne  clock_tick_1               ; JR NZ,$9604       ; jump if not
        sb   *hl,*hl                    ; LD (HL),$00       ; reset seconds
-       dec  hl                         ; DEC HL            ;
-       movb *hl,a                      ; LD A,(HL)         ;
+       dec  hl                         ; DEC HL            ; move to minutes
+       movb *hl,a                      ; LD A,(HL)         ; get minute
        ab   one,a                      ; INC A             ; add a minute
        .daa                            ; DAA               ;
-       movb a,*hl                      ; LD (HL),A         ;
+       movb a,*hl                      ; LD (HL),A         ; store minute
        cb   a,@bytes+>60               ; CP $60            ; 60 minutes?
        jne  clock_tick_1               ; JR NZ,$9604       ; jump if not
        sb   *hl,*hl                    ; LD (HL),$00       ; reset minutes
-       dec  hl                         ; DEC HL            ;
-       movb *hl,a                      ; LD A,(HL)         ;
+       dec  hl                         ; DEC HL            ; move to hours
+       movb *hl,a                      ; LD A,(HL)         ; get hour
        ab   one,a                      ; INC A             ; add an hour
        .daa                            ; DAA               ;
        andi a,>0f00                    ; AND $0F           ; clip hours to 0-15
-       movb a,*hl                      ; LD (HL),A         ;
+       movb a,*hl                      ; LD (HL),A         ; store hour
 clock_tick_1:                          ; >9604
        li   hl,>40c8                   ; LD HL,$40C8       ; time coords
 ;      Continue into print_clock

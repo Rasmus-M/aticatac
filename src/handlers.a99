@@ -206,7 +206,7 @@ h_player_appear_1:                     ; >8cd4
        movb *hl,@c                     ; LD C,(HL)         ; Save the data that was there
        movb *ix,b                      ; LD B,(IX+$00)     ; Save the graphics index
        .push bc                        ; PUSH BC           ;
-       movb one,*hl                    ; LD (HL),$01       ; Set width? to one
+       movb one,*hl                    ; LD (HL),$01       ; Set height to one. TODO: in ROM
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
        movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
@@ -235,14 +235,15 @@ h_player_appear_2:                     ; >8d12
 h_player_appear_3:                     ; >8d20
        socb @bytes+>40,a               ; OR $40            ; add bright bit
        movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; set player attr
-       movb @>06(ix),a                 ; LD A,(IX+$06)     ;
+       movb @>06(ix),a                 ; LD A,(IX+$06)     ; Drawn height
        .call @set_appear_w_h           ; CALL $92E2        ; set spawn appearance width/height
        .pop af                         ; POP AF            ;
-       movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; Restore flagfs
+       movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; Restore flags
 ;      b    @appear_sound              ; JP $A45F          ; player appearance sound
-       jmp  h_player_appear_5
+       jmp  h_player_appear_5                              ; appear_sound would return
 h_player_appear_4:                     ; >8d32
        movb @>07(ix),*ix               ; LD A,(IX+$07)     ; player spawn sprite
+       .call @draw_entity              ; Added
 ;      movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
        clr  af
        movb a,@entity_vx(ix)           ; LD (IX+$06),$00   ; no x movement
@@ -260,7 +261,7 @@ set_appear_w_h:                        ; >92e2
        .proc
 set_appear_w_h_branch:
        movb a,@height_lines            ; LD ($5E11),A      ;
-       movb @>03(ix),a                 ; LD A,(IX+$03)     ;
+       movb @entity_x(ix),a            ; LD A,(IX+$03)     ; x
        andi a,>0700                    ; AND $07           ; x aligned on cell boundary?
        movb @bytes+>02,a               ; LD A,$02          ; 2 bytes wide
        jeq  loc_92ef                   ; JR Z,$92EF        ;
@@ -360,20 +361,28 @@ loc_8e5b:                              ; >8e5b
        jhe  loc_8e94                   ; JR NC,$8E94       ; jump if so
        movb d,a                        ; LD A,D            ;
        ; AND A                         ; AND A             ; moving up?
-       movb *ix,a                      ; LD A,(IX+$00)     ;
+;      movb *ix,a                      ; LD A,(IX+$00)     ;
        jlt  loc_8e68                   ; JP M,$8E68        ; jump if so
-       ab   @bytes+>04,a               ; ADD A,$04         ; offset to down sprites
+       ab   @bytes+>04,*ix             ; ADD A,$04         ; offset to down sprites
 loc_8e68:                              ; >8e68
-       ab   @bytes+>08,a               ; ADD A,$08         ; offset to right sprites
+       ab   @bytes+>08,*ix             ; ADD A,$08         ; offset to right sprites
 loc_8e6a:                              ; >8e6a
-       movb a,*ix                      ; LD (IX+$00),A     ;
+;      movb a,*ix                      ; LD (IX+$00),A     ;
        .call @walk_sound               ; CALL $A3C7        ; play walk clicks if due
 loc_8e70:                              ; >8e70
        .call @read_controls            ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
        andi a,>1000                    ; AND $10           ; fire pressed?
        jne  !                          ; CALL Z,$8134      ; call if so (fire weapon)
        .call @knight_fire              ;
-!
+!      jmp  entry_from_wizard_and_serf
+loc_8e94:                              ; >8e94
+       movb @e,a                       ; LD A,E            ;
+       ; AND A                         ; AND A             ; moving left?
+;      movb *ix,a                      ; LD A,(IX+$00)     ;
+       jlt  loc_8e6a                   ; JP M,$8E6A        ; jump if so (use left sprites)
+       ab   @bytes+>04,*ix             ; ADD A,$04         ; offset to down sprites
+       jmp  loc_8e6a                   ; JR $8E6A          ;
+
 * This entry point is used by the routines at #R$80d2 and #R$8dc4.
 entry_from_wizard_and_serf:            ; >8e78
        .call @chk_creatures            ; CALL $83EA        ; check whether to add new room creatures
@@ -390,17 +399,7 @@ entry_from_wizard_and_serf:            ; >8e78
 draw_entity_23_and_attrs:              ; >8e8e
        .call @draw_entity_23           ; CALL $9FCA        ; draw entity to display (no attrs)
        b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
-;
-;       .call @set_entity_attrs2
-;       bl   @ti_upload_zx_screen
-;loop:  jmp loop
-loc_8e94:                              ; >8e94
-       movb @e,a                       ; LD A,E            ;
-       ; AND A                         ; AND A             ; moving left?
-       movb *ix,a                      ; LD A,(IX+$00)     ;
-       jgt  loc_8e6a                   ; JP M,$8E6A        ; jump if so (use left sprites)
-       ab   @bytes+>04,a               ; ADD A,$04         ; offset to down sprites
-       jmp  loc_8e6a                   ; JR $8E6A          ;
+
 * This entry point is used by the routines at #R$8a1e, #R$8ed7 and #R$98c8.
 player_dead:                           ; >8ea0
        movb @lives,a                   ; LD A,($5E21)      ;
@@ -467,13 +466,13 @@ loc_8108:                              ; >8108
        jhe  loc_8128                   ; JR NC,$8128       ; jump if so
        movb d,a                        ; LD A,D            ;
        ; AND A                         ; AND A             ; moving up?
-       movb *ix,a                      ; LD A,(IX+$00)     ;
+;      movb *ix,a                      ; LD A,(IX+$00)     ;
        jlt loc_8115                    ; JP M,$8115        ; jump if so
-       ab   @bytes+>04,a               ; ADD A,$04         ; offset to down sprites
+       ab   @bytes+>04,*ix             ; ADD A,$04         ; offset to down sprites
 loc_8115:                              ; >8115
-       ab   @bytes+>08,a               ; ADD A,$08         ; offset to right sprites
+       ab   @bytes+>08,*ix             ; ADD A,$08         ; offset to right sprites
 loc_8117:                              ; >8117
-       movb a,*ix                      ; LD (IX+$00),A     ; set animation graphic
+;      movb a,*ix                      ; LD (IX+$00),A     ; set animation graphic
        .call @walk_sound               ; CALL $A3C7        ; play walk clicks if due
 loc_811d:                              ; >811d
        .call @read_controls            ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
@@ -485,9 +484,9 @@ loc_811d:                              ; >811d
 loc_8128:                              ; >8128
        movb @e,a                       ; LD A,E            ;
        ; AND A                         ; AND A             ; moving left?
-       movb *ix,a                      ; LD A,(IX+$00)     ;
+;      movb *ix,a                      ; LD A,(IX+$00)     ;
        jlt  loc_8117                   ; JP M,$8117        ; jump if so
-       ab   @bytes+>04,a               ; ADD A,$04         ; offset to down sprites
+       ab   @bytes+>04,*ix             ; ADD A,$04         ; offset to down sprites
        jmp  loc_8117                   ; JR $8117          ;
 
 *********************************************************************
@@ -526,13 +525,13 @@ loc_8dfa:                              ; >8dfa
        jhe  loc_8e1a                   ; JR NC,$8E1A       ; jump if so
        movb d,a                        ; LD A,D            ;
        ; AND A                         ; AND A             ; moving up?
-       movb *ix,a                      ; LD A,(IX+$00)     ;
+;      movb *ix,a                      ; LD A,(IX+$00)     ;
        jlt  loc_8e07                   ; JP M,$8E07        ; jump if so
-       ab   @bytes+>04,a               ; ADD A,$04         ; offset to down sprites
+       ab   @bytes+>04,*ix             ; ADD A,$04         ; offset to down sprites
 loc_8e07:                              ; >8e07
-       ab   @bytes+>08,a               ; ADD A,$08         ; offset to right sprites
+       ab   @bytes+>08,*ix             ; ADD A,$08         ; offset to right sprites
 loc_8e09:                              ; >8e09
-       movb a,*ix                      ; LD (IX+$00),A     ;
+;      movb a,*ix                      ; LD (IX+$00),A     ;
        .call @walk_sound               ; CALL $A3C7        ; play walk clicks if due
 loc_8e0f:                              ; >8e0f
        .call @read_controls            ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
@@ -544,9 +543,9 @@ loc_8e0f:                              ; >8e0f
 loc_8e1a:                              ; >8e1a
        movb @e,a                       ; LD A,E            ;
        ; AND A                         ; AND A             ; moving left?
-       movb *ix,a                      ; LD A,(IX+$00)     ;
-       jlt loc_8e09                    ; JP M,$8E09        ; jump if so
-       ab   @bytes+>04,a               ; ADD A,$04         ; offset to right sprites
+;      movb *ix,a                      ; LD A,(IX+$00)     ;
+       jlt  loc_8e09                   ; JP M,$8E09        ; jump if so
+       ab   @bytes+>04,*ix             ; ADD A,$04         ; offset to right sprites
        jmp  loc_8e09                   ; JR $8E09          ;
 
 *********************************************************************

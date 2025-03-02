@@ -217,6 +217,7 @@ draw_unshifted2:                       ; >9f13
 * de: sprite data address
 * hl: screen address
 *
+; TODO: This is identical to draw_sprite_line23
 draw_sprite_line2:                     ; >9f21
        .proc
        .ex_de_hl                       ; EX DE,HL          ; Now de=screen addr and hl=data addr
