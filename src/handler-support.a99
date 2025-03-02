@@ -218,7 +218,7 @@ loc_82ed:                              ; >82ed
 * Used by the routine at #R$8e26.
 chk_creatures:                         ; >83ea
        .proc
-       movb @last_creat_room,a         ; LD A,($5E26)      ; last room creature created in
+       movb @last_create_room,a        ; LD A,($5E26)      ; last room creature created in
        movb a,@c                       ; LD C,A            ;
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@c                       ; CP C              ; player in different room?
@@ -243,18 +243,18 @@ add_creature_1:                        ; >8405
        jne  add_creature_1             ;
        jmp  add_creature_end           ; RET               ; no free slots
 add_creature_2:                        ; >840d
-       .ex_de_hl                       ; EX DE,HL          ;
+       .ex_de_hl                       ; EX DE,HL          ; de=creature entity
        li   hl,creature_default        ; LD HL,$8B6A       ; default entity data for creature
        li   bc,>0010                   ; LD BC,$0010       ; 16 bytes of entity data
-       .push de                        ; PUSH DE           ;
+       .push de                        ; PUSH DE           ; push creature entity
        .ldir                           ; LDIR              ; copy template
-       .pop hl                         ; POP HL            ;
-       .push hl                        ; PUSH HL           ;
-       inc  hl                         ; INC HL            ;
-       movb @player_room,a             ; LD A,($EA91)      ;
-       movb a,*hl                      ; LD (HL),A         ;
-       inc  hl                         ; INC HL            ;
-       .push hl                        ; PUSH HL           ;
+       .pop hl                         ; POP HL            ; hl=creature entity
+       .push hl                        ; PUSH HL           ; push creature entity
+       inc  hl                         ; INC HL            ; to entity_screen
+       movb @player_room,*hl+          ; LD A,($EA91)      ;
+;      movb a,*hl                      ; LD (HL),A         ;
+;      inc  hl                         ; INC HL            ; to entity_temp
+       .push hl                        ; PUSH HL           ; push entity_temp address
        li   hl,creatures               ; LD HL,$8B7A       ; creature table
        movb @zx_frames,a               ; LD A,($5C78)      ;
        andi a,>0f00                    ; AND $0F           ; 16 creatures entries to choose from
@@ -262,26 +262,27 @@ add_creature_2:                        ; >840d
        sb   d,d                        ; LD D,$00          ;
        a    de,hl                      ; ADD HL,DE         ;
        movb *hl,a                      ; LD A,(HL)         ; new creature graphic
-       .pop hl                         ; POP HL            ;
-       movb a,*hl                      ; LD (HL),A         ; set graphic
+       .pop hl                         ; POP HL            ; pop entity_temp address
+       movb a,*hl                      ; LD (HL),A         ; set graphic in entity_temp
        movb @room_width,@e             ; LD DE,($5E1D)     ;
        movb @room_height,d             ; LD DE,($5E1D)     ;
        movb @e,b                       ; LD B,E            ;
-       .call @rnd_coord                ; CALL $8598        ; random coord less than interior size B
+       .call @rnd_coord                ; CALL $8598        ; random coord less than interior size B and inc hl
        movb a,*hl                      ; LD (HL),A         ; set x
        movb d,b                        ; LD B,D            ;
-       .call @rnd_coord                ; CALL $8598        ; random coord less than interior size B
+       .call @rnd_coord                ; CALL $8598        ; random coord less than interior size B and inc hl
        movb a,*hl                      ; LD (HL),A         ; set y
-       .pop de                         ; POP DE            ;
+       .pop de                         ; POP DE            ; de=creature entity
        .push ix                        ; PUSH IX           ;
-       li   ix,>0000                   ; LD IX,$0000       ;
-       a    de,ix                      ; ADD IX,DE         ;
+;      clr  ix                         ; LD IX,$0000       ;
+;      a    de,ix                      ; ADD IX,DE         ;
+       mov  de,ix
        .call @rnd_movement             ; CALL $86F2        ; set random movement
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
        .pop ix                         ; POP IX            ;
        jmp add_creature_end            ; RET               ;
 add_creature_3:                        ; >844f
-       movb a,@last_creat_room         ; LD ($5E26),A      ;
+       movb a,@last_create_room        ; LD ($5E26),A      ;
        movb @bytes+>20,a               ; LD A,$20          ; delay 32 frames before next creature
        movb a,@creature_delay          ; LD ($5E27),A      ;
        jmp add_creature_end            ; RET               ;
@@ -409,7 +410,7 @@ monster_move_10:                       ; >84bf
        movb @>07(ix),a                 ; LD A,(IX+$07)     ;
        andi a,>0100                    ; AND $01           ; 2 animation frames
        movb *ix,r0
-       xor  ix,a                       ; XOR (IX+$00)      ; combine, for 1/2 animation rate
+       xor  r0,a                       ; XOR (IX+$00)      ; combine, for 1/2 animation rate
        movb a,*ix                      ; LD (IX+$00),A     ; set animation graphic
        b    @monster_move
 
@@ -451,6 +452,7 @@ chk_weapon_hit_3:
 *********************************************************************
 *
 * random coord less than interior size B
+* also increments hl
 *
 * Used by the routine at #R$83ea.
 rnd_coord:                             ; >8598
@@ -460,7 +462,7 @@ rnd_coord:                             ; >8598
        movb a,b                        ; LD B,A            ;
        bl   @ti_rnd
        movb r,a                        ; LD A,R            ;
-       inc  hl                         ; INC HL            ;
+       inc  hl                         ; INC HL            ; side effect
 loc_859f:                              ; >859f
        cb   a,b                        ; CP B              ;
        jl   loc_85a5                   ; JR C,$85A5        ;
@@ -469,10 +471,10 @@ loc_859f:                              ; >859f
 loc_85a5:                              ; >85a5
        movb a,@c                       ; LD C,A            ;
        bl   @ti_rnd
-       movb r,a                        ; LD A,R            ;
-       movb a,r0                       ; BIT 1,A           ;
-       andi r0,>0200                   ;
+;      movb r,a                        ; LD A,R            ;
+;      movb a,r0                       ; BIT 1,A           ;
        movb @bytes+>60,a               ; LD A,$60          ;
+       andi r0,>0200                   ;
        jeq  loc_85b0                   ; JR Z,$85B0        ;
        ab   @c,a                       ; ADD A,C           ;
        jmp  rnd_coord_1                ; RET               ;

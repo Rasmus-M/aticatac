@@ -4,13 +4,17 @@
 *
 * Used by the routine at #R$7dc3.
 process_action:                        ; >7e7e
-       b    *hl                        ; TODO: RM added, just return for now
+;       b    *hl                       ; TODO: RM added, just return for now
        .push hl                        ; PUSH HL           ; push return location
 **
 * This entry point is used by the routine at #R$7eb2.
 run_handler:                           ; >7e7f
        li   hl,handler_table           ; LD HL,$7EE6       ;
-       movb *ix,@c                     ; LD C,(IX+$00)     ;
+       cb   *ix,@bytes+>a1
+       jle  !
+       .endproc
+!      movb *ix,@c                     ; LD C,(IX+$00)     ;
+
        b    @branch_c_hl
 
 *********************************************************************
@@ -989,7 +993,7 @@ h_sparkles:                            ; >85f7
 !
        b    @draw_entity_23_and_attrs                  ; JP $8E8E          ;
 to_creature:                           ; >8625
-       movb @>02(ix),a                 ; LD A,(IX+$02)     ; creature graphic
+       movb @entity_temp(ix),a         ; LD A,(IX+$02)     ; creature graphic
        movb a,*ix                      ; LD (IX+$00),A     ; convert sparkle to creature
        b    @draw_entity_23_and_attrs                  ; JP $8E8E          ;
 

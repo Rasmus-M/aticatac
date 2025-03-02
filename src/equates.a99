@@ -147,7 +147,7 @@ entity_graphic:
        equ  0
 entity_screen:
        equ  1
-entity_unknown:
+entity_temp:
        equ  2
 entity_x:
        equ  3

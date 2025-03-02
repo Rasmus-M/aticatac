@@ -56,7 +56,7 @@ line_flags:                            ; >5e24
        byte >3A
 num_creatures:                         ; >5e25
        byte >EF                                            ; number of creatures processed this frame
-last_creat_room:                       ; >5e26
+last_create_room:                       ; >5e26
        byte >22
 creature_delay:                        ; >5e27
        byte >22

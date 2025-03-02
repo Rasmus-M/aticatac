@@ -298,6 +298,7 @@ draw_entity_de:                        ; >9f4d
 *
 * Used by the routines at #R$81f0, #R$871a, #R$8c63, #R$9326 and #R$98c8.
 undraw_entity:                         ; >9f56
+       .proc
        .call @prepare_draw23           ; CALL $9F80        ; prepare for 2-3 byte drawing
 * This entry point is used by the routine at #R$9f45.
 loc_9f59:                              ; >9f59
