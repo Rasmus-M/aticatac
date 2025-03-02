@@ -30,9 +30,9 @@ saved_x:                               ; >5e16
        byte >28
 saved_y:                               ; >5e17
        byte >97
-some_height:                           ; >5e18
+height23:                           ; >5e18
        byte >00
-some_width:                            ; >5e19
+height2:                            ; >5e19
        byte >00
 room_attr:                             ; >5e1a
        byte >00
@@ -174,6 +174,9 @@ key_attrs:                             ; >925c
 * blank graphic and h_player_appear handler
 player_template:                       ; >9481
        byte >66,>00,>00,>60,>68,>47,>FF,>00
+
+my_player_template:                       ; >9481
+       byte >01,>00,>00,>60,>68,>47,>FF,>00
 
 * Data block at 94dd
 acg_key_rooms:                         ; >94dd

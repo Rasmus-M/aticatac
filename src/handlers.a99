@@ -274,7 +274,7 @@ loc_92ef:                              ; >92ef
 * flash score on game start
 *
 * Used by the routine at #R$8cb7.
-flash_score:                           ; >8c8c             ; TODO: Relies on ardware flash
+flash_score:                           ; >8c8c             ; TODO: Relies on hardware flash
        sb   one,a                      ; DEC A             ; timer expired?
        movb a,@flash_timer             ; LD ($5E3C),A      ; score flash timer
        jeq  loc_8ca7                   ; JR Z,$8CA7        ; jump if so (stop flash)
@@ -390,6 +390,10 @@ entry_from_wizard_and_serf:            ; >8e78
 draw_entity_23_and_attrs:              ; >8e8e
        .call @draw_entity_23           ; CALL $9FCA        ; draw entity to display (no attrs)
        b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
+;
+;       .call @set_entity_attrs2
+;       bl   @ti_upload_zx_screen
+;loop:  jmp loop
 loc_8e94:                              ; >8e94
        movb @e,a                       ; LD A,E            ;
        ; AND A                         ; AND A             ; moving left?
