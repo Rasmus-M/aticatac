@@ -915,16 +915,16 @@ chk_wall_move:                         ; >8fca
        movb @e,a                       ; LD A,E            ;
        ab   @>03(ix),a                 ; ADD A,(IX+$03)    ; apply x movement
        movb a,@e                       ; LD E,A            ;
-       movb @>04(ix),d                 ; LD D,(IX+$04)     ; apply y movement
+       movb @>04(ix),d                 ; LD D,(IX+$04)     ; y
        movb @bytes+>10,b               ; LD B,$10          ; x bit mask
        .call @chk_walls                ; CALL $8FE9        ; check if position is within room interior
        .pop de                         ; POP DE            ;
        .push de                        ; PUSH DE           ;
-       movb @>03(ix),@e                ; LD E,(IX+$03)     ;
+       movb @>03(ix),@e                ; LD E,(IX+$03)     ; x
        movb d,a                        ; LD A,D            ;
-       ab   @>04(ix),a                 ; ADD A,(IX+$04)    ;
+       ab   @>04(ix),a                 ; ADD A,(IX+$04)    ; apply y movement
        movb a,d                        ; LD D,A            ;
-       movb @bytes+>20,b               ; LD B,$20          ;
+       movb @bytes+>20,b               ; LD B,$20          ; y bit mask
        .call @chk_walls                ; CALL $8FE9        ; check if position is within room interior
        .pop de                         ; POP DE            ;
        .endproc                        ; RET               ;
@@ -935,15 +935,17 @@ chk_wall_move:                         ; >8fca
 *
 * Used by the routine at #R$8fca.
 chk_walls:                             ; >8fe9
+*      x
        li   hl,room_width              ; LD HL,$5E1D       ;
        movb @e,a                       ; LD A,E            ; player x
        sb   @bytes+>58,a               ; SUB $58           ; subtract room centre x
-       jgt  loc_8ff4                    ; JP P,$8FF4        ;
+       jgt  loc_8ff4                   ; JP P,$8FF4        ;
        neg a                           ; NEG               ; abs
 loc_8ff4:                              ; >8ff4
        cb   a,*hl                      ; CP (HL)           ; within room width?
        jhe  chk_walls_1                ; RET NC            ; return if so
-       inc  hl                         ; INC HL            ;
+*      y
+       inc  hl                         ; INC HL            ; room_height
        movb d,a                        ; LD A,D            ; player y
        sb   @bytes+>68,a               ; SUB $68           ; subtract room centre y
        jgt  loc_8fff                   ; JP P,$8FFF        ;
@@ -951,12 +953,14 @@ loc_8ff4:                              ; >8ff4
 loc_8fff:                              ; >8fff
        cb   a,*hl                      ; CP (HL)           ; within room height?
        jhe  chk_walls_1                ; RET NC            ; return if so
-       movb b,a                        ; LD A,B            ;
-       inv  a                          ; CPL               ;
-       movb @2(ix),r0
-       inv  r0
-       szcb r0,a                       ; AND (IX+$02)      ; clear bit in B
-       movb a,@>02(ix)                 ; LD (IX+$02),A     ;
+*      Clear bit
+;       movb b,a                        ; LD A,B            ;
+;       inv  a                          ; CPL               ;
+;       movb @2(ix),r0
+;       inv  r0
+;       szcb r0,a                       ; AND (IX+$02)      ; clear bit in B
+;       movb a,@>02(ix)                 ; LD (IX+$02),A     ;
+       szcb b,@>02(ix)
 chk_walls_1:
        .ret                            ; RET               ; OK
 
@@ -1140,16 +1144,18 @@ check_exit_branch:
        movb r0,@c
 check_exit_branch_1:                   ; >90e1
        movb @player_x,a                ; LD A,($EA93)      ;
-       sb   @>03(ix),a                 ; SUB (IX+$03)      ; x distance
+       sb   @entity_x(ix),a            ; SUB (IX+$03)      ; x distance
        cb   a,@c                       ; CP C              ; within range?
        jhe  check_exit_branch_3        ; RET NC            ; return if not
        movb @>05(ix),r0                ; BIT 6,(IX+$05)    ; left/right door?
        andi r0,>4000                   ;
        jne  check_exit_branch_2        ; JR NZ,$90F1       ; jump if so
-       srl  b,1                        ; SRL B             ; halve horiztonal distance
+       movb b,r0
+       srl  r0,1                        ; SRL B            ; halve horiztonal distance
+       movb r0,b
 check_exit_branch_2:                   ; >90f1
        movb @player_y,a                ; LD A,($EA94)      ;
-       sb   @>04(ix),a                 ; SUB (IX+$04)      ; y distance to exit
+       sb   @entity_y(ix),a            ; SUB (IX+$04)      ; y distance to exit
        neg a                           ; NEG               ;
        cb   a,b                        ; CP B              ; within range?
        jl   check_exit_branch_4

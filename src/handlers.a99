@@ -4,15 +4,14 @@
 *
 * Used by the routine at #R$7dc3.
 process_action:                        ; >7e7e
-;       b    *hl                       ; TODO: RM added, just return for now
        .push hl                        ; PUSH HL           ; push return location
 **
 * This entry point is used by the routine at #R$7eb2.
 run_handler:                           ; >7e7f
        li   hl,handler_table           ; LD HL,$7EE6       ;
-       cb   *ix,@bytes+>a1
-       jle  !
-       .endproc
+;       cb   *ix,@bytes+>a1
+;       jle  !
+;       .endproc
 !      movb *ix,@c                     ; LD C,(IX+$00)     ;
 
        b    @branch_c_hl
@@ -23,7 +22,6 @@ run_handler:                           ; >7e7f
 *
 * Used by the routine at #R$7dc3.
 run_player:                            ; >7eb2
-;      rt                              ; TODO: RM added, just return for now
        .proc
 ;      limi 0                          ; DI                ;
        .push ix                        ; PUSH IX           ;
@@ -109,7 +107,7 @@ handler_table:                         ; >7ee6
 * extra delay applied to inactive creatures
 *
 h_creat_delay:                         ; >807a
-       jmp  h_creat_delay_1            ; TODO: Deplay disabled
+       jmp  h_creat_delay_1            ; TODO: Delay disabled
        .push ix                        ; PUSH IX           ;
        .pop hl                         ; POP HL            ;
        li   de,creature1               ; LD DE,$EE60       ; end marker
