@@ -303,16 +303,18 @@ monster_move:                          ; >84cd
        movb @>03(ix),a                 ; LD A,(IX+$03)     ; xpos
        ab   @>08(ix),a                 ; ADD A,(IX+$08)    ; add x velocity
        movb a,@c                       ; LD C,A            ; save new xpos
-       sb   @bytes+>58,a               ; SUB $58           ; subtract room centre x
-       jno  !
+       cb   @bytes+>58,a               ; SUB $58           ; subtract room centre x
+       jhe  !
        jmp  monster_move_1             ; JR C,$84E8        ; jump if negative (left half)
-!      cb   a,@e                       ; CP E              ; within room width?
+!      sb   @bytes+>58,a               ; SUB $58           ; subtract room centre x
+       cb   a,@e                       ; CP E              ; within room width?
        jl   monster_move_2             ; JR C,$84F8        ; jump if so
        szcb @bits+0,@>06(ix)           ; RES 0,(IX+$06)    ; set direction to left
        movb @b254,@>08(ix)             ; LD (IX+$08),$FE   ; bounce left away from wall
        movb @>03(ix),@c                ; LD C,(IX+$03)     ; current xpos
        jmp  monster_move_2             ; JR $84F8          ;
 monster_move_1:                        ; >84e8
+       sb   @bytes+>58,a               ; SUB $58           ; subtract room centre x
        neg a                           ; NEG               ; abs
        cb   a,@e                       ; CP E              ; within room width?
        jl   monster_move_2             ; JR C,$84F8        ; jump if so
@@ -323,16 +325,18 @@ monster_move_2:                        ; >84f8
        movb @>04(ix),a                 ; LD A,(IX+$04)     ; ypos
        ab   @>09(ix),a                 ; ADD A,(IX+$09)    ; add y velocity
        movb a,b                        ; LD B,A            ; save new ypos
-       sb   @bytes+>68,a               ; SUB $68           ; subtract room centre y
-       jno  !
+       cb   @bytes+>68,a               ; SUB $68           ; subtract room centre y
+       jhe  !
        jmp  monster_move_3             ; JR C,$8513        ; jump if negative (top half)
-!      cb   a,d                        ; CP D              ; within screen height?
+!      sb   @bytes+>68,a               ; SUB $68           ; subtract room centre y
+       cb   a,d                        ; CP D              ; within screen height?
        jl   monster_move_4             ; JR C,$8523        ; jump if so
        szcb @bits+1,@>06(ix)           ; RES 1,(IX+$06)    ; set direction to up
        movb @b254,@>09(ix)             ; LD (IX+$09),$FE   ; bounce up away from wall
        movb @>04(ix),b                 ; LD B,(IX+$04)     ; current ypos
        jmp  monster_move_4             ; JR $8523          ;
 monster_move_3:                        ; >8513
+       sb   @bytes+>68,a               ; SUB $68           ; subtract room centre y
        neg a                           ; NEG               ; abs
        cb   a,d                        ; CP D              ; within screen height?
        jl   monster_move_4             ; JR C,$8523        ; jump if so
@@ -655,17 +659,14 @@ get_room_style:                        ; >897d
 damage_32:                             ; >8ed7
        .proc
        movb @player_energy,a           ; LD A,($5E28)      ;
+       cb   @bytes+>20,a
+       jhe  !
        sb   @bytes+>20,a               ; SUB $20           ; lose 32 health
-       jeq  loc_8ee1                   ; JR Z,$8EE1        ;
-       jno  update_energy              ; JR NC,$8EE9       ; jump if positive
-       sb   a,a                        ; XOR A             ;
-loc_8ee1:                              ; >8ee1
+       jmp  update_energy              ; JR NC,$8EE9       ; jump if positive
+!      sb   a,a                        ; XOR A             ;
        movb a,@player_energy           ; LD ($5E28),A      ;
        .call @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
        b    @player_dead               ; JR $8EA0          ;
-;loc_8ee9:                              ; >8ee9
-;       movb a,@player_energy           ; LD ($5E28),A      ;
-;       b    @draw_chicken_branch       ; JP $8B8A          ; draw chicken energy bar
 
 *********************************************************************
 * reduce health by 16
@@ -673,10 +674,10 @@ loc_8ee1:                              ; >8ee1
 * Used by the routine at #R$8aff.
 damage_16:                             ; >8a15
        movb @player_energy,a           ; LD A,($5E28)      ;
+       cb   @bytes+>10,a
+       jhe  player_dead_pop            ; JR C,$8A2B        ;
        sb   @bytes+>10,a               ; SUB $10           ;
-       jno  update_energy
-       jmp  player_dead_pop            ; JR C,$8A2B        ;
-;      jmp  loc_8a25                   ; JR $8A25          ; OK
+       jmp  update_energy
 
 *********************************************************************
 * reduce health by 8
@@ -685,9 +686,11 @@ damage_16:                             ; >8a15
 damage_8:                              ; >8a1e
        .proc
        movb @player_energy,a           ; LD A,($5E28)      ;
+       cb   @bytes+>08,a
+       jhe  player_dead_pop            ; JR C,$8A2B        ;
        sb   @bytes+>08,a               ; SUB $08           ;
-       jno  update_energy
-       jmp  player_dead_pop            ; JR C,$8A2B        ;
+       jmp  update_energy
+
 * This entry point is used by the routine at #R$8a15.
 update_energy:                         ; >8a25
        movb a,@player_energy           ; LD ($5E28),A      ;

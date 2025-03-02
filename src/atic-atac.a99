@@ -773,7 +773,8 @@ draw_entities_4:                       ; >92c7
 * Used by the routines at #R$7d9a and #R$8d45.
 prepare_player:                        ; >9443
        .proc
-       movb @menu_selection,a          ; LD A,($5E00)      ; 
+prepare_player_branch:
+       movb @menu_selection,a          ; LD A,($5E00)      ;
        sla  a,1                        ; RLCA              ;
        andi a,>3000                    ; AND $30           ; base character graphic
        ab   @bytes+>08,a               ; ADD A,$08         ; offset to desired facing direction
@@ -928,7 +929,7 @@ loc_951f:                              ; >951f
        a    bc,hl                      ; ADD HL,BC         ; next entry
        .ex_de_hl                       ; EX DE,HL          ; 
        a    bc,hl                      ; ADD HL,BC         ; next entry
-       jno  !                          ; RET C             ; return if hit end of RAM
+       jnc  !                          ; RET C             ; return if hit end of RAM
        .endproc                        ;
 !
        .ex_de_hl                       ; EX DE,HL          ; 

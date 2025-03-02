@@ -317,15 +317,16 @@ flash_score_1:
 h_death:                               ; >8d45
        movb @zx_frames,a               ; LD A,($5C78)      ;
        andi a,>0300                    ; AND $03           ; 3/4 animation rate for death
+       jne  !
        b   @h_player_appear_2          ; JR Z,$8D12        ; jump if colouring this frame instead
-       sb   one,@>06(ix)               ; DEC (IX+$06)      ; reduce player visible height
-       jgt  loc_8d5b                   ; JP M,$8D5B        ; jump if after zero
+!      sb   one,@>06(ix)               ; DEC (IX+$06)      ; reduce player visible height
+       jlt  loc_8d5b                   ; JP M,$8D5B        ; jump if after zero
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
        .call @get_sprite_addr          ; CALL $9E89        ; return address of sprite A in DE
        b    @h_player_appear_1         ; JP $8CD4          ;
 loc_8d5b:                              ; >8d5b
        .call @place_tombstone          ; CALL $95A9        ; place a tombstone at the player position
-       b    @prepare_player            ; JP $9443          ; prepare player to spawn
+       b    @prepare_player_branch     ; JP $9443          ; prepare player to spawn
 
 *********************************************************************
 *
@@ -743,11 +744,11 @@ weapon_handler:                        ; >8209
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; weapon in player room?
        jne  remove_entity              ; JR NZ,$827E       ; jump if not (remove)
        sb   one,@>0f(ix)               ; DEC (IX+$0F)      ; existed too long?
-       jeq  undraw_and_remove_entitiy                   ; JR Z,$826F        ; jump if so (remove)
+       jeq  undraw_and_remove_entitiy  ; JR Z,$826F        ; jump if so (remove)
        movb @>02(ix),r0                ; BIT 0,(IX+$02)    ;
        andi r0,>0100                   ;
-       jne  undraw_and_remove_entitiy                   ; JR NZ,$826F       ;
-       movb @>03(ix),a                 ; LD A,(IX+$03)     ; weapon xpos
+       jne  undraw_and_remove_entitiy  ; JR NZ,$826F       ;
+       movb @entity_x(ix),a            ; LD A,(IX+$03)     ; weapon xpos
        ab   @>06(ix),a                 ; ADD A,(IX+$06)    ; add x velocity
        movb a,@c                       ; LD C,A            ;
        sb   @bytes+>58,a               ; SUB $58           ; subtract room x centre
@@ -757,7 +758,7 @@ loc_822e:                              ; >822e
        cb   a,@e                       ; CP E              ; hit screen edge?
        jhe  loc_825d                   ; JR NC,$825D       ; jump if so (bounce)
 loc_8231:                              ; >8231
-       movb @>04(ix),a                 ; LD A,(IX+$04)     ; weapon ypos
+       movb @entity_y(ix),a            ; LD A,(IX+$04)     ; weapon ypos
        ab   @>07(ix),a                 ; ADD A,(IX+$07)    ; add y velocity
        movb a,b                        ; LD B,A            ;
        sb   @bytes+>68,a               ; SUB $68           ; subtract room y centre
@@ -767,11 +768,11 @@ loc_823f:                              ; >823f
        cb   a,d                        ; CP D              ; hit screen edge?
        jhe  loc_824b                   ; JR NC,$824B       ; jump if so (bounce)
 loc_8242:                              ; >8242
-       movb @c,@>03(ix)                ; LD (IX+$03),C     ; set updated xpos
-       movb b,@>04(ix)                 ; LD (IX+$04),B     ; set updated ypos
+       movb @c,@entity_x(ix)           ; LD (IX+$03),C     ; set updated xpos
+       movb b,@entity_y(ix)            ; LD (IX+$04),B     ; set updated ypos
        b    @draw_entity_23_and_attrs                  ; JP $8E8E          ;
 loc_824b:                              ; >824b
-       movb @>04(ix),b                 ; LD B,(IX+$04)     ; weapon ypos
+       movb @entity_y(ix),b            ; LD B,(IX+$04)     ; weapon ypos
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; y velocity
        neg a                           ; NEG               ; invert (bounce)
        movb a,@>07(ix)                 ; LD (IX+$07),A     ;
@@ -780,7 +781,7 @@ loc_824b:                              ; >824b
        .pop bc                         ; POP BC            ;
        jmp  loc_8242                   ; JR $8242          ;
 loc_825d:                              ; >825d
-       movb @>03(ix),@c                ; LD C,(IX+$03)     ; weapon xpos
+       movb @entity_x(ix),@c           ; LD C,(IX+$03)     ; weapon xpos
        movb @>06(ix),a                 ; LD A,(IX+$06)     ; x velocity
        neg a                           ; NEG               ; invert (bounce)
        movb a,@>06(ix)                 ; LD (IX+$06),A     ;
@@ -848,8 +849,8 @@ h_batlet:                              ; >8301
        andi a,>0700                    ; AND $07           ; 3-bit random behaviour
        movb a,@>08(ix)                 ; LD (IX+$08),A     ;
 loc_833a:                              ; >833a
-       .call @get_rnd_velocity         ; CALL $83BA        ; random velocity used for batlet
        movb @bytes+>43,@>05(ix)        ; LD (IX+$05),$43   ; bright magenta
+       .call @get_rnd_velocity         ; CALL $83BA        ; random velocity used for batlet
        jne  loc_8344                   ; JR NZ,$8344       ; jump if using first (decreasing) entry
        inc  hl                         ; INC HL            ; advance to second (increasing) entry
 loc_8344:                              ; >8344
@@ -859,20 +860,21 @@ loc_8344:                              ; >8344
        jne  loc_834d                   ; JR NZ,$834D       ; jump if so
        neg a                           ; NEG               ; invert to go up
 loc_834d:                              ; >834d
-       ab   @>04(ix),a                 ; ADD A,(IX+$04)    ; add velocity to ypos
+       ab   @entity_y(ix),a            ; ADD A,(IX+$04)    ; add velocity to ypos
        movb a,@c                       ; LD C,A            ;
+       cb   @bytes+>68,a
+       jh   loc_835a                   ; JR C,$835A        ; jump if in top screen half
        sb   @bytes+>68,a               ; SUB $68           ; subtract room y centre
-       jno  !
-       jmp  loc_835a                   ; JR C,$835A        ; jump if in top screen half
-!      cb   a,d                        ; CP D              ;
+       cb   a,d                        ; CP D              ;
        jhe  loc_83a2                   ; JR NC,$83A2       ;
        jmp  loc_835f                   ; JR $835F          ;
 loc_835a:                              ; >835a
+       sb   @bytes+>68,a               ; SUB $68           ; subtract room y centre
        neg a                           ; NEG               ; abs
        cb   a,d                        ; CP D              ; within screen height?
        jhe  loc_83a8                   ; JR NC,$83A8       ; jump if not
 loc_835f:                              ; >835f
-       movb @c,@>04(ix)                ; LD (IX+$04),C     ; update ypos
+       movb @c,@entity_y(ix)           ; LD (IX+$04),C     ; update ypos
 loc_8362:                              ; >8362
        .call @get_rnd_velocity         ; CALL $83BA        ; random velocity used for batlet
        jeq  loc_8368                   ; JR Z,$8368        ; jump if using first (decreasing) entry
@@ -884,20 +886,21 @@ loc_8368:                              ; >8368
        jne  loc_8371                   ; JR NZ,$8371       ; jump if so
        neg a                           ; NEG               ; invert to go left
 loc_8371:                              ; >8371
-       ab   @>03(ix),a                 ; ADD A,(IX+$03)    ; add velocity to xpos
+       ab   @entity_x(ix),a            ; ADD A,(IX+$03)    ; add velocity to xpos
        movb a,@c                       ; LD C,A            ;
+       cb   @bytes+>58,a               ; SUB $58           ; subtract room x centre
+       jh   loc_837e                   ; JR C,$837E        ; jump if in left half
        sb   @bytes+>58,a               ; SUB $58           ; subtract room x centre
-       jno  !
-       jmp  loc_837e                   ; JR C,$837E        ; jump if in left half
-!      cb   a,@e                       ; CP E              ; within room width?
+       cb   a,@e                       ; CP E              ; within room width?
        jhe  loc_83b4                   ; JR NC,$83B4       ; jump if not
        jmp  loc_8383                   ; JR $8383          ;
 loc_837e:                              ; >837e
+       sb   @bytes+>58,a               ; SUB $58           ; subtract room x centre
        neg a                           ; NEG               ; abs
        cb   a,@e                       ; CP E              ; within room width?
        jhe  loc_83ae                   ; JR NC,$83AE       ; jump if not
 loc_8383:                              ; >8383
-       movb @c,@>03(ix)                ; LD (IX+$03),C     ; update xpos
+       movb @c,@entity_x(ix)           ; LD (IX+$03),C     ; update xpos
        movb @>09(ix),a                 ; LD A,(IX+$09)     ;
 ;      srl  a,1                        ; RRA               ;
        srl  a,2                        ; RRA               ; 1/4 animation rate
@@ -912,7 +915,7 @@ loc_8383:                              ; >8383
        jl   !                          ; JP NC,$875F       ; jump if not
        b    @pop_creature              ;
 !
-       b    @draw_entity_23_and_attrs                  ; JP $8E8E          ;
+       b    @draw_entity_23_and_attrs  ; JP $8E8E          ;
 loc_83a2:                              ; >83a2
        szcb @bits+1,@>08(ix)           ; RES 1,(IX+$08)    ; move left away from room bounds
        jmp  loc_8362                   ; JR $8362          ;
@@ -1077,7 +1080,7 @@ h_spikey_ghost:                        ; >8672
        movb @bytes+>f9,@>0a(ix)        ; LD (IX+$0A),$F9   ; bounce back up
 loc_86b9:                              ; >86b9
        sra  a,1                        ; SRA A             ; 1/2 bounce speed
-       ab   @>04(ix),a                 ; ADD A,(IX+$04)    ; add to y position
+       ab   @entity_y(ix),a            ; ADD A,(IX+$04)    ; add to y position
        movb a,@c                       ; LD C,A            ; save result
        sb   @bytes+>68,a               ; SUB $68           ; subtract vertical centre
        jgt  loc_86e1                   ; JP P,$86E1        ; jump if positive (lower screen half)
@@ -1091,7 +1094,7 @@ loc_86b9:                              ; >86b9
        jeq  loc_86db                   ; JR Z,$86DB        ;
        sb   @>0a(ix),@>0a(ix)          ; LD (IX+$0A),$00   ;
 loc_86db:                              ; >86db
-       movb @c,@>04(ix)                ; LD (IX+$04),C     ; set y position
+       movb @c,@entity_y(ix)           ; LD (IX+$04),C     ; set y position
        b    @monster_move              ; JP $84CD          ; common monster movement
 loc_86e1:                              ; >86e1
        cb   a,d                        ; CP D              ; out of screen bottom?
@@ -1517,7 +1520,7 @@ chk_hunch_loot_1:
 h_food:                                ; >8c63
        .call @save_entity              ; CALL $9FFB        ; save entity position for undraw
        .call @check_touching           ; CALL $90FB        ; touching food?
-       jno  !
+       jnc  !
        jmp  loc_8c6e                   ; JR C,$8C6E        ; jump if so
 !      b    @draw_16x16                ; JP $92E0          ; draw 16x16 entity
 loc_8c6e:                              ; >8c6e
@@ -1527,7 +1530,7 @@ loc_8c6e:                              ; >8c6e
        movb @bytes+>40,@c              ; LD C,$40          ; food adds 64 health
        movb @player_energy,a           ; LD A,($5E28)      ;
        ab   @c,a                       ; ADD A,C           ; add food value
-       jno  !
+       jnc  !
        jmp  loc_8c84                   ; JR C,$8C84        ;
 !      cb   a,@bytes+>f0               ; CP $F0            ; exceeded maximum?
        jl   loc_8c86                   ; JR C,$8C86        ; jump if not
