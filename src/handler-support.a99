@@ -304,9 +304,8 @@ monster_move:                          ; >84cd
        ab   @>08(ix),a                 ; ADD A,(IX+$08)    ; add x velocity
        movb a,@c                       ; LD C,A            ; save new xpos
        cb   @bytes+>58,a               ; SUB $58           ; subtract room centre x
-       jhe  !
-       jmp  monster_move_1             ; JR C,$84E8        ; jump if negative (left half)
-!      sb   @bytes+>58,a               ; SUB $58           ; subtract room centre x
+       jh   monster_move_1             ; JR C,$84E8        ; jump if negative (left half)
+       sb   @bytes+>58,a               ; SUB $58           ; subtract room centre x
        cb   a,@e                       ; CP E              ; within room width?
        jl   monster_move_2             ; JR C,$84F8        ; jump if so
        szcb @bits+0,@>06(ix)           ; RES 0,(IX+$06)    ; set direction to left
@@ -326,9 +325,8 @@ monster_move_2:                        ; >84f8
        ab   @>09(ix),a                 ; ADD A,(IX+$09)    ; add y velocity
        movb a,b                        ; LD B,A            ; save new ypos
        cb   @bytes+>68,a               ; SUB $68           ; subtract room centre y
-       jhe  !
-       jmp  monster_move_3             ; JR C,$8513        ; jump if negative (top half)
-!      sb   @bytes+>68,a               ; SUB $68           ; subtract room centre y
+       jh   monster_move_3             ; JR C,$8513        ; jump if negative (top half)
+       sb   @bytes+>68,a               ; SUB $68           ; subtract room centre y
        cb   a,d                        ; CP D              ; within screen height?
        jl   monster_move_4             ; JR C,$8523        ; jump if so
        szcb @bits+1,@>06(ix)           ; RES 1,(IX+$06)    ; set direction to up
