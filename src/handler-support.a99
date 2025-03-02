@@ -972,6 +972,7 @@ chk_walls_1:
 * Used by the routine at #R$8d77.
 chk_decor_move:                        ; >900a
        .proc
+       seto @room_data_rom_bank
        .push de                        ; PUSH DE           ;
        movb @e,a                       ; LD A,E            ;
        ab   @>03(ix),a                 ; ADD A,(IX+$03)    ;
@@ -1002,32 +1003,36 @@ chk_decor:                             ; >902b
        sb   b,b                        ; LD B,$00          ;
        li   hl,room_table              ; LD HL,$757D       ;
        ; SLA C                         ; SLA C             ;
-       sla  b,1                        ; RL B              ; * 2 (bytes per entry)
+       sla  bc,1                       ; RL B              ; * 2 (bytes per entry)
        a    bc,hl                      ; ADD HL,BC         ;
-       movb *hl+,@c                    ; LD C,(HL)         ;
+;      movb *hl,@c                     ; LD C,(HL)         ;
 ;      inc  hl                         ; INC HL            ;
-       movb *hl,b                      ; LD B,(HL)         ;
+;      movb *hl,b                      ; LD B,(HL)         ;
+       mov  *hl,bc
 chk_decor_1:                           ; >903b
-       movb *bc+,a                     ; LD A,(BC)         ; room item LSB
+;      movb *bc,@l                     ; LD A,(BC)         ; room item LSB
 ;      inc  bc                         ; INC BC            ;
-       movb a,@l                       ; LD L,A            ;
-       movb *bc+,a                     ; LD A,(BC)         ; room item MSB
+;      movb a,@l                       ; LD L,A            ;
+;      movb *bc,h                      ; LD A,(BC)         ; room item MSB
 ;      inc  bc                         ; INC BC            ;
-       movb a,h                        ; LD H,A            ;
-       socb @l,a                       ; OR L              ;
+;      movb h,a                        ; LD H,A            ;
+;      socb @l,a                       ; OR L              ;
+       mov  *bc+,hl
        jne  !                          ; RET Z             ;
        .ret                            ;                   ; OK
 !
        .push bc                        ; PUSH BC           ;
-       li   bc,room_table              ; LD BC,$757D       ;
-       ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ;
-       inc  hl                         ; INC HL            ;
+;       li   bc,room_table              ; LD BC,$757D       ;
+;       ; AND A                         ; AND A             ;
+;       s    bc,hl                      ; SBC HL,BC         ;
+       ai   hl,linked_items_end-room_table+1
+;      inc  hl                         ; INC HL            ;
        movb *hl,a                      ; LD A,(HL)         ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jeq  chk_decor_2                ; JR Z,$9055        ; jump if so
-       li   bc,>0008                   ; LD BC,$0008       ; 8 bytes per entry
-       a    bc,hl                      ; ADD HL,BC         ; next (linked) entry
+;      li   bc,>0008                   ; LD BC,$0008       ; 8 bytes per entry
+;      a    bc,hl                      ; ADD HL,BC         ; next (linked) entry
+       ai   hl,8
 chk_decor_2:                           ; >9055
 ;      inc  hl                         ; INC HL            ;
        inct hl                         ; INC HL            ;
