@@ -30,9 +30,9 @@ saved_x:                               ; >5e16
        byte >28
 saved_y:                               ; >5e17
        byte >97
-height23:                           ; >5e18
+undraw_height:                           ; >5e18
        byte >00
-height2:                            ; >5e19
+draw_height:                            ; >5e19
        byte >00
 room_attr:                             ; >5e1a
        byte >00

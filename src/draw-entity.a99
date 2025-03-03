@@ -40,51 +40,55 @@ get_sprite_addr_ix:                    ; >9e96
 * This entry point is used by the routines at #R$9f4a, #R$9f56 and #R$9fca.
 * Branch target
 *
+* c: lines to draw ?
+* de: sprite data address
+* hl: screen address
+*
 draw_sprite:                           ; >9e9b
-       movb @c,a                       ; LD A,C            ;
-       ; AND A                         ; AND A             ;
-       jeq  _draw_sprite_3             ; JR Z,$9EAF        ;
-       sb   one,@c                     ; DEC C             ;
-       .call @draw_sprite_line23       ; CALL $9EDC        ;
+       movb @c,a                       ; LD A,C            ; EXX
+       ; AND A                         ; AND A             ; EXX
+       jeq  _draw_sprite_3             ; JR Z,$9EAF        ; EXX Jump if C_ == 0
+       sb   one,@c                     ; DEC C             ; EXX C_--
+       .call @undraw_sprite_line       ; CALL $9EDC        ; EXX
        .exx                            ; EXX               ;
        movb @c,a                       ; LD A,C            ;
        ; AND A                         ; AND A             ;
-       jeq  _draw_sprite_2             ; JR Z,$9EAC        ;
+       jeq  _draw_sprite_2             ; JR Z,$9EAC        ; Jump if C == 0
 _draw_sprite_1:                        ; >9ea8
-       sb   one,@c                     ; DEC C             ;
-       .call @draw_sprite_line2        ; CALL $9F21        ;
+       sb   one,@c                     ; DEC C             ; C--
+       .call @draw_sprite_line         ; CALL $9F21        ;
 _draw_sprite_2:                        ; >9eac
        .exx                            ; EXX               ;
-       jmp  draw_sprite                ; JR $9E9B          ;
-_draw_sprite_3:                        ; >9eaf             ; c is 0
+       jmp  draw_sprite                ; JR $9E9B          ; EXX
+_draw_sprite_3:                        ; >9eaf             ; If C_ == 0
        .exx                            ; EXX               ;
        movb @c,a                       ; LD A,C            ;
        ; AND A                         ; AND A             ;
-       jne  _draw_sprite_1             ; JR NZ,$9EA8       ;
+       jne  _draw_sprite_1             ; JR NZ,$9EA8       ; Jump if C != 0
 * This entry point is used by the routine at #R$9fca.
-entry_from_draw_entity_32_2:           ; >9eb4
+entry_from_redraw_entity_2:            ; >9eb4
        .exx                            ; EXX               ;
 * This entry point is used by the routine at #R$9fca.
-entry_from_draw_entity_23_1:           ; >9eb5
-       movb @height23,a                ; LD A,($5E18)      ;
-       movb a,@c                       ; LD C,A            ;
-       movb @height2,a                 ; LD A,($5E19)      ;
-       socb @c,a                       ; OR C              ; both heights zero?
-       jne  !                          ; RET Z             ; return if so
-       .endproc                        ;
+entry_from_draw_entity_1:              ; >9eb5             ; EXX
+       movb @undraw_height,a           ; LD A,($5E18)      ; EXX
+       movb a,@c                       ; LD C,A            ; EXX C_=undraw_height
+       movb @draw_height,a             ; LD A,($5E19)      ; EXX
+       socb @c,a                       ; OR C              ; EXX both heights zero?
+       jne  !                          ; RET Z             ; EXX return if so
+       .endproc                        ;                   ; EXX
 !
-       sb   a,a                        ; XOR A             ;
-       movb a,@height23                ; LD ($5E18),A      ;
+       sb   a,a                        ; XOR A             ; EXX
+       movb a,@undraw_height           ; LD ($5E18),A      ; EXX undraw_height=0
        .exx                            ; EXX               ;
-       movb @height2,a                 ; LD A,($5E19)      ;
-       movb a,@c                       ; LD C,A            ;
+       movb @draw_height,a             ; LD A,($5E19)      ;
+       movb a,@c                       ; LD C,A            ; C=draw_height
        sb   a,a                        ; XOR A             ;
 * This entry point is used by the routine at #R$9fca.
-entry_from_draw_entity_32_3:           ; >9ec8
-       movb a,@height2                 ; LD ($5E19),A      ;
+entry_from_redraw_entity_3:            ; >9ec8
+       movb a,@draw_height             ; LD ($5E19),A      ; draw_height = 0 or ...
        .exx                            ; EXX               ;
-       jmp  draw_sprite                ; JR $9E9B          ;
-*// draw_sprite_2_or_23
+       jmp  draw_sprite                ; JR $9E9B          ; EXX
+*// draw_sprite
 
 *********************************************************************
 *
@@ -92,7 +96,7 @@ entry_from_draw_entity_32_3:           ; >9ec8
 *
 * hl=data bytes, de=data addr, screen address on stack
 *
-draw_unshifted23:                      ; >9ece
+undraw_unshifted:                      ; >9ece
        .ex_de_hl                       ; EX DE,HL          ; hl=data addr, de=data bytes
        .ex_sp_hl                       ; EX (SP),HL        ; hl=screen addr, stack=data addr
 *      First byte
@@ -122,7 +126,7 @@ draw_unshifted23:                      ; >9ece
 * de: sprite data address
 * hl: screen address
 *
-draw_sprite_line23:                    ; >9edc
+undraw_sprite_line:                    ; >9edc
        .proc
        .ex_de_hl                       ; EX DE,HL          ; Now de=screen addr and hl=data addr
        .push de                        ; PUSH DE           ; Push screen address
@@ -133,23 +137,23 @@ draw_sprite_line23:                    ; >9edc
        .ex_de_hl                       ; EX DE,HL          ; Now hl=data bytes and de=data addr
        sb   a,a                        ; XOR A             ;
        movb h,@f                       ; Added, for shifting into a
-jr_23:                                 ; >9ee4
-       nop                             ; JR $9EE4          ; Self-modified, can jump to draw_unshifted23
-                                                           ; or into the instructions below
+jr_undraw:                             ; >9ee4
+       nop                             ; JR $9EE4          ; Self-modified, can jump to undraw_unshifted
+shift_undraw:                                              ; or into the instructions below
        sla  hl,1                       ; ADD HL,HL         ;
        sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
        .ex_de_hl                       ; EX DE,HL          ;
        .ex_sp_hl                       ; EX (SP),HL        ;
 *      First byte
@@ -187,7 +191,7 @@ draw_2_bytes:                          ; >9ef9
 *
 * hl=data bytes, de=data addr, screen address on stack
 *
-draw_unshifted2:                       ; >9f13
+draw_unshifted:                       ; >9f13
        .ex_de_hl                       ; EX DE,HL          ; hl=data addr, de=data bytes
        .ex_sp_hl                       ; EX (SP),HL        ; hl=screen addr, stack=data addr
 *      First byte
@@ -217,8 +221,9 @@ draw_unshifted2:                       ; >9f13
 * de: sprite data address
 * hl: screen address
 *
-; TODO: This is identical to draw_sprite_line23
-draw_sprite_line2:                     ; >9f21
+* This is identical to undraw_sprite_line, except for self-modified part
+*
+draw_sprite_line:                     ; >9f21
        .proc
        .ex_de_hl                       ; EX DE,HL          ; Now de=screen addr and hl=data addr
        .push de                        ; PUSH DE           ; Push screen address
@@ -229,23 +234,23 @@ draw_sprite_line2:                     ; >9f21
        .ex_de_hl                       ; EX DE,HL          ; Now hl=data bytes and de=data addr
        sb   a,a                        ; XOR A             ;
        movb h,@f                       ; Added, for shifting into a
-jr_2:                                  ; >9f29
-       nop                             ; JR $9F13          ; Self-modified, can jump to draw_unshifted2
-                                                           ; or into the instructions below
+jr_draw:                               ; >9f29
+       nop                             ; JR $9F13          ; Self-modified, can jump to draw_unshifted
+shift_draw:                                                ; or into the instructions below
        sla  hl,1                       ; ADD HL,HL         ;
        sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
-       sla  hl,1                       ; ADD HL,HL         ;
-       sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
+;      sla  hl,1                       ; ADD HL,HL         ;
+;      sla  af,1                       ; ADC A,A           ;
        .ex_de_hl                       ; EX DE,HL          ;
        .ex_sp_hl                       ; EX (SP),HL        ;
 *      First byte
@@ -281,14 +286,14 @@ jr_2:                                  ; >9f29
 draw_entity:                           ; >9f4a
        .proc
        seto @sprite_graphics_rom_bank
-       .call @prepare_draw2            ; CALL $9F9F        ; prepare for 2-byte drawing
+       .call @prepare_draw            ; CALL $9F9F        ; prepare for drawing
 * This entry point is used by the routine at #R$9f40.
 draw_entity_de:                        ; >9f4d
        .exx                            ; EXX               ;
-       sb   a,a                        ; XOR A             ;
-       movb a,@height23                ; LD ($5E18),A      ;
-       movb a,@c                       ; LD C,A            ;
-       b    @draw_sprite               ; JP $9E9B          ;
+       sb   a,a                        ; XOR A             ; EXX
+       movb a,@undraw_height           ; LD ($5E18),A      ; EXX undraw_height = 0
+       movb a,@c                       ; LD C,A            ; EXX C_ = 0
+       b    @draw_sprite               ; JP $9E9B          ; EXX
 *      Expecting draw_sprite to ret
 *// draw_entity
 
@@ -297,102 +302,147 @@ draw_entity_de:                        ; >9f4d
 * Routine at 9f56
 *
 * Used by the routines at #R$81f0, #R$871a, #R$8c63, #R$9326 and #R$98c8.
+*
 undraw_entity:                         ; >9f56
        .proc
-       .call @prepare_draw23           ; CALL $9F80        ; prepare for 2-3 byte drawing
+       seto @sprite_graphics_rom_bank
+       .call @prepare_undraw           ; CALL $9F80        ; prepare for undraw in normal regs
 * This entry point is used by the routine at #R$9f45.
-loc_9f59:                              ; >9f59
+loc_9f59:                              ; >9f59             ; Was used by undraw_entity_de
        .exx                            ; EXX               ;
-       sb   a,a                        ; XOR A             ;
-       movb a,@c                       ; LD C,A            ;
-       movb a,@height2                 ; LD ($5E19),A      ;
-       movb @height23,a                ; LD A,($5E18)      ;
-       movb a,@height_lines            ; LD ($5E11),A      ;
-       movb @l,a                       ; LD A,L            ;
-       andi a,>0700                    ; AND $07           ; aligned to cell boundary?
-       movb @bytes+>02,a               ; LD A,$02          ; 2 bytes wide
-       jeq  loc_9f6d                   ; JR Z,$9F6D        ; jump if so
-       ab   one,a                      ; INC A             ; 3 bytes needed
+       sb   a,a                        ; XOR A             ; EXX
+       movb a,@c                       ; LD C,A            ; EXX C_ = 0
+       movb a,@draw_height             ; LD ($5E19),A      ; EXX draw_height = 0
+       movb @undraw_height,a           ; LD A,($5E18)      ; EXX
+       movb a,@height_lines            ; LD ($5E11),A      ; EXX height_lines = undraw_height
+       movb @bytes+>02,a               ; LD A,$02          ; EXX 2 bytes wide
+       movb @l,r0                      ; LD A,L            ; EXX L_ low byte of screen address (where was this set up?)
+       andi r0,>0700                   ; AND $07           ; EXX aligned to cell boundary?
+       jeq  loc_9f6d                   ; JR Z,$9F6D        ; EXX jump if so
+       ab   one,a                      ; INC A             ; EXX 3 bytes needed
 loc_9f6d:                              ; >9f6d
-       movb a,@width_bytes             ; LD ($5E10),A      ;
+       movb a,@width_bytes             ; LD ($5E10),A      ; EXX
        .exx                            ; EXX               ;
-       b    @draw_sprite               ; JP $9E9B          ;
+       b    @draw_sprite               ; JP $9E9B          ; TODO: without EXX?
        .push de                        ; PUSH DE           ;
-       .call @prepare_draw23_de        ; CALL $9F83        ;
+       .call @prepare_undraw_de        ; CALL $9F83        ;
        .exx                            ; EXX               ;
-       .pop de                         ; POP DE            ;
-       .call @prepare_draw2_de         ; CALL $9FA2        ;
+       .pop de                         ; POP DE            ; EXX
+       .call @prepare_draw_de          ; CALL $9FA2        ; EXX
        .exx                            ; EXX               ;
-       jmp  draw_entity_23_1                   ; JR $9FD1          ;
+       jmp  redraw_entity_1            ; JR $9FD1          ;
 
 *********************************************************************
 *
-* prepare draw_sprite_line23 for drawing
+* Prepare undraw_sprite_line for saved entity
+*
+* On return HL=screen address, DE=sprite data addr, C=0, @undraw_height contains the height.
 *
 * Used by the routines at #R$9f56 and #R$9fca.
-prepare_draw23:                        ; >9f80
+*
+prepare_undraw:                        ; >9f80
        .proc
-       .call @get_saved_sprite_addr    ; CALL $9E86        ; return address of sprite A in DE
+       .call @get_saved_sprite_addr    ; CALL $9E86        ; return address of saved_graphic in DE
        jmp  !
 * This entry point is used by the routines at #R$9f45 and #R$9f56.
-prepare_draw23_de:                     ; >9f83
+prepare_undraw_de:                     ; >9f83
        .proc
 !
-;       mov  @saved_x,hl
        movb @saved_x,@l                ; LD HL,($5E16)     ;
        movb @saved_y,h
-       movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
-       sb   one,a                      ; DEC A             ;
-       sla  a,1                        ; RLCA              ; * 2 (bytes per
-       andi a,>0e00                    ; AND $0E           ; relative jump offset)
-       cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
-       jne  loc_9f91                   ; JR NZ,$9F91       ; jump if not (use calculated offset)
-       li   a,(draw_unshifted23-jr_23-2)/2*256 ; LD A,$E8 jr offset back to 'draw_unshifted'
-loc_9f91:                              ; >9f91
-       movb a,@jr_23+1                 ; LD ($9EE5),A      ; set jr offset for data shifting
+;      movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
+;      sb   one,a                      ; DEC A             ;
+;      sla  a,1                        ; RLCA              ; * 2 (bytes per
+;      andi a,>0e00                    ; AND $0E           ; relative jump offset)
+;      cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
+;      jne  prepare_undraw_1           ; JR NZ,$9F91       ; jump if not (use calculated offset)
+;      li   a,(undraw_unshifted-jr_undraw-2)/2*256         ; LD A,$E8 jr offset back to 'draw_unshifted'
+;      movb a,@jr_undraw+1             ; LD ($9EE5),A      ; set jr offset for data shifting
+       mov  hl,r0
+       andi r0,7
+       jne  !
+       li   a,(undraw_unshifted-jr_undraw-2)/2*256
+       movb a,@jr_undraw+1
+       jmp  prepare_undraw_1
+!      movb @zero,@jr_undraw+1
+       li   r1,8
+       s    r0,r1
+       sla  r1,4
+       mov  @shift_undraw,r0
+       andi r0,>ff0f
+       soc  r1,r0
+       mov  r0,@shift_undraw
+       mov  @shift_undraw+2,r0
+       andi r0,>ff0f
+       soc  r1,r0
+       mov  r0,@shift_undraw+2
+prepare_undraw_1:                      ; >9f91
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       movb *de,a                      ; LD A,(DE)         ; Get height (but it's now de_?)
-       movb a,@height23                ; LD ($5E18),A      ; Save height
+       movb *de+,a                     ; LD A,(DE)         ; Get height
+       movb a,@undraw_height           ; LD ($5E18),A      ; Save height
        sb   @c,@c                      ; LD C,$00          ;
-       inc  de                         ; INC DE            ; Advance to bitmap data
+;      inc  de                         ; INC DE            ; Advance to bitmap data
        .endproc                        ; RET               ;
 
 *********************************************************************
 *
-* prepare draw_sprite_line2 drawing
+* Prepare draw_sprite_line for entity in ix
+*
+* On return HL=screen address, DE=sprite data addr, C=0, @width_bytes contains 2 or 3, @draw_height and @height_lines contains the height.
 *
 * Used by the routines at #R$9f4a and #R$9fca.
-prepare_draw2:                         ; >9f9f
+*
+prepare_draw:                          ; >9f9f
        .proc
-       .call @get_sprite_addr_ix        ; CALL $9E96        ; return addr of entity sprite addr in DE
+       .call @get_sprite_addr_ix       ; CALL $9E96        ; return addr of entity sprite addr in DE
        jmp  !
 * This entry point is used by the routines at #R$9f40 and #R$9f56.
-prepare_draw2_de:                      ; >9fa2
+prepare_draw_de:                       ; >9fa2
        .proc
 !      movb @entity_x(ix),@l           ; LD L,(IX+$03)     ; x
        movb @entity_y(ix),h            ; LD H,(IX+$04)     ; y
-       movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
-       sb   one,a                      ; DEC A             ;
-       sla  a,1                        ; RLCA              ; * 2 (bytes per
-       andi a,>0e00                    ; AND $0E           ; relative jump offset)
-       movb a,r0
-       cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
-       jne  loc_9fb3                   ; JR NZ,$9FB3       ; jump if not (use calculated offset)
-       li   a,(draw_unshifted2-jr_2-2)/2*256              ; LD A,$E8 jr offset back to 'draw_unshifted_2'
-loc_9fb3:                              ; >9fb3
-       movb a,@jr_2+1                  ; LD ($9F2A),A      ; set jr offset for data shifting
-       movb @bytes+>02,a               ; LD A,$02          ; 2 bytes wide
-       cb   r0,@bytes+>0e
-       jeq  loc_9fbb                   ; JR Z,$9FBB        ;
-       ab   one,a                      ; INC A             ; any shift requires 3 bytes
-loc_9fbb:                              ; >9fbb
+;      movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
+;      sb   one,a                      ; DEC A             ;
+;      sla  a,1                        ; RLCA              ; * 2 (bytes per
+;      andi a,>0e00                    ; AND $0E           ; relative jump offset)
+;      movb a,r0
+;      cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
+;      jne  prepare_draw_1             ; JR NZ,$9FB3       ; jump if not (use calculated offset)
+;      li   a,(draw_unshifted-jr_draw-2)/2*256             ; LD A,$E8 jr offset back to 'draw_unshifted_2'
+;prepare_draw_1:                        ; >9fb3
+;      movb a,@jr_draw+1               ; LD ($9F2A),A      ; set jr offset for data shifting
+;      movb @bytes+>02,a               ; LD A,$02          ; 2 bytes wide
+;      cb   r0,@bytes+>0e
+;      jeq  prepare_draw_2             ; JR Z,$9FBB        ;
+;      ab   one,a                      ; INC A             ; any shift requires 3 bytes
+       mov  hl,r0
+       andi r0,7
+       jne  !
+       li   a,(draw_unshifted-jr_draw-2)/2*256
+       movb a,@jr_draw+1
+       movb @bytes+2,a
+       jmp  prepare_draw_2
+!      movb @zero,@jr_draw+1
+       li   r1,8
+       s    r0,r1
+       sla  r1,4
+       mov  @shift_draw,r0
+       andi r0,>ff0f
+       soc  r1,r0
+       mov  r0,@shift_draw
+       mov  @shift_draw+2,r0
+       andi r0,>ff0f
+       soc  r1,r0
+       mov  r0,@shift_draw+2
+       movb @bytes+3,a
+prepare_draw_2:                        ; >9fbb
        movb a,@width_bytes             ; LD ($5E10),A      ;
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       movb *de,a                      ; LD A,(DE)         ; Get height
-       movb a,@height2                 ; LD ($5E19),A      ; Save height
+       movb *de+,a                     ; LD A,(DE)         ; Get height
+       movb a,@draw_height             ; LD ($5E19),A      ; Save height
        movb a,@height_lines            ; LD ($5E11),A      ; Save height
        sb   @c,@c                      ; LD C,$00          ;
-       inc  de                         ; INC DE            ; Advance to bitmap data
+;      inc  de                         ; INC DE            ; Advance to bitmap data
        .endproc                        ; RET               ;
 
 *********************************************************************
@@ -400,43 +450,43 @@ loc_9fbb:                              ; >9fbb
 * draw entity to display (no attrs)
 *
 * Used by the routine at #R$8e26.
-draw_entity_23:                        ; >9fca
+redraw_entity:                         ; >9fca
        .proc
        seto @sprite_graphics_rom_bank
-       .call @prepare_draw2            ; CALL $9F9F        ; prepare for 2-byte drawing
+       .call @prepare_draw             ; CALL $9F9F        ; prepare for drawing
        .exx                            ; EXX               ;
-       .call @prepare_draw23           ; CALL $9F80        ; prepare for 2-3 byte drawing
+       .call @prepare_undraw           ; CALL $9F80        ; EXX prepare for undrawing
 * This entry point is used by the routine at #R$9f56.
-draw_entity_23_1:                      ; >9fd1
-       movb @saved_y,a                 ; LD A,($5E17)      ;
-       sb   @entity_y(ix),a            ; SUB (IX+$04)      ;
-       jne  !                          ; JP Z,$9EB5        ;
+redraw_entity_1:                       ; >9fd1
+       movb @saved_y,a                 ; LD A,($5E17)      ; EXX
+       sb   @entity_y(ix),a            ; SUB (IX+$04)      ; EXX
+       jne  !                          ; JP Z,$9EB5        ; EXX
 *      If y is the same
-       b    @entry_from_draw_entity_23_1                   ;
+       b    @entry_from_draw_entity_1                      ; EXX
 !
-       jgt  draw_entity_23_2           ; JP M,$9FEC        ;
+       jgt  redraw_entity_2            ; JP M,$9FEC        ; EXX
 *      If new y is smaller
-       movb a,@c                       ; LD C,A            ; Difference in y
-       movb @height23,a                ; LD A,($5E18)      ; Height from graphics
-       cb   a,@c                       ; CP C              ;
-       jhe  !                          ; JP C,$9EB5        ;
-       b    @entry_from_draw_entity_23_1                   ; If height23 < difference in y
+       movb a,@c                       ; LD C,A            ; EXX Difference in y
+       movb @undraw_height,a           ; LD A,($5E18)      ; EXX Undraw height from graphics
+       cb   a,@c                       ; CP C              ; EXX
+       jhe  !                          ; JP C,$9EB5        ; EXX
+       b    @entry_from_draw_entity_1                      ; EXX If undraw height < difference in y
 !
-       sb   @c,a                       ; SUB C             ; difference in y - height23
-       movb a,@height23                ; LD ($5E18),A      ;
-       b    @draw_sprite               ; JP $9E9B          ;
+       sb   @c,a                       ; SUB C             ; EXX difference in y - undraw height
+       movb a,@undraw_height           ; LD ($5E18),A      ; EXX
+       b    @draw_sprite               ; JP $9E9B          ; EXX
 *      If new y is greater
-draw_entity_23_2:                      ; >9fec
+redraw_entity_2:                       ; >9fec
        .exx                            ; EXX               ;
-       neg a                           ; NEG               ; - Difference in y
+       neg a                           ; NEG               ; -difference in y
        movb a,@c                       ; LD C,A            ;
-       movb @height2,a                 ; LD A,($5E19)      ;
+       movb @draw_height,a             ; LD A,($5E19)      ;
        cb   a,@c                       ; CP C              ;
        jhe  !                          ; JP C,$9EB4        ;
-       b    @entry_from_draw_entity_32_2                   ;
+       b    @entry_from_redraw_entity_2                    ;
 !
        sb   @c,a                       ; SUB C             ;
-       b    @entry_from_draw_entity_32_3 ; JP $9EC8          ;
+       b    @entry_from_redraw_entity_3 ; JP $9EC8          ;
 
 *********************************************************************
 *
@@ -461,8 +511,8 @@ save_entity:                           ; >9ffb
 * Used by the routines at #R$a14d and #R$a2ce.
 clear_sprite:                          ; >a185
        .proc
-       movb @>03(ix),@l                ; LD L,(IX+$03)     ;
-       movb @>04(ix),h                 ; LD H,(IX+$04)     ;
+       movb @entity_x(ix),@l           ; LD L,(IX+$03)     ;
+       movb @entity_y(ix),h            ; LD H,(IX+$04)     ;
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        movb @bytes+>14,b               ; LD B,$14          ; 20 pixels high
 loc_a190:                              ; >a190

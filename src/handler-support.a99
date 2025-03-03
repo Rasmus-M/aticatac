@@ -362,7 +362,7 @@ monster_move_4:                        ; >8523
        b    @pop_creature              ;
 !
 keep_special:                          ; >8547
-       b    @draw_entity_23_and_attrs  ; JP $8E8E          ;
+       b    @redraw_entity_and_attrs   ; JP $8E8E          ;
 monster_move_5:                        ; >854a
        movb @>08(ix),a                 ; LD A,(IX+$08)     ;
        cb   a,@b254                    ; CP $FE            ; at left speed limit?

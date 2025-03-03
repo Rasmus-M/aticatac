@@ -113,15 +113,16 @@ pixel_line_up_branch:
 ;       movb h,a                        ; LD A,H            ;
 ;       ab   @bytes+>08,a               ; ADD A,$08         ;
 ;       movb a,h                        ; LD H,A            ;
-       li   r0,>0700                   ; Are all l bits 0?
-       czc  r0,hl
+       czc  @pixel_line_mask,hl        ; Are all l bits 0?
        jeq  !
        sb   one,h                      ; If no, subtract one from the l bits
        jmp  pixel_line_up_end
 !      ai   hl,->0020                  ; If yes, subtract one from the r bits
-       soc  r0,hl                      ; and set the l bits to 0
+       soc  @pixel_line_mask,hl        ; and set the l bits to 1
 pixel_line_up_end:
        .endproc                        ; RET               ;
+pixel_line_mask:
+       data >0700
 
 *********************************************************************
 *

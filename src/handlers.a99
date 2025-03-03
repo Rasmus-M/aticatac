@@ -391,7 +391,7 @@ entry_from_wizard_and_serf:            ; >8e78
        .call @chk_creatures            ; CALL $83EA        ; check whether to add new room creatures
        movb @counter_low,a             ; LD A,($5E12)      ;
        andi a,>0f00                    ; AND $0F           ; 16th game loop?
-       jne  draw_entity_23_and_attrs   ; JR NZ,$8E8E       ; jump if not
+       jne  redraw_entity_and_attrs    ; JR NZ,$8E8E       ; jump if not
        movb @player_energy,a           ; LD A,($5E28)      ;
        sb   one,a                      ; DEC A             ; reduce health by 1
        jeq  player_dead                ; JR Z,$8EA0        ;
@@ -399,8 +399,8 @@ entry_from_wizard_and_serf:            ; >8e78
        .call @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
 * This entry point is used by the routines at #R$81f0, #R$8301, #R$845f,
 * #R$85f7 and #R$8787.
-draw_entity_23_and_attrs:              ; >8e8e
-       .call @draw_entity_23           ; CALL $9FCA        ; draw entity to display (no attrs)
+redraw_entity_and_attrs:               ; >8e8e
+       .call @redraw_entity            ; CALL $9FCA        ; draw entity to display (no attrs)
        b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
 
 * This entry point is used by the routines at #R$8a1e, #R$8ed7 and #R$98c8.
@@ -415,23 +415,23 @@ player_dead:                           ; >8ea0
        movb *ix,a                      ; LD A,(IX+$00)     ;
        sb   one,a                      ; DEC A             ;
        cb   a,@bytes+>30               ; CP $30            ; is player active?
-       jl   loc_8ec6                   ; JR C,$8EC6        ; jump if so
+       jl   player_dead_2              ; JR C,$8EC6        ; jump if so
        movb @player,a                  ; LD A,($EA90)      ;
-loc_8eb6:                              ; >8eb6
+player_dead_1:                         ; >8eb6
        movb a,@player_steps_y          ; LD ($EA97),A      ;
        .call @get_sprite_addr          ; CALL $9E89        ; return address of sprite A in DE
        movb *de,a                      ; LD A,(DE)         ;
        movb a,@player_steps_x          ; LD ($EA96),A      ;
-       movb @bytes+>67,a               ; LD A,$67          ; blank graphic, death handler
-       movb a,@player                  ; LD ($EA90),A      ;
+       movb @bytes+>67,@player         ; LD A,$67          ; blank graphic, death handler
+;      movb a,@player                  ; LD ($EA90),A      ;
        .endproc                        ; RET               ;
-loc_8ec6:                              ; >8ec6
-       movb @saved_x,a                 ; LD A,($5E16)      ;
-       movb a,@player_x                ; LD ($EA93),A      ;
-       movb @saved_y,a                 ; LD A,($5E17)      ;
-       movb a,@player_y                ; LD ($EA94),A      ;
+player_dead_2:                         ; >8ec6
+       movb @saved_x,@player_x         ; LD A,($5E16)      ;
+;      movb a,@player_x                ; LD ($EA93),A      ;
+       movb @saved_y,@player_y         ; LD A,($5E17)      ;
+;      movb a,@player_y                ; LD ($EA94),A      ;
        movb @saved_graphic,a           ; LD A,($5E15)      ;
-       jmp  loc_8eb6                   ; JR $8EB6          ;
+       jmp  player_dead_1              ; JR $8EB6          ;
 
 *********************************************************************
 *
@@ -770,7 +770,7 @@ loc_823f:                              ; >823f
 loc_8242:                              ; >8242
        movb @c,@entity_x(ix)           ; LD (IX+$03),C     ; set updated xpos
        movb b,@entity_y(ix)            ; LD (IX+$04),B     ; set updated ypos
-       b    @draw_entity_23_and_attrs                  ; JP $8E8E          ;
+       b    @redraw_entity_and_attrs   ; JP $8E8E          ;
 loc_824b:                              ; >824b
        movb @entity_y(ix),b            ; LD B,(IX+$04)     ; weapon ypos
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; y velocity
@@ -915,7 +915,7 @@ loc_8383:                              ; >8383
        jl   !                          ; JP NC,$875F       ; jump if not
        b    @pop_creature              ;
 !
-       b    @draw_entity_23_and_attrs  ; JP $8E8E          ;
+       b    @redraw_entity_and_attrs   ; JP $8E8E          ;
 loc_83a2:                              ; >83a2
        szcb @bits+1,@>08(ix)           ; RES 1,(IX+$08)    ; move left away from room bounds
        jmp  loc_8362                   ; JR $8362          ;
@@ -992,11 +992,11 @@ h_sparkles:                            ; >85f7
        jl   !                          ; JP NC,$875F       ; jump if not
        b    @pop_creature              ;
 !
-       b    @draw_entity_23_and_attrs                  ; JP $8E8E          ;
+       b    @redraw_entity_and_attrs   ; JP $8E8E          ;
 to_creature:                           ; >8625
        movb @entity_temp(ix),a         ; LD A,(IX+$02)     ; creature graphic
        movb a,*ix                      ; LD (IX+$00),A     ; convert sparkle to creature
-       b    @draw_entity_23_and_attrs                  ; JP $8E8E          ;
+       b    @redraw_entity_and_attrs   ; JP $8E8E          ;
 
 *********************************************************************
 *
@@ -1164,7 +1164,7 @@ h_pop:                                 ; >8787
        andi a,>0300                    ; AND $03           ; 4 animation frames
        ab   @bytes+>6c,a               ; ADD A,$6C         ; base pop graphic
        movb a,*ix                      ; LD (IX+$00),A     ; set animation graphic
-       b    @draw_entity_23_and_attrs  ; JP $8E8E          ;
+       b    @redraw_entity_and_attrs   ; JP $8E8E          ;
 
 *********************************************************************
 *
