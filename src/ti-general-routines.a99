@@ -9,6 +9,7 @@ ti_setup_environment:
        mov  r0,@b255
        seto @frame
        li   sp,stack
+       clr  @exx_flag
        .proc
        bl   @init_bits
 ;      bl   @copy_to_pad
@@ -869,6 +870,7 @@ exx_routine:
        mov  de,r0
        mov  de_,de
        mov  r0,de_
+       inv  @exx_flag
        rt
 *// exx_routine
 

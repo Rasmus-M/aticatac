@@ -314,16 +314,16 @@ loc_9f59:                              ; >9f59             ; Was used by undraw_
        movb a,@c                       ; LD C,A            ; EXX C_ = 0
        movb a,@draw_height             ; LD ($5E19),A      ; EXX draw_height = 0
        movb @undraw_height,a           ; LD A,($5E18)      ; EXX
-       movb a,@height_lines            ; LD ($5E11),A      ; EXX height_lines = undraw_height
+       movb a,@height_lines            ; LD ($5E11),A      ; EXX height_lines = undraw_height. For attribute drawing.
        movb @bytes+>02,a               ; LD A,$02          ; EXX 2 bytes wide
        movb @l,r0                      ; LD A,L            ; EXX L_ low byte of screen address (where was this set up?)
        andi r0,>0700                   ; AND $07           ; EXX aligned to cell boundary?
        jeq  loc_9f6d                   ; JR Z,$9F6D        ; EXX jump if so
        ab   one,a                      ; INC A             ; EXX 3 bytes needed
 loc_9f6d:                              ; >9f6d
-       movb a,@width_bytes             ; LD ($5E10),A      ; EXX
+       movb a,@width_bytes             ; LD ($5E10),A      ; EXX For attribute drawing
        .exx                            ; EXX               ;
-       b    @draw_sprite               ; JP $9E9B          ; TODO: without EXX?
+       b    @draw_sprite               ; JP $9E9B          ; Called without EXX?
        .push de                        ; PUSH DE           ;
        .call @prepare_undraw_de        ; CALL $9F83        ;
        .exx                            ; EXX               ;
@@ -377,58 +377,6 @@ redraw_entity_2:                       ; >9fec
 
 *********************************************************************
 *
-* Prepare undraw_sprite_line for saved entity
-*
-* On return HL=screen address, DE=sprite data addr, C=0, @undraw_height contains the height.
-*
-* Used by the routines at #R$9f56 and #R$9fca.
-*
-prepare_undraw:                        ; >9f80
-       .proc
-       .call @get_saved_sprite_addr    ; CALL $9E86        ; return address of saved_graphic in DE
-       jmp  !
-* This entry point is used by the routines at #R$9f45 and #R$9f56.
-prepare_undraw_de:                     ; >9f83
-       .proc
-!
-       movb @saved_x,@l                ; LD HL,($5E16)     ;
-       movb @saved_y,h
-;      movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
-;      sb   one,a                      ; DEC A             ;
-;      sla  a,1                        ; RLCA              ; * 2 (bytes per
-;      andi a,>0e00                    ; AND $0E           ; relative jump offset)
-;      cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
-;      jne  prepare_undraw_1           ; JR NZ,$9F91       ; jump if not (use calculated offset)
-;      li   a,(undraw_unshifted-jr_undraw-2)/2*256         ; LD A,$E8 jr offset back to 'draw_unshifted'
-;      movb a,@jr_undraw+1             ; LD ($9EE5),A      ; set jr offset for data shifting
-       mov  hl,r0
-       andi r0,7
-       jne  !
-       li   a,(undraw_unshifted-jr_undraw-2)/2*256
-       movb a,@jr_undraw+1
-       jmp  prepare_undraw_1
-!      movb @zero,@jr_undraw+1
-       li   r1,8
-       s    r0,r1
-       sla  r1,4
-       mov  @shift_undraw,r0
-       andi r0,>ff0f
-       soc  r1,r0
-       mov  r0,@shift_undraw
-       mov  @shift_undraw+2,r0
-       andi r0,>ff0f
-       soc  r1,r0
-       mov  r0,@shift_undraw+2
-prepare_undraw_1:                      ; >9f91
-       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       movb *de+,a                     ; LD A,(DE)         ; Get height
-       movb a,@undraw_height           ; LD ($5E18),A      ; Save height
-       sb   @c,@c                      ; LD C,$00          ;
-;      inc  de                         ; INC DE            ; Advance to bitmap data
-       .endproc                        ; RET               ;
-
-*********************************************************************
-*
 * Prepare draw_sprite_line for entity in ix
 *
 * On return HL=screen address, DE=sprite data addr, C=0, @width_bytes contains 2 or 3, @draw_height and @height_lines contains the height.
@@ -479,12 +427,64 @@ prepare_draw_de:                       ; >9fa2
        mov  r0,@shift_draw+2
        movb @bytes+3,a
 prepare_draw_2:                        ; >9fbb
-       movb a,@width_bytes             ; LD ($5E10),A      ;
+       movb a,@width_bytes             ; LD ($5E10),A      ; Save width for attribute drawing
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        movb *de+,a                     ; LD A,(DE)         ; Get height
        movb a,@draw_height             ; LD ($5E19),A      ; Save height
-       movb a,@height_lines            ; LD ($5E11),A      ; Save height
-       sb   @c,@c                      ; LD C,$00          ;
+       movb a,@height_lines            ; LD ($5E11),A      ; Save height for attribute drawing
+       sb   @c,@c                      ; LD C,$00          ; C = 0
+;      inc  de                         ; INC DE            ; Advance to bitmap data
+       .endproc                        ; RET               ;
+
+*********************************************************************
+*
+* Prepare undraw_sprite_line for saved entity
+*
+* On return HL=screen address, DE=sprite data addr, C=0, @undraw_height contains the height.
+*
+* Used by the routines at #R$9f56 and #R$9fca.
+*
+prepare_undraw:                        ; >9f80
+       .proc
+       .call @get_saved_sprite_addr    ; CALL $9E86        ; return address of saved_graphic in DE
+       jmp  !
+* This entry point is used by the routines at #R$9f45 and #R$9f56.
+prepare_undraw_de:                     ; >9f83
+       .proc
+!
+       movb @saved_x,@l                ; LD HL,($5E16)     ;
+       movb @saved_y,h
+;      movb @l,a                       ; LD A,L            ; xpos (b2-0 determine shifting)
+;      sb   one,a                      ; DEC A             ;
+;      sla  a,1                        ; RLCA              ; * 2 (bytes per
+;      andi a,>0e00                    ; AND $0E           ; relative jump offset)
+;      cb   a,@bytes+>0e               ; CP $0E            ; originally unshifted?
+;      jne  prepare_undraw_1           ; JR NZ,$9F91       ; jump if not (use calculated offset)
+;      li   a,(undraw_unshifted-jr_undraw-2)/2*256         ; LD A,$E8 jr offset back to 'draw_unshifted'
+;      movb a,@jr_undraw+1             ; LD ($9EE5),A      ; set jr offset for data shifting
+       mov  hl,r0
+       andi r0,7
+       jne  !
+       li   a,(undraw_unshifted-jr_undraw-2)/2*256
+       movb a,@jr_undraw+1
+       jmp  prepare_undraw_1
+!      movb @zero,@jr_undraw+1
+       li   r1,8
+       s    r0,r1
+       sla  r1,4
+       mov  @shift_undraw,r0
+       andi r0,>ff0f
+       soc  r1,r0
+       mov  r0,@shift_undraw
+       mov  @shift_undraw+2,r0
+       andi r0,>ff0f
+       soc  r1,r0
+       mov  r0,@shift_undraw+2
+prepare_undraw_1:                      ; >9f91
+       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       movb *de+,a                     ; LD A,(DE)         ; Get height
+       movb a,@undraw_height           ; LD ($5E18),A      ; Save height
+       sb   @c,@c                      ; LD C,$00          ; C = 0
 ;      inc  de                         ; INC DE            ; Advance to bitmap data
        .endproc                        ; RET               ;
 
@@ -495,6 +495,7 @@ prepare_draw_2:                        ; >9fbb
 * Used by the routines at #R$81db, #R$81f0, #R$82f1, #R$8301, #R$845f, #R$85f7,
 * #R$862e, #R$8672, #R$871a, #R$8787, #R$87a6, #R$8862, #R$8906, #R$8988,
 * #R$89ed, #R$8a2f, #R$8a80, #R$8aff, #R$8c63, #R$8d77, #R$92f5 and #R$988b.
+*
 save_entity:                           ; >9ffb
        movb @entity_x(ix),@saved_x     ; LD A,(IX+$03)     ;
 ;      movb a,@saved_x                 ; LD ($5E16),A      ;
@@ -509,6 +510,7 @@ save_entity:                           ; >9ffb
 * Routine at a185
 *
 * Used by the routines at #R$a14d and #R$a2ce.
+*
 clear_sprite:                          ; >a185
        .proc
        movb @entity_x(ix),@l           ; LD L,(IX+$03)     ;
