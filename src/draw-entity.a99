@@ -334,6 +334,49 @@ loc_9f6d:                              ; >9f6d
 
 *********************************************************************
 *
+* draw entity to display (no attrs)
+*
+* Used by the routine at #R$8e26.
+redraw_entity:                         ; >9fca
+       .proc
+       seto @sprite_graphics_rom_bank
+       .call @prepare_draw             ; CALL $9F9F        ; prepare for drawing
+       .exx                            ; EXX               ;
+       .call @prepare_undraw           ; CALL $9F80        ; EXX prepare for undrawing
+* This entry point is used by the routine at #R$9f56.
+redraw_entity_1:                       ; >9fd1
+       movb @saved_y,a                 ; LD A,($5E17)      ; EXX
+       sb   @entity_y(ix),a            ; SUB (IX+$04)      ; EXX
+       jne  !                          ; JP Z,$9EB5        ; EXX
+*      If y is the same
+       b    @entry_from_draw_entity_1                      ; EXX
+!
+       jgt  redraw_entity_2            ; JP M,$9FEC        ; EXX
+*      If new y is smaller
+       movb a,@c                       ; LD C,A            ; EXX Difference in y
+       movb @undraw_height,a           ; LD A,($5E18)      ; EXX Undraw height from graphics
+       cb   a,@c                       ; CP C              ; EXX
+       jhe  !                          ; JP C,$9EB5        ; EXX
+       b    @entry_from_draw_entity_1                      ; EXX If undraw height < difference in y
+!
+       sb   @c,a                       ; SUB C             ; EXX difference in y - undraw height
+       movb a,@undraw_height           ; LD ($5E18),A      ; EXX
+       b    @draw_sprite               ; JP $9E9B          ; EXX
+*      If new y is greater
+redraw_entity_2:                       ; >9fec
+       .exx                            ; EXX               ;
+       neg a                           ; NEG               ; -difference in y
+       movb a,@c                       ; LD C,A            ;
+       movb @draw_height,a             ; LD A,($5E19)      ;
+       cb   a,@c                       ; CP C              ;
+       jhe  !                          ; JP C,$9EB4        ;
+       b    @entry_from_redraw_entity_2                    ;
+!
+       sb   @c,a                       ; SUB C             ;
+       b    @entry_from_redraw_entity_3 ; JP $9EC8          ;
+
+*********************************************************************
+*
 * Prepare undraw_sprite_line for saved entity
 *
 * On return HL=screen address, DE=sprite data addr, C=0, @undraw_height contains the height.
@@ -444,49 +487,6 @@ prepare_draw_2:                        ; >9fbb
        sb   @c,@c                      ; LD C,$00          ;
 ;      inc  de                         ; INC DE            ; Advance to bitmap data
        .endproc                        ; RET               ;
-
-*********************************************************************
-*
-* draw entity to display (no attrs)
-*
-* Used by the routine at #R$8e26.
-redraw_entity:                         ; >9fca
-       .proc
-       seto @sprite_graphics_rom_bank
-       .call @prepare_draw             ; CALL $9F9F        ; prepare for drawing
-       .exx                            ; EXX               ;
-       .call @prepare_undraw           ; CALL $9F80        ; EXX prepare for undrawing
-* This entry point is used by the routine at #R$9f56.
-redraw_entity_1:                       ; >9fd1
-       movb @saved_y,a                 ; LD A,($5E17)      ; EXX
-       sb   @entity_y(ix),a            ; SUB (IX+$04)      ; EXX
-       jne  !                          ; JP Z,$9EB5        ; EXX
-*      If y is the same
-       b    @entry_from_draw_entity_1                      ; EXX
-!
-       jgt  redraw_entity_2            ; JP M,$9FEC        ; EXX
-*      If new y is smaller
-       movb a,@c                       ; LD C,A            ; EXX Difference in y
-       movb @undraw_height,a           ; LD A,($5E18)      ; EXX Undraw height from graphics
-       cb   a,@c                       ; CP C              ; EXX
-       jhe  !                          ; JP C,$9EB5        ; EXX
-       b    @entry_from_draw_entity_1                      ; EXX If undraw height < difference in y
-!
-       sb   @c,a                       ; SUB C             ; EXX difference in y - undraw height
-       movb a,@undraw_height           ; LD ($5E18),A      ; EXX
-       b    @draw_sprite               ; JP $9E9B          ; EXX
-*      If new y is greater
-redraw_entity_2:                       ; >9fec
-       .exx                            ; EXX               ;
-       neg a                           ; NEG               ; -difference in y
-       movb a,@c                       ; LD C,A            ;
-       movb @draw_height,a             ; LD A,($5E19)      ;
-       cb   a,@c                       ; CP C              ;
-       jhe  !                          ; JP C,$9EB4        ;
-       b    @entry_from_redraw_entity_2                    ;
-!
-       sb   @c,a                       ; SUB C             ;
-       b    @entry_from_redraw_entity_3 ; JP $9EC8          ;
 
 *********************************************************************
 *
