@@ -26,7 +26,7 @@ set_entity_attrs2_branch:
        srl  a,2                                            ; lines / 4
        ab   one,a                      ; INC A             ; lines / 4 + 1
        ; RRCA                          ; RRCA              ;
-       srl  a,1                                            ; (lines / 4 + 1) / 2
+       srl  a,1                                            ; (lines / 4 + 1) / 2 = lines / 8 + 0.5
        andi a,>1f00                    ; AND $1F           ; mod 32
        ab   one,a                      ; INC A             ; + 1
        movb a,@c                       ; LD C,A            ; attr height
