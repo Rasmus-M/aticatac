@@ -1179,23 +1179,21 @@ check_touching:                        ; >90fb
        .proc
        movb @player_x,a                ; LD A,($EA93)      ;
        sb   @>03(ix),a                 ; SUB (IX+$03)      ; x distance
-       jh   loc_9106                   ; JP P,$9106        ;
+       jgt  loc_9106                   ; JP P,$9106        ;
        neg a                           ; NEG               ; abs
 loc_9106:                              ; >9106
        cb   a,@bytes+>0c               ; CP $0C            ; within range?
-       jl   !                          ; RET NC            ; return if not
-       jmp  check_touching_1           ;
-!
+       jhe  check_touching_1           ; RET NC            ; return if not
        movb @player_y,a                ; LD A,($EA94)      ;
        sb   @>04(ix),a                 ; SUB (IX+$04)      ; y distance
        jgt  loc_9114                   ; JP P,$9114        ;
        neg a                           ; NEG               ; abs
 loc_9114:                              ; >9114
        cb   a,@bytes+>0c               ; CP $0C            ; within range?
-       jl   !
+       jhe  check_touching_1
+       b    @return_with_carry
 check_touching_1:
        b    @return_without_carry      ; RET               ; return no-carry if not
-!      b    @return_with_carry
 
 *********************************************************************
 *
@@ -1303,7 +1301,7 @@ add_inventory:                         ; >9326
 ;      inc  hl                         ; INC HL            ;
        movb @>05(ix),*hl               ; LD A,(IX+$05)     ;
 ;      movb a,*hl                      ; LD (HL),A         ;
-       .call @undraw_entity            ; CALL $9F56        ;
+       .call @undraw_entity            ; CALL $9F56        ; Remove from play field
        movb @room_attr,@>05(ix)        ; LD A,($5E1A)      ;
 ;      movb a,@>05(ix)                 ; LD (IX+$05),A     ;
        .call @set_entity_attrs2        ; CALL $A01A        ; set attrs covering previous and new position
@@ -1657,7 +1655,7 @@ clock_tick:                            ; >95da
        movb a,*hl                      ; LD (HL),A         ; store hour
 clock_tick_1:                          ; >9604
        li   hl,>40c8                   ; LD HL,$40C8       ; time coords
-;      Continue into print_clock
+       jmp  print_clock_branch
 
 *********************************************************************
 *
@@ -1665,6 +1663,8 @@ clock_tick_1:                          ; >9604
 *
 * Used by the routine at #R$9641.
 print_clock:                           ; >9607
+       .proc
+print_clock_branch:
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        li   de,clock_hours             ; LD DE,$5E3D       ;
        movb @bytes+>02,b               ; LD B,$02          ;
@@ -1702,13 +1702,15 @@ loc_974c:                              ; >974c
        movb a,b                        ; LD B,A            ;
        .call @click_sound                    ; CALL $A3A8        ; short beep
        .pop bc                         ; POP BC            ;
+       ab   one,@zx_frames                                 ; Added
        movb @zx_frames,a               ; LD A,($5C78)      ;
        cb   a,@c                       ; CP C              ; same frame?
        jeq  loc_974c                   ; JR Z,$974C        ; loop back to continue sound effect
        andi a,>0700                    ; AND $07           ; frame 1-7?
+       jeq  !
        sb   a,a                        ; LD A,$00          ; black
-       jne  loc_9762                   ; JR NZ,$9762       ; jump if so (use black)
-       movb @bytes+>47,a               ; LD A,$47          ; bright white
+       jmp  loc_9762                   ; JR NZ,$9762       ; jump if so (use black)
+!      movb @bytes+>47,a               ; LD A,$47          ; bright white
 loc_9762:                              ; >9762
        movb a,@l                       ; LD L,A            ;
        movb a,h                        ; LD H,A            ;
@@ -1719,6 +1721,7 @@ loc_9762:                              ; >9762
        .push bc                        ; PUSH BC           ;
        .call @draw_tunnel_attrs        ; CALL $9774        ;
        .pop bc                         ; POP BC            ;
+       bl   @ti_upload_zx_screen
        sb   one,b                      ; DJNZ $9748        ; loop until end of effect
        jne  loc_9748                   ;
        b    @change_room_branch        ; JP $9117          ; move player to room linked to entity (usually door)

@@ -525,16 +525,16 @@ get_blend_instr:                       ; >9d19
 ;       ab   @bytes+>08,a               ; ADD A,$08         ; b6 or (hl)
 ;       .ret                            ; RET               ; return
        jne  !
-       mov  @jmp2_instr,af
+       mov  @jmp2_instr,af             ; 0 = nop
        mov  @nop_instr,af_
        .ret
 !      cb   a,one
        jne  !
-       mov  @movb_instr,af
-       mov  @xor_instr,af_
-       .ret
-!      mov  @socb_instr,af
+       mov  @socb_instr,af             ; 1 = or
        mov  @nop_instr,af_
+       .ret
+!      mov  @movb_instr,af             ; 2,3 = xor
+       mov  @xor_instr,af_
        .ret
 jmp2_instr:
        jmp  $+4

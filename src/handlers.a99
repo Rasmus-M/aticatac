@@ -208,7 +208,7 @@ h_player_appear_1:                     ; >8cd4
        movb *hl,@c                     ; LD C,(HL)         ; Save the data that was there
        movb *ix,b                      ; LD B,(IX+$00)     ; Save the graphics index
        .push bc                        ; PUSH BC           ;
-       movb one,*hl                    ; LD (HL),$01       ; Set height to one. TODO: in ROM
+;      movb one,*hl                    ; LD (HL),$01       ; Set height to one. TODO: in ROM
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
        movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
        .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
@@ -237,15 +237,16 @@ h_player_appear_2:                     ; >8d12
 h_player_appear_3:                     ; >8d20
        socb @bytes+>40,a               ; OR $40            ; add bright bit
        movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; set player attr
-       movb @>06(ix),a                 ; LD A,(IX+$06)     ; Drawn height
-       .call @set_appear_w_h           ; CALL $92E2        ; set spawn appearance width/height
+;      movb @>06(ix),a                 ; LD A,(IX+$06)     ; Drawn height
+       movb @bytes+>12,a                                   ; Added, draw full height.
+       .call @draw_appear_attr         ; CALL $92E2        ; set spawn appearance width/height
        .pop af                         ; POP AF            ;
        movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; Restore flags
 ;      b    @appear_sound              ; JP $A45F          ; player appearance sound
        jmp  h_player_appear_5                              ; appear_sound would return
 h_player_appear_4:                     ; >8d32
        movb @>07(ix),*ix               ; LD A,(IX+$07)     ; player spawn sprite
-       .call @draw_entity              ; Added
+       .call @draw_entity                                  ; Added to undraw.
 ;      movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
        clr  af
        movb a,@entity_vx(ix)           ; LD (IX+$06),$00   ; no x movement
@@ -259,7 +260,7 @@ h_player_appear_5:                     ; >8cb7
 * set spawn appearance width/height
 *
 * Used by the routine at #R$8cb7.
-set_appear_w_h:                        ; >92e2
+draw_appear_attr:                     ; >92e2
        .proc
 set_appear_w_h_branch:
        movb a,@height_lines            ; LD ($5E11),A      ;
@@ -325,6 +326,8 @@ h_death:                               ; >8d45
        .call @get_sprite_addr          ; CALL $9E89        ; return address of sprite A in DE
        b    @h_player_appear_1         ; JP $8CD4          ;
 loc_8d5b:                              ; >8d5b
+       movb @>07(ix),*ix               ;                   ; Added. Player spawn sprite
+       .call @draw_entity              ;                   ; Added to undraw.
        .call @place_tombstone          ; CALL $95A9        ; place a tombstone at the player position
        b    @prepare_player_branch     ; JP $9443          ; prepare player to spawn
 
@@ -1583,9 +1586,9 @@ h_door_closed:                         ; >917d
        movb a,@door_timer              ; LD ($5E2E),A      ;
        b    @draw_room_item            ; JP $91FE          ; draw room item
 loc_9193:                              ; >9193
-       movb @bytes+>5e,a               ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer
-                                                           ; processing
-       movb a,@door_timer              ; LD ($5E2E),A      ;
+       movb @bytes+>18,@door_timer     ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer ;
+                                                           ; processing TODO: RM changed
+;      movb a,@door_timer              ; LD ($5E2E),A      ;
        movb @>05(ix),a                 ; LD A,(IX+$05)     ; save door attr
        .push af                        ; PUSH AF           ;
        socb @bytes+>03,a               ; OR $03            ;
@@ -1625,7 +1628,6 @@ h_trap_open:                           ; >91c5
        b    @chk_trap_exit             ;
 !
 trap_common:                           ; >91cc
-       equ  $
        movb @>05(ix),a                 ; LD A,(IX+$05)     ;
        .push af                        ; PUSH AF           ;
        socb @bytes+>03,a               ; OR $03            ;
@@ -1697,7 +1699,7 @@ h_pickup_item:                         ; >92f5
        .call @save_entity              ; CALL $9FFB        ; save entity position for undraw
        movb @pickup_pressed,a          ; LD A,($5E20)      ;
        ; AND A                         ; AND A             ; if pick-up key pressed?
-       jmp  pickup_released            ; JR Z,$92D8        ; jump if not
+       jeq  pickup_released            ; JR Z,$92D8        ; jump if not
        movb @pickup_flags,a            ; LD A,($5E1F)      ;
        andi a,>0300                    ; AND $03           ; is pick-up allowed?
        jne  draw_16x16                 ; JR NZ,$92E0       ; jump if not
@@ -1707,13 +1709,13 @@ h_pickup_item:                         ; >92f5
        jhe  draw_16x16                 ; JR NC,$92E0       ; jump if not
        .call @check_touching           ; CALL $90FB        ; is player touching item?
        jnc  draw_16x16                 ; JR NC,$92E0       ; jump if not
-       movb @pickup_flags,a            ; LD A,($5E1F)      ;
-       socb @bytes+>03,a               ; OR $03            ; disallow further pickups
-       movb a,@pickup_flags            ; LD ($5E1F),A      ;
+;      movb @pickup_flags,a            ; LD A,($5E1F)      ;
+       socb @bytes+>03,@pickup_flags   ; OR $03            ; disallow further pickups
+;      movb a,@pickup_flags            ; LD ($5E1F),A      ;
        .call @drop_item                ; CALL $9358        ; drop last item in inventory
        .call @shift_inventory          ; CALL $934C        ; move items 1+2 to slots 2+3
        .call @add_inventory            ; CALL $9326        ; add item to inventory slot 1
-       b    @draw_inventory            ; JP $A13B          ; draw any items in player inventory
+       b    @draw_inventory_branch     ; JP $A13B          ; draw any items in player inventory
 *
 * clear pickup key flag
 *

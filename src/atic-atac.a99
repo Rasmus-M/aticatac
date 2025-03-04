@@ -131,7 +131,7 @@ loc_7c73:                              ; >7c73
        bl   @ti_check_key
        jeq  !                          ; JP NZ,$7D9A       ; jump if so
        bl   @ti_display_off
-       b    @start_game                ;                   
+       b    @start_game                ;
 !
 
        li   hl,menu_attrs              ; LD HL,$7CEA       ;
@@ -636,12 +636,13 @@ draw_chicken_5:                        ; >8c26
 * Used by the routine at #R$8e26.
 game_over:                             ; >8c35
        .call @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
-       li   hl,charset_base                   ; LD HL,$BE4C       ;
+       li   hl,charset_base            ; LD HL,$BE4C       ;
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
        li   hl,>3040                   ; LD HL,$3040       ; game over at 64,48
        li   de,gameover_msg            ; LD DE,$8C59       ; 
        .call @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
        .call @game_stats               ; CALL $9641        ; show game statistics
+       bl   @ti_upload_zx_screen
 * This entry point is used by the routine at #R$96c9.
 loc_8c4a:                              ; >8c4a
        movb @bytes+>14,b               ; LD B,$14          ; 20 loops of 65536 delay
@@ -974,22 +975,22 @@ loc_9542:                              ; >9542
 game_stats:                            ; >9641
        .proc
        .call @calc_visited             ; CALL $96C9        ; calculate percentage of rooms visited
-       li   hl,zx_screen+>0040         ; LD HL,$4040       ; time header at 64,64
+       li   hl,>4060                   ; LD HL,$4040       ; time header at 64,64
        li   de,time_msg                ; LD DE,$967F       ; 
        .call @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
-       li   hl,zx_screen+>1040         ; LD HL,$5040       ; score header at 64,80
+       li   hl,>5040                   ; LD HL,$5040       ; score header at 64,80
        li   de,score_msg               ; LD DE,$968F       ; 
        .call @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
-       li   hl,green_key_init+>0003    ; LD HL,$6040       ; percent header at 64,96
+       li   hl,>6040                   ; LD HL,$6040       ; percent header at 64,96
        li   de,percent_msg             ; LD DE,$969F       ; 
        .call @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
        li   hl,digit_charset           ; LD HL,$BFCC       ; 
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
-       li   hl,zx_screen+>0080         ; LD HL,$4080       ; clock at 128,64
+       li   hl,>4080                   ; LD HL,$4080       ; clock at 128,64
        .call @print_clock              ; CALL $9607        ; print clock time at position HL
-       li   hl,zx_screen+>1080         ; LD HL,$5080       ; score at 128,80
+       li   hl,>5080                   ; LD HL,$5080       ; score at 128,80
        .call @print_score              ; CALL $A1B7        ; print player score at position HL
-       li   hl,cyan_key_init+>0033     ; LD HL,$6080       ; percent at 128,96
+       li   hl,>6080                   ; LD HL,$6080       ; percent at 128,96
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        li   de,visited_percent         ; LD DE,$5E54       ; 
        movb one,b                      ; LD B,$01          ; 
@@ -1200,6 +1201,7 @@ replenish_food_2:
 * Used by the routines at #R$9117, #R$92f5 and #R$93e3.
 draw_inventory:                        ; >a13b
        .proc
+draw_inventory_branch:
        li   de,>2cc8                   ; LD DE,$2CC8       ; coords of first inventory item
        li   hl,inventory1              ; LD HL,$5E30       ; 
        movb @bytes+>03,b               ; LD B,$03          ; 3 items to draw

@@ -105,9 +105,11 @@ draw_room_frame:                       ; >9bea
        sb   a,a                        ; XOR A             ;
        movb a,@game_flags              ; LD ($5E14),A      ; b0 set if room content drawn
        movb @player_room,a             ; LD A,($EA91)      ;
+       jmp  !
 * This entry point is used by the routine at #R$9731.
 draw_room_a:                           ; >9bf1
-       li   bc,room_attrs              ; LD BC,$A854       ; room attr colour and style (0-B)
+       .proc
+!      li   bc,room_attrs              ; LD BC,$A854       ; room attr colour and style (0-B)
        movb a,@l                       ; LD L,A            ;
        sb   h,h                        ; LD H,$00          ;
        a    hl,hl                      ; ADD HL,HL         ; 2 bytes per entry
