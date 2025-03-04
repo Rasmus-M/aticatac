@@ -49,7 +49,7 @@ score_msg:                             ; >968f
 * Data block at 969f
 percent_msg:                           ; >969f
        byte >45                                                      ; bright cyan
-       text '>             '
+       text '$             '
        byte >A0
 
 * Data block at 9710

@@ -785,7 +785,7 @@ prepare_player_branch:
        li   de,player                  ; LD DE,$EA90       ; 
        li   bc,>0008                   ; LD BC,$0008       ; player entity size
        .ldir                           ; LDIR              ; copy to live player
-       movb @bytes+>4,@flash_timer     ; LD A,$68          ; flash score for 104 frames TODO: Changed to 4
+       movb @bytes+16,@flash_timer     ; LD A,$68          ; flash score for 104 frames TODO: Changed to 16
 ;      movb a,@flash_timer             ; LD ($5E3C),A      ; score flash timer
        movb @lives,a                   ; LD A,($5E21)      ; 
        cb   a,@bytes+>03               ; CP $03            ; first game spawn? (full lives)
@@ -974,7 +974,7 @@ loc_9542:                              ; >9542
 game_stats:                            ; >9641
        .proc
        .call @calc_visited             ; CALL $96C9        ; calculate percentage of rooms visited
-       li   hl,>4060                   ; LD HL,$4040       ; time header at 64,64
+       li   hl,>4040                   ; LD HL,$4040       ; time header at 64,64
        li   de,time_msg                ; LD DE,$967F       ; 
        .call @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
        li   hl,>5040                   ; LD HL,$5040       ; score header at 64,80

@@ -1253,6 +1253,7 @@ loc_9278:                              ; >9278
        jne  loc_9280                   ; JR NZ,$9280       ; jump if not
        movb *hl,a                      ; LD A,(HL)         ; item graphic
        cb   a,d                        ; CP D              ; match?
+       jne  loc_9280
        b    @return_with_eq            ; RET Z             ; return if so
 loc_9280:                              ; >9280
 ;      inc  hl                         ; INC HL            ;
@@ -1691,7 +1692,7 @@ chk_trap_exit:                         ; >9731
        .push ix                        ; PUSH IX           ;
        .call @draw_room_a              ; CALL $9BF1        ; draw trap door lines
        .pop ix                         ; POP IX            ;
-       movb @bytes+>80,b               ; LD B,$80          ; 128 frames of tunnel animation
+       movb @bytes+>40,b               ; LD B,$80          ; 128 frames of tunnel animation. TODO: Changed to 64
 loc_9748:                              ; >9748
        movb @zx_frames,a               ; LD A,($5C78)      ;
        movb a,@c                       ; LD C,A            ;

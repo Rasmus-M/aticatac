@@ -278,13 +278,14 @@ loc_92ef:                              ; >92ef
 * flash score on game start
 *
 * Used by the routine at #R$8cb7.
-flash_score:                           ; >8c8c             ; TODO: Relies on hardware flash
+flash_score:                           ; >8c8c             ;
        sb   one,a                      ; DEC A             ; timer expired?
        movb a,@flash_timer             ; LD ($5E3C),A      ; score flash timer
        jeq  loc_8ca7                   ; JR Z,$8CA7        ; jump if so (stop flash)
-       andi a,>0f00                    ; AND $0F           ; 16th frame?
+       andi a,>0400                    ; AND $0F           ; 16th frame? TODO: Changed to 4
        jne  !                          ; CALL Z,$A3E0      ; call if so (beep)
-;      .call @start_beep               ;
+      .call @start_beep                ;
+       jmp  loc_8ca7                   ;                   ; Added
 !
        li   hl,>50C8                   ; LD HL,$50C8       ;
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address

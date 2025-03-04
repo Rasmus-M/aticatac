@@ -66,9 +66,10 @@ walk_sound:                            ; >a3c7
 ;* Routine at a3e0
 ;*
 ;* Used by the routine at #R$8c8c.
-;start_beep:                            ; >a3e0
+start_beep:                            ; >a3e0
 ;       li   bc,>8060                   ; LD BC,$8060       ; long low beep
 ;       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
+       .ret
 
 * play monster touched sound
 *
