@@ -1728,7 +1728,7 @@ pickup_released:                       ; >92d8
 * This entry point is used by the routines at #R$8c63, #R$92f5, #R$95d7 and
 * #R$988b.
 draw_16x16:                            ; >92e0
-       movb @bytes+>10,a               ; LD A,$10          ; 16 lines high by default
+       movb @bytes+>10,a               ; LD A,$10          ; 16 lines high by default (this is not accurate for bottle, etc.)
        b    @set_appear_w_h_branch
 
 *********************************************************************

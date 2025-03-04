@@ -20,16 +20,26 @@ set_entity_attrs2_branch:
 ;      movb a,@e                       ; LD E,A            ;
        movb @width_bytes,b             ; LD A,($5E10)      ;
 ;      movb a,b                        ; LD B,A            ;
-       movb @height_lines,a            ; LD A,($5E11)      ;
-       ; RRCA                          ; RRCA              ;
-       ; RRCA                          ; RRCA              ;
-       srl  a,2                                            ; lines / 4
-       ab   one,a                      ; INC A             ; lines / 4 + 1
-       ; RRCA                          ; RRCA              ;
-       srl  a,1                                            ; (lines / 4 + 1) / 2 = lines / 8 + 0.5
-       andi a,>1f00                    ; AND $1F           ; mod 32
-       ab   one,a                      ; INC A             ; + 1
-       movb a,@c                       ; LD C,A            ; attr height
+;       movb @height_lines,a            ; LD A,($5E11)      ;
+;       ; RRCA                          ; RRCA              ;
+;       ; RRCA                          ; RRCA              ;
+;       srl  a,2                                            ; lines / 4
+;       ab   one,a                      ; INC A             ; lines / 4 + 1
+;       ; RRCA                          ; RRCA              ;
+;       srl  a,1                                            ; (lines / 4 + 1) / 2 = lines / 8 + 0.5
+;       andi a,>1f00                    ; AND $1F           ; mod 32
+;       ab   one,a                      ; INC A             ; + 1
+       mov  h,a
+       andi a,>0700
+       neg  a
+       ai   a,>0700
+       ab   @height_lines,a
+       movb a,r0
+       srl  a,3
+       andi r0,>0700
+       jeq  !
+       ab   one,a
+!      movb a,@c                       ; LD C,A            ; attr height
        .push bc                        ; PUSH BC           ;
        sb   b,b                        ; LD B,$00          ;
        movb @saved_x,a                 ; LD A,($5E16)      ;
