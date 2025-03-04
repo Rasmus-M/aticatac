@@ -45,9 +45,9 @@ loc_9d38:                              ; >9d38
        sb   one,b                      ; DJNZ $9D2B        ;
        jne  loc_9d2b                   ;
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_9d29                   ; JR NZ,$9D29       ;
@@ -66,7 +66,7 @@ loc_9d4c:                              ; >9d4c
 loc_9d52:                              ; >9d52
        movb *de,a                      ; LD A,(DE)         ; attr byte
        dec  de                         ; DEC DE            ;
-       ; AND A                         ; AND A             ; skip attr?
+       movb a,a                        ; AND A             ; skip attr?
        jeq  loc_9d5f                   ; JR Z,$9D5F        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?
        jne  loc_9d5e                   ; JR NZ,$9D5E       ; jump if not
@@ -78,9 +78,9 @@ loc_9d5f:                              ; >9d5f
        sb   one,b                      ; DJNZ $9D52        ;
        jne  loc_9d52                   ;
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
@@ -116,9 +116,9 @@ loc_9d8a:                              ; >9d8a
        sb   one,@c                     ; DEC C             ;
        jne  loc_9d7e                   ; JR NZ,$9D7E       ;
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
 ;      .exx                            ; EXX               ;
@@ -154,9 +154,9 @@ loc_9db7:                              ; >9db7
        sb   one,@c                     ; DEC C             ;
        jne  loc_9dab                   ; JR NZ,$9DAB       ;
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
        inc  de                         ; INC DE            ;
@@ -189,10 +189,10 @@ loc_9de5:                              ; >9de5
        ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $9DD8        ;
        jne  loc_9dd8                   ;
-       .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       .pop hl                         ; POP HL            ;       ;
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
        .call @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
@@ -204,7 +204,7 @@ loc_9de5:                              ; >9de5
 draw_attr_5:                           ; >9df8
        .pop bc                         ; POP BC            ;
        .call @get_gfx_attrs            ; CALL $99AF        ; IN
-       .call @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       .call @de_plus_b_mpy_c          ; CALL $9ABA        ; DE = DE + B * (C - 1)
        .call @add_de_b                 ; CALL $9A9D        ; add B to DE
        dec  de                         ; DEC DE            ;
 loc_9e03:                              ; >9e03
@@ -213,7 +213,7 @@ loc_9e03:                              ; >9e03
 loc_9e05:                              ; >9e05
        movb *de,a                      ; LD A,(DE)         ;
        dec  de                         ; DEC DE            ;
-       ; AND A                         ; AND A             ; skip attr?
+       movb a,a                        ; AND A             ; skip attr?
        jeq  loc_9e12                   ; JR Z,$9E12        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?
        jne  loc_9e11                   ; JR NZ,$9E11       ; jump if not
@@ -225,9 +225,9 @@ loc_9e12:                              ; >9e12
        sb   one,b                      ; DJNZ $9E05        ;
        jne  loc_9e05                   ;
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_9e03                   ; JR NZ,$9E03       ;
@@ -263,9 +263,9 @@ loc_9e3f:                              ; >9e3f
        sb   one,@c                     ; DEC C             ;
        jne  loc_9e33                   ; JR NZ,$9E33       ;
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
 ;      .exx                            ; EXX               ;
@@ -302,9 +302,9 @@ loc_9e6f:                              ; >9e6f
        sb   one,@c                     ; DEC C             ;
        jne  loc_9e63                   ; JR NZ,$9E63       ;
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
        inc  de                         ; INC DE            ;
