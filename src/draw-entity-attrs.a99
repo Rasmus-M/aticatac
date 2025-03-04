@@ -23,12 +23,12 @@ set_entity_attrs2_branch:
        movb @height_lines,a            ; LD A,($5E11)      ;
        ; RRCA                          ; RRCA              ;
        ; RRCA                          ; RRCA              ;
-       srl  a,2
-       ab   one,a                      ; INC A             ;
+       srl  a,2                                            ; lines / 4
+       ab   one,a                      ; INC A             ; lines / 4 + 1
        ; RRCA                          ; RRCA              ;
-       srl  a,1
-       andi a,>1f00                    ; AND $1F           ;
-       ab   one,a                      ; INC A             ;
+       srl  a,1                                            ; (lines / 4 + 1) / 2
+       andi a,>1f00                    ; AND $1F           ; mod 32
+       ab   one,a                      ; INC A             ; + 1
        movb a,@c                       ; LD C,A            ; attr height
        .push bc                        ; PUSH BC           ;
        sb   b,b                        ; LD B,$00          ;
@@ -81,14 +81,14 @@ loc_a07b:                              ; >a07b
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
 loc_a07d:                              ; >a07d
-       movb d,*hl                      ; LD (HL),D         ; entity attr
-       ab   one,@l                     ; INC L             ;
+       movb d,*hl+                     ; LD (HL),D         ; entity attr
+;      ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $A07D        ;
        jne  loc_a07d                   ;
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+ ;     li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_a07b                   ; JR NZ,$A07B       ;
@@ -102,17 +102,17 @@ loc_a08e:                              ; >a08e
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
        sb   one,@l                     ; DEC L             ;
-       movb @e,*hl                     ; LD (HL),E         ; room attr
-       ab   one,@l                     ; INC L             ;
+       movb @e,*hl+                    ; LD (HL),E         ; room attr
+;      ab   one,@l                     ; INC L             ;
 loc_a093:                              ; >a093
-       movb d,*hl                      ; LD (HL),D         ; entity attr
-       ab   one,@l                     ; INC L             ;
+       movb d,*hl+                     ; LD (HL),D         ; entity attr
+;      ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $A093        ;
        jne  loc_a093                   ;
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_a08e                   ; JR NZ,$A08E       ;
@@ -126,15 +126,15 @@ loc_a0a4:                              ; >a0a4
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
 loc_a0a6:                              ; >a0a6
-       movb d,*hl                      ; LD (HL),D         ; entity attr
-       ab   one,@l                     ; INC L             ;
+       movb d,*hl+                     ; LD (HL),D         ; entity attr
+;      ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $A0A6        ;
        jne  loc_a0a6                   ;
        movb @e,*hl                     ; LD (HL),E         ; room attr
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_a0a4                   ; JR NZ,$A0A4       ;
@@ -147,14 +147,14 @@ loc_a0b8:                              ; >a0b8
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
 loc_a0ba:                              ; >a0ba
-       movb d,*hl                      ; LD (HL),D         ; entity attr
-       ab   one,@l                     ; INC L             ;
+       movb d,*hl+                     ; LD (HL),D         ; entity attr
+;      ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $A0BA        ;
        jne  loc_a0ba                   ;
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_a0b8                   ; JR NZ,$A0B8       ;
@@ -162,13 +162,11 @@ loc_a0ba:                              ; >a0ba
 cond_room_row:                         ; >a0c9
        movb h,a                        ; LD A,H            ;
        cb   a,@bytes+>58               ; CP $58            ; out of screen top?
-       jhe  !                          ; RET C             ; return if so
+       jhe  loc_a0cd                   ; RET C             ; return if so
        .ret                            ;
-!
 loc_a0cd:                              ; >a0cd
-       equ  $
-       movb @e,*hl                     ; LD (HL),E         ; room attr
-       ab   one,@l                     ; INC L             ;
+       movb @e,*hl+                    ; LD (HL),E         ; room attr
+;      ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $A0CD        ;
        jne  loc_a0cd                   ;
        .ret                            ; RET               ;
@@ -180,23 +178,23 @@ loc_a0d3:                              ; >a0d3
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
        sb   one,@l                     ; DEC L             ;
-       movb @e,*hl                     ; LD (HL),E         ; room attr
-       ab   one,@l                     ; INC L             ;
+       movb @e,*hl+                    ; LD (HL),E         ; room attr
+;      ab   one,@l                     ; INC L             ;
 loc_a0d8:                              ; >a0d8
-       movb d,*hl                      ; LD (HL),D         ;
-       ab   one,@l                     ; INC L             ;
+       movb d,*hl+                     ; LD (HL),D         ;
+;      ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $A0D8        ;
        jne  loc_a0d8                   ;
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_a0d3                   ; JR NZ,$A0D3       ;
        sb   one,@l                     ; DEC L             ;
-       movb @e,*hl                     ; LD (HL),E         ;
-       ab   one,@l                     ; INC L             ;
+       movb @e,*hl+                    ; LD (HL),E         ;
+;      ab   one,@l                     ; INC L             ;
        jmp  cond_room_row              ; JR $A0C9          ;
 
 * draw attrs for moving up
@@ -204,13 +202,13 @@ attr_draw_u:                           ; >a0ec
        .pop hl                         ; POP HL            ;
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
-       .push bc                        ; PUSH BC           ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       a    bc,hl                      ; ADD HL,BC         ; down a row
-       .pop bc                         ; POP BC            ;
+;      .push bc                        ; PUSH BC           ;
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ai   hl,>0020                   ; ADD HL,BC         ; down a row       ,
+;      .pop bc                         ; POP BC            ;
 loc_a0f5:                              ; >a0f5
-       movb @e,*hl                     ; LD (HL),E         ; entity attr
-       ab   one,@l                     ; INC L             ;
+       movb @e,*hl+                    ; LD (HL),E         ; entity attr
+;      ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $A0F5        ;
        jne  loc_a0f5                   ;
        .pop hl                         ; POP HL            ;
@@ -222,14 +220,14 @@ attr_draw_ul:                          ; >a0fe
        .pop hl                         ; POP HL            ;
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
-       .push bc                        ; PUSH BC           ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       a    bc,hl                      ; ADD HL,BC         ; down a row
-       .pop bc                         ; POP BC            ;
+;      .push bc                        ; PUSH BC           ;
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ai   hl,>0020                   ; ADD HL,BC         ; down a row
+;      .pop bc                         ; POP BC            ;
        ab   one,b                      ; INC B             ; extra row
 loc_a108:                              ; >a108
-       movb @e,*hl                     ; LD (HL),E         ;
-       ab   one,@l                     ; INC L             ;
+       movb @e,*hl+                    ; LD (HL),E         ;
+;      ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $A108        ;
        jne  loc_a108                   ;
        .pop hl                         ; POP HL            ;
@@ -243,15 +241,15 @@ loc_a111:                              ; >a111
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
 loc_a113:                              ; >a113
-       movb d,*hl                      ; LD (HL),D         ; room attr
-       ab   one,@l                     ; INC L             ;
+       movb d,*hl+                     ; LD (HL),D         ; room attr
+;      ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $A113        ;
        jne  loc_a113                   ;
        movb @e,*hl                     ; LD (HL),E         ; entity attr
        .pop hl                         ; POP HL            ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
        ; AND A                         ; AND A             ;
-       s    bc,hl                      ; SBC HL,BC         ; up a row
+       ai   hl,->0020                  ; SBC HL,BC         ; up a row
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_a111                   ; JR NZ,$A111       ;
@@ -262,16 +260,16 @@ loc_a113:                              ; >a113
 attr_draw_ur:                          ; >a127
        .pop hl                         ; POP HL            ;
        .push bc                        ; PUSH BC           ;
-       .push hl                        ; PUSH HL           ;
-       .push bc                        ; PUSH BC           ;
-       li   bc,>0020                   ; LD BC,$0020       ; line pitch
-       a    bc,hl                      ; ADD HL,BC         ; down a row
-       .pop bc                         ; POP BC            ;
+       .push hl                        ; PUSH HL           ;       ;
+;      .push bc                        ; PUSH BC           ;
+;      li   bc,>0020                   ; LD BC,$0020       ; line pitch
+       ai   hl,>0020                   ; ADD HL,BC         ; down a row
+;      .pop bc                         ; POP BC            ;
        sb   one,@l                     ; DEC L             ;
        ab   one,b                      ; INC B             ; extra row
 loc_a132:                              ; >a132
-       movb @e,*hl                     ; LD (HL),E         ; entity attr
-       ab   one,@l                     ; INC L             ;
+       movb @e,*hl+                    ; LD (HL),E         ; entity attr
+;      ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $A132        ;
        jne  loc_a132                   ;
        .pop hl                         ; POP HL            ;

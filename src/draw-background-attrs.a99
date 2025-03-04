@@ -31,8 +31,8 @@ loc_9d29:                              ; >9d29
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
 loc_9d2b:                              ; >9d2b
-       movb *de,a                      ; LD A,(DE)         ; attr byte
-       inc  de                         ; INC DE            ;
+       movb *de+,a                     ; LD A,(DE)         ; attr byte
+;      inc  de                         ; INC DE            ;
        ; AND A                         ; AND A             ; skip attr?
        jeq  loc_9d38                   ; JR Z,$9D38        ; jump if so
        cb   a,@b255                    ; CP $FF            ; use room attr?

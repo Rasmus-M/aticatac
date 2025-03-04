@@ -49,9 +49,6 @@ decor_loop:                            ; >7e35
 ;      a    bc,ix                      ; ADD IX,BC         ; If not in player room, adjust by 8
        ai   ix,8
 loc_7ead:                              ; >7ead
-
-;      b    @draw_room_item            ; TODO: not all handlers have been tested
-
        li   hl,handler_table2          ; LD HL,$802A       ;
        movb *ix,@c                     ; LD C,(IX+$00)     ;
        b    @branch_c_hl
@@ -409,7 +406,7 @@ plot_l_h_branch:
 ;       sb   a,a                        ; XOR A             ;
 ;       ; SCF                           ; SCF               ;
 ;loc_9c68:                              ; >9c68
-;       srl  a,1                        ; RRA               ; TODO: check code.
+;       srl  a,1                        ; RRA               ;
 ;       sb   one,b                      ; DJNZ $9C68        ;
 ;       jne  loc_9c68                   ;
 ;       .push hl                        ; PUSH HL           ;

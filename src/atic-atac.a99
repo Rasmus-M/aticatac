@@ -304,6 +304,7 @@ start_game:                            ; >7d9a
 * Routine at 7dc3
 * 
 * Used by the routines at #R$7e13 and #R$9117.
+*
 main_loop:                             ; >7dc3
        li   sp,stack                   ; LD SP,$5E00       ;
        ; EI                            ; EI                ; 
@@ -344,6 +345,7 @@ loop_return_1:                         ; >7df3
 ;       c    de,hl                     ; SBC HL,DE         ; end of list?
        ci   ix,creature1
        jl   main_loop_1                ; JR C,$7DDC        ; jump if not
+       ab   one,@zx_frames
 * This entry point is used by the routine at #R$7e13.
 main_loop_2:                           ; >7e03
 *      Process player if a frame has passed
@@ -373,12 +375,9 @@ loop2_return:                          ; >7e13
 *
 draw_room:
 *      Draw room, or only attributes if room already drawn
-;       movb @game_flags,r0             ; TODO: Prevent redrawng attributes for now
-;       andi r0,>0100
-;       jne  !
        .call @draw_room_decor
 *      Advance counter
-!      movb @counter_low,@l            ; LD HL,($5E12)     ;
+       movb @counter_low,@l            ; LD HL,($5E12)     ;
        movb @counter_high,h
        inc  hl                         ; INC HL            ; advance game loop counter
        movb @l,@counter_low            ; LD ($5E12),HL     ;

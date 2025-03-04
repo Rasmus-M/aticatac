@@ -1565,7 +1565,7 @@ loc_9174:                              ; >9174
        jeq  !                          ; JP NZ,$91F2       ; jump if so (run exit logic only)
        b    @h_door_exit               ;
 !
-       jmp  loc_9193                   ; JR $9193          ;
+       jmp  h_door_common                   ; JR $9193          ;
 
 *********************************************************************
 *
@@ -1580,18 +1580,18 @@ h_door_closed:                         ; >917d
        movb @door_timer,a              ; LD A,($5E2E)      ;
        ; AND A                         ; AND A             ; door timer expired?
        jne  !                          ; JP Z,$9193        ; jump if so
-       b    @loc_9193                  ;
+       b    @h_door_common                  ;
 !
        sb   one,a                      ; DEC A             ;
        movb a,@door_timer              ; LD ($5E2E),A      ;
        b    @draw_room_item            ; JP $91FE          ; draw room item
-loc_9193:                              ; >9193
+h_door_common:                              ; >9193
        movb @bytes+>18,@door_timer     ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer ;
                                                            ; processing TODO: RM changed
 ;      movb a,@door_timer              ; LD ($5E2E),A      ;
        movb @>05(ix),a                 ; LD A,(IX+$05)     ; save door attr
        .push af                        ; PUSH AF           ;
-       socb @bytes+>03,a               ; OR $03            ;
+       socb @bytes+>03,a               ; OR $03            ; Set draw mode to XOR
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
        .call @draw_bgrnd_graphics      ; CALL $9213        ; undraw door
        movb *ix,a                      ; LD A,(IX+$00)     ; entity type
