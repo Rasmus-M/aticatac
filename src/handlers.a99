@@ -176,7 +176,7 @@ h_player_appear:                       ; >8cb7
        ; AND A                         ; AND A             ; score flash timer active?
        jne  flash_score                ; JR NZ,$8C8C       ; jump if so
        movb @zx_frames,a               ; LD A,($5C78)      ;
-       andi a,>0300                    ; AND $03           ; 0 in range 0-3?
+       andi a,>0100                    ; AND $03           ; 0 in range 0-3? TODO: Changed to 1
        jne  h_player_appear_2          ; JP NZ,$8D12       ; jump if not
        ab   one,@>06(ix)               ; INC (IX+$06)      ; increase drawn height
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
