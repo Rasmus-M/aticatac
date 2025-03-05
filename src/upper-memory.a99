@@ -10,8 +10,8 @@
        copy "draw-room.a99"
        copy "sound-fx.a99"
        copy "util.a99"
+       copy "ti-routines.a99"
        copy "text.a99"
-       copy "data.a99"
        copy "buffers.a99"
 
 upper_memory_max:
