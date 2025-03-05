@@ -20,16 +20,16 @@ set_entity_attrs2_branch:
 ;      movb a,@e                       ; LD E,A            ;
        movb @width_bytes,b             ; LD A,($5E10)      ;
 ;      movb a,b                        ; LD B,A            ;
-;       movb @height_lines,a            ; LD A,($5E11)      ;
-;       ; RRCA                          ; RRCA              ;
-;       ; RRCA                          ; RRCA              ;
-;       srl  a,2                                            ; lines / 4
-;       ab   one,a                      ; INC A             ; lines / 4 + 1
-;       ; RRCA                          ; RRCA              ;
-;       srl  a,1                                            ; (lines / 4 + 1) / 2 = lines / 8 + 0.5
-;       andi a,>1f00                    ; AND $1F           ; mod 32
-;       ab   one,a                      ; INC A             ; + 1
-       mov  h,a
+;      movb @height_lines,a            ; LD A,($5E11)      ;
+;      ; RRCA                          ; RRCA              ;
+;      ; RRCA                          ; RRCA              ;
+;      srl  a,2                                            ; lines / 4
+;      ab   one,a                      ; INC A             ; lines / 4 + 1
+;      ; RRCA                          ; RRCA              ;
+;      srl  a,1                                            ; (lines / 4 + 1) / 2 = lines / 8 + 0.5
+;      andi a,>1f00                    ; AND $1F           ; mod 32
+;      ab   one,a                      ; INC A             ; + 1
+       mov  h,a                                            ; RM: This is more accurate
        andi a,>0700
        neg  a
        ai   a,>0700

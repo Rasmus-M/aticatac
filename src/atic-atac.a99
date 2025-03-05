@@ -408,7 +408,7 @@ loc_7e55:                              ; >7e55
        movb @player_room,a             ; LD A,($EA91)      ; 
        cb   a,@bytes+>8e               ; CP $8E            ; end room?
        jne  !                          ; JP Z,$96EC        ; congratulate player on completion
-       b    @game_complete             ;                   
+       b    @game_complete             ;
 !
        bl   @ti_upload_zx_screen
        b    @main_loop                 ; JP $7DC3          ;
@@ -638,22 +638,37 @@ game_over:                             ; >8c35
        li   hl,charset_base            ; LD HL,$BE4C       ;
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
        li   hl,>3040                   ; LD HL,$3040       ; game over at 64,48
-       li   de,gameover_msg            ; LD DE,$8C59       ; 
+       li   de,gameover_msg            ; LD DE,$8C59       ;
        .call @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
        .call @game_stats               ; CALL $9641        ; show game statistics
-       bl   @ti_upload_zx_screen
 * This entry point is used by the routine at #R$96c9.
 loc_8c4a:                              ; >8c4a
-       movb @bytes+>14,b               ; LD B,$14          ; 20 loops of 65536 delay
+       bl   @ti_upload_zx_screen
+       movb @bytes+>4,b                ; LD B,$14          ; 20 loops of 65536 delay. Changed
        clr  hl                         ; LD HL,$0000       ;
 gameover_delay:                        ; >8c4f
        dec  hl                         ; DEC HL            ; 
-;       movb h,a                        ; LD A,H            ;
-;       socb @l,a                       ; OR L              ;
+;      movb h,a                        ; LD A,H            ;
+;      socb @l,a                       ; OR L              ;
        jne  gameover_delay             ; JR NZ,$8C4F       ; 
        sb   one,b                      ; DJNZ $8C4F        ; 
-       jne  gameover_delay             ;                   
-       b    @main_menu                 ; JP $7C29          ; 
+       jne  gameover_delay             ;
+       li   hl,charset_base            ; RM: Added. Display 'press fire' and wait
+       mov  hl,@charset_addr
+       li   hl,>8040
+       li   de,press_fire_msg
+       .call @colour_text
+       bl   @ti_upload_zx_screen
+!      li   r0,KEY_SP
+       bl   @ti_check_key
+       jne  !
+       li   r0,KEY_FI
+       bl   @ti_check_key
+       jne  !
+       li   r0,KEY_EN
+       bl   @ti_check_key
+       jeq  -!
+!      b    @main_menu                 ; JP $7C29          ;
 
 *********************************************************************
 *
@@ -716,7 +731,7 @@ enter_room:                            ; >9147
        .call @draw_panel_attrs         ; CALL $A240        ; draw side-panel colours, which follow room colour
        .call @draw_inventory           ; CALL $A13B        ; draw any items in player inventory
        .call @entry_sound              ; CALL $A403        ; room entry sound effect
-       b    @main_loop                 ; JP $7DC3          ; 
+       b    @main_loop                 ; JP $7DC3          ;
 
 *********************************************************************
 *
@@ -978,7 +993,7 @@ game_stats:                            ; >9641
        li   de,time_msg                ; LD DE,$967F       ; 
        .call @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
        li   hl,>5040                   ; LD HL,$5040       ; score header at 64,80
-       li   de,score_msg               ; LD DE,$968F       ; 
+       li   de,score_msg               ; LD DE,$968F       ;
        .call @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
        li   hl,>6040                   ; LD HL,$6040       ; percent header at 64,96
        li   de,percent_msg             ; LD DE,$969F       ; 
@@ -1344,25 +1359,25 @@ colour_text:                           ; >a1f3
 colour_text_jump_target:
        .push hl                        ; PUSH HL           ;
        .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
-       movb *de,a                      ; LD A,(DE)         ; text attr colour
-       .ex_af_af_                      ; EX AF,AF'         ; 
-       inc  de                         ; INC DE            ; 
+       movb *de+,a                     ; LD A,(DE)         ; text attr colour
+       .ex_af_af_                      ; EX AF,AF'         ;
+;      inc  de                         ; INC DE            ;
        .exx                            ; EXX               ; display addr in HL
        .pop hl                         ; POP HL            ; 
        .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
 * This entry point is used by the routine at #R$7d8a.
 loc_a1ff:                              ; >a1ff
        .exx                            ; EXX               ; attr addr in HL'
-       movb *de,a                      ; LD A,(DE)         ; 
+       movb *de,a                      ; LD A,(DE)         ;
        movb a,r0                       ; BIT 7,A           ; last character?
        andi r0,>8000                   ;                   
        jne  loc_a210                   ; JR NZ,$A210       ; jump if so
        .call @print_char               ; CALL $A1D3        ; print a single character
-       inc  de                         ; INC DE            ; 
+       inc  de                         ; INC DE            ;
        .exx                            ; EXX               ; 
        .ex_af_af_                      ; EX AF,AF'         ; 
        movb a,*hl                      ; LD (HL),A         ; set attr
-       ab   one,@l                     ; INC L             ; 
+       ab   one,@l                     ; INC L             ;
        .ex_af_af_                      ; EX AF,AF'         ; 
        jmp  loc_a1ff                   ; JR $A1FF          ; 
 loc_a210:                              ; >a210

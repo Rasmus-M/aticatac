@@ -63,3 +63,8 @@ escape_msg:                            ; >9720
        byte >47
        text 'YOU HAVE ESCAPE'
        byte >C4
+
+press_fire_msg:
+       byte >41
+       text 'PRESS FIR'
+       byte >C5
