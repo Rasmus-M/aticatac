@@ -122,3 +122,7 @@ menu_entities:                         ; >a331
        byte >01,>00,>00,>28,>67,>47,>00,>00                          ; knight (facing left)
        byte >11,>00,>00,>28,>7F,>47,>00,>00                          ; wizard (facing left)
        byte >21,>00,>00,>28,>97,>47,>00,>00                          ; serf (facing left)
+
+sprite_pattern_allocation_table:
+       bss  >a2
+

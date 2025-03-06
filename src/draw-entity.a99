@@ -24,7 +24,7 @@ get_sprite_addr:                       ; >9e89
 ;      inc  hl                         ; INC HL            ;
 ;      movb *hl,d                      ; LD D,(HL)         ;
        sla  hl,1
-       mov @sprite_table(hl),de
+       mov  @sprite_table(hl),de
        .ret                            ; RET               ;
 *
 * return addr of entity sprite addr in DE

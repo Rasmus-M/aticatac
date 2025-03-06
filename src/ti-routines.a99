@@ -14,6 +14,8 @@ ti_setup_environment:
        bl   @init_bits
 ;      bl   @copy_to_pad
        bl   @graphics_mode
+       clr  @double_buffer_flag
+       bl   @ti_clear_sprite_allocation_table
        .endproc
 *// ti_setup_environment
 
@@ -498,6 +500,205 @@ upload_screen_part_2:
        .endproc
 *// upload_screen_buffer
 
+
+*********************************************************************
+*
+* Reset sprite allocation table
+*
+ti_clear_sprite_allocation_table:
+       li   r0,sprite_pattern_allocation_table
+       li   r2,>00a2
+ti_clear_sprite_allocation_table_1:
+       seto *r0+
+       dect r2
+       jne  ti_clear_sprite_allocation_table_1
+       clr  @next_sprite_pattern_index
+       rt
+*// ti_clear_sprite_allocation_table
+
+*********************************************************************
+*
+* Upload sprite graphics for a single sprite if not already uploaded
+*
+* a: Index (zero based) of sprite graphics
+* de: Address of sprite graphics
+*
+ti_upload_sprite_patterns:
+       mov  af,r1                      ; r14 in ti_wrksp
+       mov  de,r2                      ; r15 in ti_wrksp
+       lwpi ti_wrksp
+*      Check and update allocation
+       srl  r14,8
+       movb @sprite_pattern_allocation_table(r14),r0
+       jgt  ti_upload_sprite_patterns_10    ; Already allocated
+       jeq  ti_upload_sprite_patterns_10    ; Already allocated
+       mov  @next_sprite_pattern_index,r0
+       mov  r0,r1
+       swpb r1
+       movb r1,@sprite_pattern_allocation_table(r14)
+*      VDP address
+       sla  r0,3
+       ai   r0,sprite_pattern_table
+       bl   @vwad
+       li   r13,vdpwd
+*      Calculate number of rows and sprites
+       movb *r15+,r3                   ; Height
+       jeq  ti_upload_sprite_patterns_10
+       srl  r3,8                       ; To LSB
+       mov  r3,r4                      ; Copy height
+       dec  r4                         ; Height - 1
+       sla  r4,1                       ; 2 bytes per row
+       a    r4,r15                     ; To first row of sprite (sprites are upside down)
+       mov  r3,r4                      ; Copy height
+       srl  r4,4                       ; height / 16
+       mov  r3,r5                      ; Copy height
+       andi r5,15                      ; height % 16
+       jeq  ti_upload_sprite_patterns_1
+       inc  r4                         ; r4 if number of sprites of 16 rows to use
+ti_upload_sprite_patterns_1:
+       li   r5,16                      ; Try to upload 16 rows
+       c    r3,r5                      ; Less than 16 rows left?
+       jl   ti_upload_sprite_patterns_2
+       clr  r6                         ; No blanks to upload
+       jmp  ti_upload_sprite_patterns_3
+ti_upload_sprite_patterns_2:
+       mov  r3,r5                      ; Cap at number of rows left
+       li   r6,16
+       s    r3,r6                      ; Number of blanks to upload
+ti_upload_sprite_patterns_3:
+       mov  r5,r7                      ; Copy number of rows in this sprite
+       mov  r6,r8                      ; Copy number of blanks in this sprite
+       s    r5,r3                      ; Total rows - drawn rows
+*      Column 1
+       mov  r15,r9                     ; Copy sprite graphics address
+ti_upload_sprite_patterns_4:
+       movb *r15,*r13                  ; Write pattern byte to VDP
+       dect r15                        ; One row up in sprite graphics
+       dec  r5
+       jne  ti_upload_sprite_patterns_4
+       mov  r6,r6                      ; Any blanks?
+       jeq  ti_upload_sprite_patterns_6
+ti_upload_sprite_patterns_5:
+       clr  *r13                       ; Upload blank
+       dec  r6
+       jne  ti_upload_sprite_patterns_5
+*      Column 2
+ti_upload_sprite_patterns_6:
+       mov  r9,r15
+       inc  r15
+ti_upload_sprite_patterns_7:
+       movb *r15,*r13                  ; Write pattern byte to VDP
+       dect r15                        ; One row up in sprite graphics
+       dec  r7
+       jne  ti_upload_sprite_patterns_7
+       mov  r8,r8                      ; Any blanks?
+       jeq  ti_upload_sprite_patterns_9
+ti_upload_sprite_patterns_8:
+       clr  *r13                       ; Upload blank
+       dec  r8
+       jne  ti_upload_sprite_patterns_8
+ti_upload_sprite_patterns_9:
+*      Next sprite
+       inct @next_sprite_pattern_index
+       inct @next_sprite_pattern_index
+       dec  r4
+       jne  ti_upload_sprite_patterns_1
+ti_upload_sprite_patterns_10:
+       lwpi wrksp
+       rt
+*// ti_upload_sprite_patterns
+
+*********************************************************************************
+*
+* Prepare for drawing hardware sprites
+*
+ti_init_sprite_attr_table:
+       mov  @double_buffer_flag,r0
+       andi r0,>80
+       ai   r0,sprite_attr_table
+       mov  r0,@sprite_attr_table_addr
+       movb @vdpsta,r0
+       rt
+*// ti_init_sprite_attr_table
+
+*********************************************************************************
+*
+* Upload a hardware sprite to the TMS9918A sprite attribute table
+*
+* ix: Address of entity to draw
+* Address to draw at in the ZX Spectrum screen (xxxsslllrrrccccc)
+*
+ti_draw_sprite:
+       .proc
+       mov  @sprite_attr_table_addr,r0 ; Check if enabled
+       jeq  ti_draw_sprite_3           ; Return if not
+       bl   @get_sprite_addr_ix        ; Now a=sprite index and de=sprite graphics
+       bl   @ti_upload_sprite_patterns ; Upload patterns as needed
+       mov  @sprite_attr_table_addr,r0
+       bl   @vwad
+       li   r2,1                       ; Number of hardware sprites to allocate
+       cb   *de,@bytes+16              ; Check height
+       jle  ti_draw_sprite_1
+       inc  r2                         ; Allocate 2
+ti_draw_sprite_1:
+       clr  r0                         ; y offset
+ti_draw_sprite_2:
+*      y
+       movb @entity_y(ix),r1           ; y (bottom)
+       sb   *de,r1                     ; top = y - height
+       ab   r0,r1                      ; Add offset
+       movb r1,@vdpwd
+*      x
+       movb @entity_x(ix),@vdpwd
+*      Pattern
+       movb @sprite_pattern_allocation_table(a),@vdpwd
+*      Color
+       movb @entity_flags(ix),r1
+       movb @ti_colors(r1),@vdpwd     ; Get TI color
+*      Update address
+       inct  @sprite_attr_table_addr
+       inct  @sprite_attr_table_addr
+*      Another?
+       ab   @bytes+16,r0               ; Increase offset
+       dec  r2
+       jne ti_draw_sprite_2
+ti_draw_sprite_3:
+       .endproc
+*// ti_draw_sprite
+
+*********************************************************************
+*
+* Close hardware sprite table
+*
+ti_close_sprite_attr_table:
+       .proc
+       mov  @sprite_attr_table_addr,r0
+       bl   @vwad
+       li   r0,>d000                    ; Write sprite attribute table terminator
+       movb r0,@vdpwd
+       bl   @ti_vsync
+       mov  @double_buffer_flag,r0
+       andi r0,1
+       ori  r0,>0500+(sprite_attr_table/>80)
+       bl   @vwtr
+       inv  @double_buffer_flag
+       .endproc
+*// ti_close_sprite_attr_table
+
+*********************************************************************
+*
+* Reset hardware sprite table
+*
+ti_reset_sprite_attr_table:
+       .proc
+       li   r0,sprite_attr_table
+       li   r1,>d000
+       li   r2,256
+       bl   @vsmw
+       clr  @sprite_attr_table_addr
+       .endproc
+*// ti_reset_sprite_attr_table
+
 *********************************************************************
 *
 * VDP Write To Register
@@ -819,6 +1020,19 @@ ti_vsync_1:
        .endproc
 *// ti_vsync
 
+*********************************************************************
+*
+* CPU space clear
+*
+ti_clear:
+       clr  r0
+clear_1:
+       movb r0,*hl+
+       dec  bc
+       jne  clear_1
+       rt
+*// ti_clear
+
 ;*********************************************************************
 ;*
 ;* Wait for r0 frames
@@ -870,7 +1084,7 @@ exx_routine:
        mov  de,r0
        mov  de_,de
        mov  r0,de_
-       inv  @exx_flag
+;      inv  @exx_flag
        rt
 *// exx_routine
 
@@ -892,16 +1106,3 @@ daa_routine:
        ab   @bytes+>60,a
 !      rt
 *// daa_routine
-
-*********************************************************************
-*
-* CPU space clear
-*
-ti_clear:
-       clr  r0
-clear_1:
-       movb r0,*hl+
-       dec  bc
-       jne  clear_1
-       rt
-*// ti_clear

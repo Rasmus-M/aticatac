@@ -51,8 +51,14 @@ rnd_seed:
        equ  frame+2
 vdp_status:
        equ  rnd_seed+2
-exx_flag:
+double_buffer_flag:
        equ  vdp_status+2
+next_sprite_pattern_index:
+       equ  double_buffer_flag+2
+sprite_attr_table_addr:
+       equ  next_sprite_pattern_index+2
+exx_flag:
+       equ  sprite_attr_table_addr+2
 pad_max:
        equ  exx_flag+2
 kscan_device:
