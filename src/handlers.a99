@@ -1528,7 +1528,7 @@ h_food:                                ; >8c63
        jmp  loc_8c6e                   ; JR C,$8C6E        ; jump if so
 !      b    @draw_16x16                ; JP $92E0          ; draw 16x16 entity
 loc_8c6e:                              ; >8c6e
-       bl    @undraw_entity            ; CALL $9F56        ;
+       bl   @undraw_entity_as_bckground ; CALL $9F56        ; TODO
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; remove food item
        bl    @eat_sound                ; CALL $A485        ;
        movb @bytes+>40,@c              ; LD C,$40          ; food adds 64 health
@@ -1594,11 +1594,11 @@ h_door_common:                              ; >9193
        .push af                        ; PUSH AF           ;
        socb @bytes+>03,a               ; OR $03            ; Set draw mode to XOR
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       bl    @draw_bgrnd_graphics      ; CALL $9213        ; undraw door
+;      bl   @draw_bgrnd_graphics      ; CALL $9213        ; undraw door TODO
        movb *ix,a                      ; LD A,(IX+$00)     ; entity type
        xor  one,a                      ; XOR $01           ; toggle open/close state
-       bl    @set_door_type            ; CALL $9260        ; set door type for both linked entities
-       bl    @draw_bgrnd_graphics      ; CALL $9213        ; redraw door
+       bl   @set_door_type            ; CALL $9260        ; set door type for both linked entities
+;      bl   @draw_bgrnd_graphics      ; CALL $9213        ; redraw door TODO
        .pop af                         ; POP AF            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; restore door attr
        bl    @update_door              ; CALL $9546        ; update solid/passable door state
@@ -1834,7 +1834,7 @@ loc_98b1:                              ; >98b1
 *
 * Used by the routine at #R$988b.
 mushroom_death:                        ; >98c8
-       bl    @undraw_entity            ; CALL $9F56        ;
+       bl   @undraw_entity_as_bckground ; CALL $9F56        ;  TODO
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; remove mushroom
        b    @player_dead               ; JP $8EA0          ;
 

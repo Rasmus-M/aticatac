@@ -38,7 +38,7 @@ start:                                 ; >6000
 * 
 * Used by the routine at #R$6000.
 reset_menu:                            ; >7c19
-       li   hl,menu_selection          ; LD HL,$5E00       ; 
+       li   hl,menu_selection          ; LD HL,$5E00       ;
        movb @bytes+>10,b               ; LD B,$10          ; 
 clear_menu_data:                       ; >7c1e
        sb   *hl,*hl                    ; LD (HL),$00       ; clear menu data
@@ -52,7 +52,7 @@ main_menu:                             ; >7c29
        bl   @clear_screen             ; CALL $80AA        ; clear display, attributes, and set black border
        bl   @draw_menu_icons          ; CALL $A311        ; draw menu icons for controls and player acharacters
 menu_loop:                             ; >7c2f
-       bl   @draw_menu_text           ; CALL $7CAF        ; 
+       bl   @draw_menu_text           ; CALL $7CAF        ;
 
 ;       movb @bytes+>f7,a               ; LD A,$F7          ; xxx54321
 ;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
@@ -185,14 +185,14 @@ set_menu_attrs:                        ; >7c90
 set_menu_attrs_1:                      ; >7c91
        andi a,>0300                    ; AND $03           ; 
        jeq  set_menu_attrs_3           ; JR Z,$7C9C        ;
-       bl   @set_flash_off            ; CALL $7CA4        ; 
+       bl   @set_flash_off            ; CALL $7CA4        ;
 set_menu_attrs_2:                      ; >7c98
        sb   one,a                      ; DEC A             ; 
        sb   one,b                      ; DJNZ $7C91        ; 
        jne  set_menu_attrs_1           ;
        .endproc                        ; RET               ;
 set_menu_attrs_3:                      ; >7c9c
-       bl   @set_flash_on             ; CALL $7CAB        ; 
+       bl   @set_flash_on             ; CALL $7CAB        ;
        jmp  set_menu_attrs_2           ; JR $7C98          ;
        socb @bits+7,*hl                ; SET 7,(HL)        ; flash on
        inc  hl                         ; INC HL            ; 
@@ -246,7 +246,7 @@ loc_7cc1:                              ; >7cc1
        .push hl                        ; PUSH HL           ; 
        movb a,h                        ; LD H,A            ; 
        movb @bytes+>58,@l              ; LD L,$58          ; x coord for text
-       bl   @print_text               ; CALL $7D8A        ; 
+       bl   @print_text               ; CALL $7D8A        ;
        .exx                            ; EXX               ; 
        .pop hl                         ; POP HL            ; 
        .pop bc                         ; POP BC            ; 
@@ -280,6 +280,7 @@ print_text:                            ; >7d8a
 * 
 * Used by the routine at #R$7c19.
 start_game:                            ; >7d9a
+       bl   @ti_reset_sprite_attr_table
        bl   @clear_game_data          ; CALL $80CB        ; clear 5E10-5FFF
        movb @bytes+>03,a               ; LD A,$03          ; 3 lives on startup
        movb a,@lives                   ; LD ($5E21),A      ; 
@@ -306,6 +307,7 @@ start_game:                            ; >7d9a
 * Used by the routines at #R$7e13 and #R$9117.
 *
 main_loop:                             ; >7dc3
+       bl   @ti_init_sprite_attr_table
        li   sp,stack                   ; LD SP,$5E00       ;
        ; EI                            ; EI                ; 
        ab   one,@zx_frames             ;                   ; RM added
@@ -345,7 +347,7 @@ loop_return_1:                         ; >7df3
 ;       c    de,hl                     ; SBC HL,DE         ; end of list?
        ci   ix,creature1
        jl   main_loop_1                ; JR C,$7DDC        ; jump if not
-       ab   one,@zx_frames
+;       ab   one,@zx_frames            ;  TODO
 * This entry point is used by the routine at #R$7e13.
 main_loop_2:                           ; >7e03
 *      Process player if a frame has passed
@@ -388,6 +390,7 @@ draw_room:
        andi r0,>0100                   ;                   
        jne  loc_7e55                   ; JR NZ,$7E55       ; jump if so
        bl   @draw_entities            ; CALL $9291        ; draw all non-monster entities in the current room
+       bl   @ti_upload_zx_screen                           ; This is only once per room
 loc_7e55:                              ; >7e55
 ;      li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
        socb @bits+0,@game_flags        ; SET 0,(HL)        ; mark room as drawn
@@ -410,7 +413,9 @@ loc_7e55:                              ; >7e55
        jne  !                          ; JP Z,$96EC        ; congratulate player on completion
        b    @game_complete             ;
 !
-       bl   @ti_upload_zx_screen
+;      bl   @ti_upload_zx_screen
+       bl   @ti_close_sprite_attr_table
+       bl   @ti_update_sprite_pattern_usage_table
        b    @main_loop                 ; JP $7DC3          ;
 
 *********************************************************************
@@ -724,6 +729,7 @@ change_room_branch:
 * This entry point is used by the routine at #R$7d9a.
 *
 enter_room:                            ; >9147
+       bl   @ti_reset_sprite_pattern_allocation_table
        movb @player_room,a             ; LD A,($EA91)      ;
        bl   @visit_room               ; CALL $96AF        ; mark room A as visited
        bl   @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
@@ -749,7 +755,7 @@ draw_entities_1:                       ; >9295
 ;      movb @player_room,a             ; LD A,($EA91)      ;
        cb   @player_room,@entity_screen(ix) ; CP (IX+$01)       ; in player room?
        jne  draw_entities_2            ; JR NZ,$92A6       ; jump if not
-       bl   @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl   @draw_entity_as_bckground ; CALL $9F4A        ; draw entity graphic (no attrs)  TODO
 draw_entities_2:                       ; >92a6
 ;      li   de,>0008                   ; LD DE,$0008       ; 8 bytes per entry
        ai   ix,8                       ; ADD IX,DE         ;
@@ -1128,7 +1134,7 @@ set_key_positions:                     ; >98d2
        bl   @ti_rnd
        movb r0,a                       ; LD A,($5C78)      ; zx_frames
        li   hl,green_key_rooms         ; LD HL,$990C       ; 
-       bl   @get_key_room             ; CALL $9904        ; 
+       bl   @get_key_room             ; CALL $9904        ;
 ;      movb a,@green_key_init+>0001    ; LD ($603E),A      ; set green key room
        movb a,@green_key+>0001         ; LD ($603E),A      ; set green key room
 *      Red
@@ -1138,7 +1144,7 @@ set_key_positions:                     ; >98d2
        movb @counter_low,a             ; LD A,($5E12)      ; 
        ab   @c,a                       ; ADD A,C           ; 
        li   hl,red_key_rooms           ; LD HL,$9914       ; 
-       bl   @get_key_room             ; CALL $9904        ; 
+       bl   @get_key_room             ; CALL $9904        ;
 ;      movb a,@red_key_init+1          ; LD ($6046),A      ; set red key room
        movb a,@red_key+1               ; LD ($6046),A      ; set red key room
 ;      movb a,@mummy_init+1            ; LD ($640E),A      ; set Mummy room to match
@@ -1150,7 +1156,7 @@ set_key_positions:                     ; >98d2
        movb @counter_high,a            ; LD A,($5E13)      ; 
        ab   @c,a                       ; ADD A,C           ; 
        li   hl,cyan_key_rooms          ; LD HL,$991C       ; 
-       bl   @get_key_room             ; CALL $9904        ; 
+       bl   @get_key_room             ; CALL $9904        ;
 ;      movb a,@cyan_key_init+1         ; LD ($604E),A      ; set cyan key room
        movb a,@cyan_key+1              ; LD ($604E),A      ; set cyan key room
        .endproc                        ; RET               ;
@@ -1257,7 +1263,7 @@ loc_a15e:                              ; >a15e
 ;      inc  hl                         ; INC HL            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; set attr
        .push hl                        ; PUSH HL           ; 
-       bl   @clear_sprite             ; CALL $A185        ; 
+       bl   @clear_sprite             ; CALL $A185        ;
        bl   @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
        bl   @set_entity_attrs         ; CALL $A00E        ; paint entity with its current attr colour
        .pop hl                         ; POP HL            ; 

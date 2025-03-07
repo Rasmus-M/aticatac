@@ -286,8 +286,13 @@ shift_draw:                                                ; or into the instruc
 *
 draw_entity:                           ; >9f4a
        .proc
-       seto @sprite_graphics_rom_bank
-       bl    @prepare_draw            ; CALL $9F9F        ; prepare for drawing
+       mov  @sprite_attr_table_addr,r0
+       jeq  !
+       bl   @ti_draw_sprite
+       .endproc
+draw_entity_as_bckground:
+       .proc
+!      bl   @prepare_draw            ; CALL $9F9F        ; prepare for drawing
 * This entry point is used by the routine at #R$9f40.
 draw_entity_de:                        ; >9f4d
        .exx                            ; EXX               ;
@@ -305,9 +310,10 @@ draw_entity_de:                        ; >9f4d
 * Used by the routines at #R$81f0, #R$871a, #R$8c63, #R$9326 and #R$98c8.
 *
 undraw_entity:                         ; >9f56
+       rt
+undraw_entity_as_bckground:
        .proc
-       seto @sprite_graphics_rom_bank
-       bl    @prepare_undraw           ; CALL $9F80        ; prepare for undraw in normal regs
+       bl   @prepare_undraw           ; CALL $9F80        ; prepare for undraw in normal regs
 * This entry point is used by the routine at #R$9f45.
 loc_9f59:                              ; >9f59             ; Was used by undraw_entity_de
        .exx                            ; EXX               ;
@@ -340,8 +346,11 @@ loc_9f6d:                              ; >9f6d
 * Used by the routine at #R$8e26.
 redraw_entity:                         ; >9fca
        .proc
-       seto @sprite_graphics_rom_bank
-       bl    @prepare_draw             ; CALL $9F9F        ; prepare for drawing (normal regs)
+       mov  @sprite_attr_table_addr,r0
+       jeq  !
+       bl   @ti_draw_sprite
+       .endproc
+!      bl   @prepare_draw             ; CALL $9F9F        ; prepare for drawing (normal regs)
        .exx                            ; EXX               ;
        bl    @prepare_undraw           ; CALL $9F80        ; EXX prepare for undrawing (shadow regs)
 * This entry point is used by the routine at #R$9f56 (undraw).
