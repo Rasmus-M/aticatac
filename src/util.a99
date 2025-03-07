@@ -48,7 +48,7 @@ xy_to_display:                         ; >9ba2
        soc  r0,hl                      ; 000sslll000ccccc
        soc  r1,hl                      ; 000sslllrrrccccc
        ai   hl,zx_screen               ; 001sslllrrrccccc
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 *********************************************************************
 *
@@ -87,7 +87,7 @@ xy_to_attr:                            ; >9bd2
        andi hl,>ffe0                   ; % 32
        a    r0,hl                      ; + x offset
        ai   hl,zx_attrs
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 *********************************************************************
 *
@@ -133,19 +133,19 @@ pixel_line_mask:
 ;       movb h,a                        ; LD A,H            ;
 ;       andi a,>0700                    ; AND $07           ;
 ;       jeq  !                          ; RET NZ            ;
-;       .ret                            ;
+;       rt                              ;
 ;!
 ;       movb @l,a                       ; LD A,L            ;
 ;       ab   @bytes+>20,a               ; ADD A,$20         ;
 ;       movb a,@l                       ; LD L,A            ;
 ;       andi a,>e000                    ; AND $E0           ;
 ;       jne  !                          ; RET Z             ;
-;       .ret                            ;
+;       rt                              ;
 ;!
 ;       movb h,a                        ; LD A,H            ;
 ;       sb   @bytes+>08,a               ; SUB $08           ;
 ;       movb a,h                        ; LD H,A            ;
-;       .ret                            ; RET               ;
+;       rt                              ; RET               ;
 
 *********************************************************************
 *
@@ -171,7 +171,7 @@ mirror_a:                              ; >9a92
        soc  r1,af                      ; Set bit in result
 !      dec  r2
        jne  -!!
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 *********************************************************************
 *
@@ -189,7 +189,7 @@ add_de_b:                              ; >9a9d
        mov  bc,r0
        srl  r0,8
        a    r0,de
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 *********************************************************************
 *
@@ -207,7 +207,7 @@ sbc_de_b:                              ; >9aa5
        mov  bc,r0
        srl  r0,8
        s    r0,de
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 *********************************************************************
 *
@@ -229,7 +229,7 @@ mpy_de_a:                             ; >9aad
        srl  r0,8
        mpy  de,r0
        mov  r1,hl
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 *********************************************************************
 *
@@ -245,7 +245,7 @@ de_plus_b_mpy_c:                             ; >9aba
 ;       sb   one,@e                     ; DEC E             ; E=c-1 convert 1-based to 0-based
 ;       sb   d,d                        ; LD D,$00          ; D=0, DE=0 c-1
 ;       .push bc                        ; PUSH BC           ;
-;       .call @mult_de_a                ; CALL $9AAD        ; HL = b * (c-1)
+;       bl    @mult_de_a                ; CALL $9AAD        ; HL = b * (c-1)
 ;       .pop bc                         ; POP BC            ;
 ;       .pop de                         ; POP DE            ;
 ;       a    de,hl                      ; ADD HL,DE         ; HL = de + b * (c-1)
@@ -259,7 +259,7 @@ de_plus_b_mpy_c:                             ; >9aba
        mpy  r1,r0                      ; b * (c - 1)
        a    de,r1                      ; de + b * (c - 1)
        mov  r1,de
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 ;*********************************************************************
 ;*
@@ -274,7 +274,7 @@ de_plus_b_mpy_c:                             ; >9aba
 ;;      s    de,hl                      ; SBC HL,DE         ; HL=0-hl
 ;;      .pop de                         ; POP DE            ; DE=de
 ;       neg  hl
-;       .ret                            ; RET               ;
+;       rt                              ; RET               ;
 
 *********************************************************************
 *
@@ -290,7 +290,7 @@ add_hl_a:                              ; >926c
        mov  a,r0
        srl  r0,8
        a    r0,hl
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 *********************************************************************
 *
@@ -311,7 +311,7 @@ get_signed_b7_4:                       ; >8f80
 ;       srl  a,4
 ;       andi a,>0f00                    ; AND $0F           ; keep low nibble
 ;       neg a                           ; NEG               ; re-negate
-;       .ret                            ; RET               ;
+;       rt                              ; RET               ;
 ; loc_8f8f:                             ; >8f8f
 ;       ; RRCA                          ; RRCA              ;
 ;       ; RRCA                          ; RRCA              ;
@@ -320,7 +320,7 @@ get_signed_b7_4:                       ; >8f80
 ;       srl  a,4
 ;       andi a,>0f00                    ; AND $0F           ; keep low nibble
        sra  a,4                        ; TODO: not sure
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 *********************************************************************
 *

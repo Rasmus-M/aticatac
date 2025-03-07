@@ -2,19 +2,15 @@
 * Macros
 *
 
-;       li   r11,$+10
-;       mov  r11,*sp+
-;       b    #1
-
        .defm call
-       bl   #1
+       li   r11,$+10
+       mov  r11,*sp+
+       b    #1
        .endm
 
-;       dect sp
-;       mov  *sp,r11
-;       b    *r11
-
        .defm ret
+       dect sp
+       mov  *sp,r11
        b    *r11
        .endm
 
@@ -57,15 +53,6 @@
 
        .defm exx
        bl   @exx_routine
-;       mov  bc,r0
-;       mov  bc_,bc
-;       mov  r0,bc_
-;       mov  hl,r0
-;       mov  hl_,hl
-;       mov  r0,hl_
-;       mov  de,r0
-;       mov  de_,de
-;       mov  r0,de_
        .endm
 
        .defm ex_de_hl
@@ -88,16 +75,4 @@
 
        .defm daa
        bl   @daa_routine
-;       mov  a,r0
-;       andi r0,>0f00
-;       cb   r0,@bytes+>09
-;       jle  !
-;       ab   @bytes+>06,a
-;!      mov  a,r0
-;       andi r0,>f000
-;       srl  r0,4
-;       cb   r0,@bytes+>b09
-;       jle  !
-;       ab   @bytes+>60,a
-;!
        .endm

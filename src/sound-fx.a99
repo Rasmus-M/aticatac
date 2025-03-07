@@ -22,13 +22,13 @@ click_sound:                                 ; >a3a8
 ;       .pop bc                         ; POP BC            ;
 ;       sb   one,@c                     ; DEC C             ;
 ;       jne  beep                       ; JR NZ,$A3AA       ; freq B (low is higher), length C
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 * This entry point is used by the routine at #R$9326.
 inventory_sound:                       ; >a3bd
 ;       li   bc,>4040                   ; LD BC,$4040       ;
 ;       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-       .ret
+       rt
 
 * Routine at a3c2
 *
@@ -36,7 +36,7 @@ inventory_sound:                       ; >a3bd
 drop_sound:                            ; >a3c2
 ;       li   bc,>2080                   ; LD BC,$2080       ; long high beep
 ;       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-       .ret
+       rt
 
 * play walk clicks if due
 *
@@ -50,18 +50,18 @@ walk_sound:                            ; >a3c7
 ;       jeq  walk_low                   ; JR Z,$A3D8        ; jump if so
 ;       andi a,>0100                    ; AND $01           ; click this frame?
 ;       jne  !                          ; RET Z             ; return if not
-;       .ret                            ;
+;       rt                              ;
 ;!
 ;       li   bc,zx_screen+>0004         ; LD BC,$4004       ; high beep
 ;       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
 ;walk_low:                              ; >a3d8
 ;       andi a,>0100                    ; AND $01           ; click this frame?
 ;       jne  !                          ; RET Z             ; return if not
-;       .ret                            ;
+;       rt                              ;
 ;!
 ;       li   bc,>6004                   ; LD BC,$6004       ; low beep
 ;       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-       .ret
+       rt
 
 ;* Routine at a3e0
 ;*
@@ -69,14 +69,14 @@ walk_sound:                            ; >a3c7
 start_beep:                            ; >a3e0
 ;       li   bc,>8060                   ; LD BC,$8060       ; long low beep
 ;       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-       .ret
+       rt
 
 * play monster touched sound
 *
 * Used by the routines at #R$85b2 and #R$988b.
 touching_sound:                        ; >a3e5
 ;       li   bc,>6410                   ; LD BC,$6410       ;
-       .ret
+       rt
 
 *This entry point is used by the routines at #R$a403 and #R$a485.
 queue_sound:                           ; >a3e8
@@ -84,7 +84,7 @@ queue_sound:                           ; >a3e8
 ;       movb b,*hl                      ; LD (HL),B         ; blank graphic with required sound handler (64 or 65)
 ;       inc  hl                         ; INC HL            ;
 ;       movb @c,*hl                     ; LD (HL),C         ; effect counter
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 * play next note of sound effect
 h_sound_effect:                        ; >a3ef
@@ -96,12 +96,12 @@ h_sound_effect:                        ; >a3ef
 ;       xor  r0,a                       ;
 ;       movb a,b                        ; LD B,A            ;
 ;       b    @beep                      ; JP $A3AA          ; freq B (low is higher), length C
-       .ret
+       rt
 
 * This entry point is used by the routines at #R$a408 and #R$a48b.
 clear_sound:                           ; >a3fe
 ;      sb   *ix,*ix                    ; LD (IX+$00),$00   ;
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 * room entry sound effect
 *
@@ -109,7 +109,7 @@ clear_sound:                           ; >a3fe
 entry_sound:                           ; >a403
 ;       li   bc,>650a                   ; LD BC,$650A       ;
 ;       jmp  queue_sound                ; JR $A3E8          ;
-       .ret
+       rt
 
 * play next note of sound effect
 h_sound_effect2:                       ; >a408
@@ -125,7 +125,7 @@ h_sound_effect2:                       ; >a408
 ;       xor  r0,a                       ;
 ;       movb a,b                        ; LD B,A            ;
 ;       b    @beep                      ; JP $A3AA          ; freq B (low is higher), length C
-       .ret
+       rt
 
 * play axe throw sound
 *
@@ -136,10 +136,10 @@ axe_sound:                             ; >a41b
 ;       movb d,a                        ; LD A,D            ;
 ;       ; RRCA                          ; RRCA              ;
 ;       movb a,b                        ; LD B,A            ; set freq
-;       .call @click                    ; CALL $A3A8        ;
+;       bl    @click                    ; CALL $A3A8        ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  loc_a41d                   ; JR NZ,$A41D       ;
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 * play sword throw sound
 *
@@ -155,10 +155,10 @@ sword_sound:                           ; >a427
 ;       sla  a,1                        ; RLCA              ; TODO: check code.
 ;       sla  a,1                        ; RLCA              ; TODO: check code.
 ;       movb a,b                        ; LD B,A            ; set freq
-;       .call @click                    ; CALL $A3A8        ;
+;       bl    @click                    ; CALL $A3A8        ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  loc_a429                   ; JR NZ,$A429       ;
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 * play fireball throw sound
 *
@@ -170,10 +170,10 @@ fireball_sound:                        ; >a438
 ;       inv  a                          ; CPL               ;
 ;       sla  a,1                        ; RLCA              ; TODO: check code.
 ;       movb a,b                        ; LD B,A            ; set freq
-;       .call @click                    ; CALL $A3A8        ;
+;       bl    @click                    ; CALL $A3A8        ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  loc_a43a                   ; JR NZ,$A43A       ;
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 * weapon disappearing sound
 *
@@ -193,17 +193,17 @@ weapon_pop_sound:                       ; >a445
 ;       li   r0,32*256                  ; XOR $20           ;
 ;       xor  r0,a                       ;
 ;       movb a,b                        ; LD B,A            ;
-;       .call @click                    ; CALL $A3A8        ;
+;       bl    @click                    ; CALL $A3A8        ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  !                          ; RET Z             ;
-;       .ret                            ;
+;       rt                              ;
 ;!
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  !                          ; RET Z             ;
-;       .ret                            ;
+;       rt                              ;
 ;!
 ;       jmp  loc_a452                   ; JR $A452          ;
-       .ret
+       rt
 
 * This entry point is used by the routine at #R$8cb7.
 appear_sound:                          ; >a45f
@@ -215,7 +215,7 @@ appear_sound:                          ; >a45f
 ;       movb a,b                        ; LD B,A            ;
 ;       movb @bytes+>10,@c              ; LD C,$10          ;
 ;       b    @beep                      ; JP $A3AA          ; freq B (low is higher), length C
-       .ret
+       rt
 
 * This entry point is used by the routines at #R$915f and #R$91bc.
 door_sound:                            ; >a46e
@@ -235,7 +235,7 @@ door_sound:                            ; >a46e
 ;       .pop bc                         ; POP BC            ;
 ;       sb   one,@c                     ; DEC C             ; done all bytes?
 ;       jne  loc_a474                   ; JR NZ,$A474       ; jump back if not
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 * Routine at a485
 *
@@ -243,7 +243,7 @@ door_sound:                            ; >a46e
 eat_sound:                             ; >a485
 ;       li   bc,>a010                   ; LD BC,$A010       ; A0 is blank graphic with food-eaten handler (below)
 ;       b    @queue_sound               ; JP $A3E8          ;
-       .ret
+       rt
 
 * eaten food sound effect handler
 h_food_eaten:                          ; >a48b
@@ -270,7 +270,7 @@ bounce_sound:                          ; >a4b0
 ;       movb @bytes+>40,d               ; LD D,$40          ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  !                          ; RET Z             ;
-;       .ret                            ;
+;       rt                              ;
 ;!
 ;       movb d,a                        ; LD A,D            ;
 ;       ; RRCA                          ; RRCA              ;
@@ -279,4 +279,4 @@ bounce_sound:                          ; >a4b0
 ;       movb a,b                        ; LD B,A            ;
 ;       movb @bytes+>04,@c              ; LD C,$04          ;
 ;       b    @beep                      ; JP $A3AA          ; freq B (low is higher), length C
-       .ret
+       rt

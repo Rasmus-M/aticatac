@@ -60,14 +60,14 @@ loc_a04e:                              ; >a04e
        ab   @bytes+>04,b               ; ADD A,$04         ;
 loc_a050:                              ; >a050
  ;     movb a,b                        ; LD B,A            ; handler table index
-       .call @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       bl    @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        movb b,a                        ; LD A,B            ;
        .pop bc                         ; POP BC            ;
        .push hl                        ; PUSH HL           ;
        li   hl,attr_handlers           ; LD HL,$A064       ; 3x3 handlers (in 4x3 table) to cover attr for moving
                                                            ; entity
        sla  a,1                        ; SLA A             ; * 2 (bytes per entry)
-       .call @add_hl_a                 ; CALL $926C        ; HL = HL + A
+       bl    @add_hl_a                 ; CALL $926C        ; HL = HL + A
 ;      movb *hl,a                      ; LD A,(HL)         ; handler LSB
 ;      inc  hl                         ; INC HL            ;
 ;      movb *hl,h                      ; LD H,(HL)         ; handler MSB
@@ -102,7 +102,7 @@ loc_a07d:                              ; >a07d
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_a07b                   ; JR NZ,$A07B       ;
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 * draw attrs for moving right
 attr_draw_r:                           ; >a08d
@@ -126,7 +126,7 @@ loc_a093:                              ; >a093
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_a08e                   ; JR NZ,$A08E       ;
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 * draw attrs for moving left
 attr_draw_l:                           ; >a0a3
@@ -148,7 +148,7 @@ loc_a0a6:                              ; >a0a6
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_a0a4                   ; JR NZ,$A0A4       ;
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 * draw attrs for moving down
 attr_draw_d:                           ; >a0b7
@@ -173,13 +173,13 @@ cond_room_row:                         ; >a0c9
        movb h,a                        ; LD A,H            ;
        cb   a,@bytes+>58               ; CP $58            ; out of screen top?
        jhe  loc_a0cd                   ; RET C             ; return if so
-       .ret                            ;
+       rt                              ;
 loc_a0cd:                              ; >a0cd
        movb @e,*hl+                    ; LD (HL),E         ; room attr
 ;      ab   one,@l                     ; INC L             ;
        sb   one,b                      ; DJNZ $A0CD        ;
        jne  loc_a0cd                   ;
-       .ret                            ; RET               ;
+       rt                              ; RET               ;
 
 * draw attrs for moving down-right
 attr_draw_dr:                          ; >a0d2

@@ -11,8 +11,8 @@ knight_fire:                           ; >8134
        movb @in_doorway,a              ; LD A,($5E2D)      ;
        ; AND A                         ; AND A             ; standing in doorway?
        jne  knight_fire_1              ; RET NZ            ; return if so (can't fire)
-       .call @axe_sound                ; CALL $A41B        ; play axe throw sound
-       .call @throw_weapon             ; CALL $817C        ; throw the current character's weapon
+       bl    @axe_sound                ; CALL $A41B        ; play axe throw sound
+       bl    @throw_weapon             ; CALL $817C        ; throw the current character's weapon
        li   hl,weapon                  ; LD HL,$EA98       ;
        movb @bytes+>40,*hl             ; LD (HL),$40       ; base axe graphic
        jmp  wizard_fire_1                   ; JR $8160          ;
@@ -32,8 +32,8 @@ wizard_fire:                           ; >814b
        movb @in_doorway,a              ; LD A,($5E2D)      ;
        ; AND A                         ; AND A             ; standing in doorway?
        jne  wizard_fire_2              ; RET NZ            ; return if so (can't fire)
-       .call @fireball_sound           ; CALL $A438        ; play fireball throw sound
-       .call @throw_weapon             ; CALL $817C        ; throw the current character's weapon
+       bl    @fireball_sound           ; CALL $A438        ; play fireball throw sound
+       bl    @throw_weapon             ; CALL $817C        ; throw the current character's weapon
        li   hl,weapon                  ; LD HL,$EA98       ;
        movb @bytes+>34,*hl             ; LD (HL),$34       ; base fireball graphic
 * This entry point is used by the routines at #R$8134 and #R$8283.
@@ -50,7 +50,7 @@ wizard_fire_1:                         ; >8160
        movb a,*hl                      ; LD (HL),A         ; set weapon ypos
        .push ix                        ; PUSH IX           ;
        li   ix,weapon                  ; LD IX,$EA98       ;
-       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl    @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
        .pop ix                         ; POP IX            ;
 wizard_fire_2:
        .endproc                        ; RET               ;
@@ -68,8 +68,8 @@ serf_fire:                             ; >8283
        movb @in_doorway,a              ; LD A,($5E2D)      ;
        ; AND A                         ; AND A             ; standing in doorway?
        jne  serf_fire_1                ; RET NZ            ; return if so
-       .call @sword_sound              ; CALL $A427        ; play sword throw sound
-       .call @throw_weapon             ; CALL $817C        ; throw the current character's weapon
+       bl    @sword_sound              ; CALL $A427        ; play sword throw sound
+       bl    @throw_weapon             ; CALL $817C        ; throw the current character's weapon
        sb   @c,@c                      ; LD C,$00          ;
        movb *hl,a                      ; LD A,(HL)         ;
        ; AND A                         ; AND A             ; y velocity zero?
@@ -141,7 +141,7 @@ loc_81af:                              ; >81af
        movb @bytes+>fc,a               ; LD A,$FC          ;
 loc_81b1:                              ; >81b1
        movb a,*hl                      ; LD (HL),A         ;
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 loc_81b3:                              ; >81b3
        movb *ix,a                      ; LD A,(IX+$00)     ;
        sb   one,a                      ; DEC A             ;
@@ -154,22 +154,22 @@ loc_81b3:                              ; >81b3
        sb   *hl,*hl                    ; LD (HL),$00       ; x velocity
        inc  hl                         ; INC HL            ;
        movb @bytes+>fc,*hl             ; LD (HL),$FC       ; y velocity (up)
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 loc_81c9:                              ; >81c9
        movb @bytes+>fc,*hl             ; LD (HL),$FC       ; x velocity (left)
        inc  hl                         ; INC HL            ;
        sb   *hl,*hl                    ; LD (HL),$00       ; y velocity
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 loc_81cf:                              ; >81cf
        movb @bytes+>04,*hl             ; LD (HL),$04       ; set x velocity (right)
        inc  hl                         ; INC HL            ;
        sb   *hl,*hl                    ; LD (HL),$00       ; set y velocity
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 loc_81d5:                              ; >81d5
        sb   *hl,*hl                    ; LD (HL),$00       ; set x velocity (none)
        inc  hl                         ; INC HL            ;
        movb @bytes+>04,*hl             ; LD (HL),$04       ; set y velocity (down)
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 
 *********************************************************************
 *
@@ -196,7 +196,7 @@ loc_82d7:                              ; >82d7
        ab   @bytes+>38,a               ; ADD A,$38         ; base sword graphic
        li   hl,weapon                  ; LD HL,$EA98       ;
        movb a,*hl                      ; LD (HL),A         ;
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 loc_82e1:                              ; >82e1
        ab   one,@c                     ; INC C             ; up-right or down-right
        jmp  loc_82d7                   ; JR $82D7          ;
@@ -267,18 +267,18 @@ add_creature_2:                        ; >840d
        movb @room_width,@e             ; LD DE,($5E1D)     ;
        movb @room_height,d             ; LD DE,($5E1D)     ;
        movb @e,b                       ; LD B,E            ;
-       .call @rnd_coord                ; CALL $8598        ; random coord less than interior size B and inc hl
+       bl    @rnd_coord                ; CALL $8598        ; random coord less than interior size B and inc hl
        movb a,*hl                      ; LD (HL),A         ; set x
        movb d,b                        ; LD B,D            ;
-       .call @rnd_coord                ; CALL $8598        ; random coord less than interior size B and inc hl
+       bl    @rnd_coord                ; CALL $8598        ; random coord less than interior size B and inc hl
        movb a,*hl                      ; LD (HL),A         ; set y
        .pop de                         ; POP DE            ; de=creature entity
        .push ix                        ; PUSH IX           ;
 ;      clr  ix                         ; LD IX,$0000       ;
 ;      a    de,ix                      ; ADD IX,DE         ;
        mov  de,ix
-       .call @rnd_movement             ; CALL $86F2        ; set random movement
-       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl    @rnd_movement             ; CALL $86F2        ; set random movement
+       bl    @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
        .pop ix                         ; POP IX            ;
        jmp add_creature_end            ; RET               ;
 add_creature_3:                        ; >844f
@@ -518,7 +518,7 @@ loc_85dc:                              ; >85dc
        jhe  enemy_touching_1           ; RET NC            ; return if so
        movb one,a                      ; LD A,$01          ;
        movb a,@player_contact          ; LD ($EA92),A      ;
-       .call @touching_sound           ; CALL $A3E5        ; play monster touched sound
+       bl    @touching_sound           ; CALL $A3E5        ; play monster touched sound
        movb one,@e                     ; LD E,$01          ; is touching player
 enemy_touching_1:
        .endproc
@@ -527,7 +527,7 @@ enemy_touching_1:
 * This entry point is used by the routines at #R$8301, #R$845f, #R$862e,
 * #R$8672, #R$871a, #R$87a6, #R$8a2f and #R$8a80.
 hurt_and_pop:                          ; >85ea
-       .call @damage_32                ; CALL $8ED7        ; reduce health by 32
+       bl    @damage_32                ; CALL $8ED7        ; reduce health by 32
        b    @pop_creature              ; JP $875F          ;
 
 *********************************************************************
@@ -539,15 +539,15 @@ pop_creature:                          ; >875f
        .push af                        ; PUSH AF           ;
        movb @room_attr,a               ; LD A,($5E1A)      ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; undraw to room attr
-       .call @undraw_entity            ; CALL $9F56        ;
-       .call @set_entity_attrs2        ; CALL $A01A        ; set attrs covering previous and new position
+       bl    @undraw_entity            ; CALL $9F56        ;
+       bl    @set_entity_attrs2        ; CALL $A01A        ; set attrs covering previous and new position
        .pop af                         ; POP AF            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
        movb @bytes+>6c,*ix             ; LD (IX+$00),$6C   ; base pop graphic
        movb @bytes+>10,@>0e(ix)        ; LD (IX+$0E),$10   ; 16 animation frames (4 loops of 4)
        li   bc,>0155                   ; LD BC,$0155       ;
-       .call @add_score_bc_bcd         ; CALL $A19C        ; add 155 score
-       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl    @add_score_bc_bcd         ; CALL $A19C        ; add 155 score
+       bl    @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
        b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
 
 *********************************************************************
@@ -646,7 +646,7 @@ get_room_style:                        ; >897d
        a    de,hl                      ; ADD HL,DE         ;
        inc  hl                         ; INC HL            ;
        movb *hl,a                      ; LD A,(HL)         ; first byte is room style (0-C)
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 
 *********************************************************************
 *
@@ -663,7 +663,7 @@ damage_32:                             ; >8ed7
        jmp  update_energy              ; JR NC,$8EE9       ; jump if positive
 !      sb   a,a                        ; XOR A             ;
        movb a,@player_energy           ; LD ($5E28),A      ;
-       .call @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
+       bl    @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
        b    @player_dead               ; JR $8EA0          ;
 
 *********************************************************************
@@ -710,7 +710,7 @@ auto_walk_step:                        ; >8d6d
        jeq  auto_walk_step_1           ; RET Z             ; return if not
        sb   one,@>02(ix)               ; DEC (IX+$02)      ; take a step
 auto_walk_step_1:
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 
 *********************************************************************
 *
@@ -724,12 +724,12 @@ control_player:                        ; >8d77
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
        .push hl                        ; PUSH HL           ;
-       .call @auto_walk_step           ; CALL $8D6D        ; reduce auto-walk counter
+       bl    @auto_walk_step           ; CALL $8D6D        ; reduce auto-walk counter
        movb @>02(ix),a                 ; LD A,(IX+$02)     ;
        socb @bytes+>30,a               ; OR $30            ; can move left/right or up/down
        movb a,@>02(ix)                 ; LD (IX+$02),A     ;
-       .call @save_entity              ; CALL $9FFB        ; save entity position for undraw
-       .call @read_controls            ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
+       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl    @read_controls            ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
        movb a,@c                       ; LD C,A            ; FUDLR
        .pop hl                         ; POP HL            ;
        li   de,>0000                   ; LD DE,$0000       ; no movement yet
@@ -758,12 +758,12 @@ loc_8da8:                              ; >8da8
        movb a,d                        ; LD D,A            ;
 loc_8db0:                              ; >8db0
        .pop hl                         ; POP HL            ; DE value from function entry
-       .call @slow_player              ; CALL $8F96        ; decelerate player movement
+       bl    @slow_player              ; CALL $8F96        ; decelerate player movement
        .pop hl                         ; POP HL            ; BC value from function entry
-       .call @move_player              ; CALL $8EEF        ; apply player movement, including auto-walk
-       .call @chk_wall_move            ; CALL $8FCA        ; check if walls are blocking movement in DE
-       .call @check_doorway            ; CALL $957D        ; check if player is standing in a doorway
-       .call @chk_decor_move           ; CALL $900A        ; check if decor is blocking movement in DE
+       bl    @move_player              ; CALL $8EEF        ; apply player movement, including auto-walk
+       bl    @chk_wall_move            ; CALL $8FCA        ; check if walls are blocking movement in DE
+       bl    @check_doorway            ; CALL $957D        ; check if player is standing in a doorway
+       bl    @chk_decor_move           ; CALL $900A        ; check if decor is blocking movement in DE
        b    @apply_move                ; JP $8F66          ; apply movement in DE
 
 *********************************************************************
@@ -793,10 +793,10 @@ loc_8f01:                              ; >8f01
 loc_8f0f:                              ; >8f0f
        movb a,@>07(ix)                 ; LD (IX+$07),A     ; update y velocity
        movb @>06(ix),a                 ; LD A,(IX+$06)     ;
-       .call @get_signed_b7_4          ; CALL $8F80        ; return signed top nibble
+       bl    @get_signed_b7_4          ; CALL $8F80        ; return signed top nibble
        movb a,@e                       ; LD E,A            ; x offset
        movb @>07(ix),a                 ; LD A,(IX+$07)     ;
-       .call @get_signed_b7_4          ; CALL $8F80        ; return signed top nibble
+       bl    @get_signed_b7_4          ; CALL $8F80        ; return signed top nibble
        movb a,d                        ; LD D,A            ; y move offset
        jmp  move_player_1              ; RET               ;
 loc_8f21:                              ; >8f21
@@ -903,7 +903,7 @@ loc_8fc4:                              ; >8fc4
        jlt loc_8fba                    ; JP M,$8FBA        ; jump if negative
        jmp  stop_y                     ; JR $8FB9          ; stopped on y axis
 slow_player_1:
-       .ret                            ; OK
+       rt                              ; OK
 
 *********************************************************************
 *
@@ -918,7 +918,7 @@ chk_wall_move:                         ; >8fca
        movb a,@e                       ; LD E,A            ;
        movb @>04(ix),d                 ; LD D,(IX+$04)     ; y
        movb @bytes+>10,b               ; LD B,$10          ; x bit mask
-       .call @chk_walls                ; CALL $8FE9        ; check if position is within room interior
+       bl    @chk_walls                ; CALL $8FE9        ; check if position is within room interior
        .pop de                         ; POP DE            ;
        .push de                        ; PUSH DE           ;
        movb @>03(ix),@e                ; LD E,(IX+$03)     ; x
@@ -926,7 +926,7 @@ chk_wall_move:                         ; >8fca
        ab   @>04(ix),a                 ; ADD A,(IX+$04)    ; apply y movement
        movb a,d                        ; LD D,A            ;
        movb @bytes+>20,b               ; LD B,$20          ; y bit mask
-       .call @chk_walls                ; CALL $8FE9        ; check if position is within room interior
+       bl    @chk_walls                ; CALL $8FE9        ; check if position is within room interior
        .pop de                         ; POP DE            ;
        .endproc                        ; RET               ;
 
@@ -963,7 +963,7 @@ loc_8fff:                              ; >8fff
 ;       movb a,@>02(ix)                 ; LD (IX+$02),A     ;
        szcb b,@>02(ix)
 chk_walls_1:
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 
 *********************************************************************
 *
@@ -980,7 +980,7 @@ chk_decor_move:                        ; >900a
        movb @>04(ix),d                 ; LD D,(IX+$04)     ;
        movb @bytes+>10,a               ; LD A,$10          ; bit for x movement allowed
        .ex_af_af_                      ; EX AF,AF'         ;
-       .call @chk_decor                ; CALL $902B        ; check if room decor is blocking movement
+       bl    @chk_decor                ; CALL $902B        ; check if room decor is blocking movement
        .pop de                         ; POP DE            ;
        .push de                        ; PUSH DE           ;
        movb @>03(ix),@e                ; LD E,(IX+$03)     ;
@@ -989,7 +989,7 @@ chk_decor_move:                        ; >900a
        movb a,d                        ; LD D,A            ;
        movb @bytes+>20,a               ; LD A,$20          ; bit for y movement allowed
        .ex_af_af_                      ; EX AF,AF'         ;
-       .call @chk_decor                ; CALL $902B        ; check if room decor is blocking movement
+       bl    @chk_decor                ; CALL $902B        ; check if room decor is blocking movement
        .pop de                         ; POP DE            ;
        .endproc                        ; RET               ;
 
@@ -1019,7 +1019,7 @@ chk_decor_1:                           ; >903b
 ;      socb @l,a                       ; OR L              ;
        mov  *bc+,hl
        jne  !                          ; RET Z             ;
-       .ret                            ;                   ; OK
+       rt                              ;                   ; OK
 !
        .push bc                        ; PUSH BC           ;
 ;       li   bc,room_table              ; LD BC,$757D       ;
@@ -1205,16 +1205,16 @@ check_key_colour:                      ; >9222
        movb *ix,a                      ; LD A,(IX+$00)     ;
        andi a,>0300                    ; AND $03           ; locked door colour index
        li   hl,key_attrs               ; LD HL,$925C       ;
-       .call @add_hl_a                 ; CALL $926C        ; HL = HL + A
+       bl    @add_hl_a                 ; CALL $926C        ; HL = HL + A
        movb *hl,d                      ; LD D,(HL)         ; key colour attr
        movb @bytes+>81,@e              ; LD E,$81          ; key graphic
-       .call @check_carrying           ; CALL $9273        ; is player carrying the required key colour?
+       bl    @check_carrying           ; CALL $9273        ; is player carrying the required key colour?
        jne   loc_923f                  ; JP NZ,$923F       ; jump if not
-       .call @enter_door               ; CALL $954D        ; enter linked object (door etc.)
+       bl    @enter_door               ; CALL $954D        ; enter linked object (door etc.)
        li   bc,>1111                   ; LD BC,$1111       ; 17x17 size
        b    @check_exit_branch         ; JP $90CC          ; check if player has left through a door
 loc_923f:                              ; >923f
-       .call @update_door_2            ; CALL $9565        ;
+       bl    @update_door_2            ; CALL $9565        ;
        ; AND A                         ; AND A             ; door locked
        b    @return_without_carry      ; RET               ;
 
@@ -1235,7 +1235,7 @@ set_door_type:                         ; >9260
        movb a,@l                       ; LD L,A            ;
        .ex_af_af_                      ; EX AF,AF'         ;
        movb a,*hl                      ; LD (HL),A         ; set linked door graphic
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 
 *********************************************************************
 *
@@ -1280,7 +1280,7 @@ get_linked_door:                       ; >9286
 ;       .push hl                        ; PUSH HL           ;
 ;       .pop ix                         ; POP IX            ;
        mov  hl,ix
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 
 *********************************************************************
 *
@@ -1302,12 +1302,12 @@ add_inventory:                         ; >9326
 ;      inc  hl                         ; INC HL            ;
        movb @>05(ix),*hl               ; LD A,(IX+$05)     ;
 ;      movb a,*hl                      ; LD (HL),A         ;
-       .call @undraw_entity            ; CALL $9F56        ; Remove from play field
+       bl    @undraw_entity            ; CALL $9F56        ; Remove from play field
        movb @room_attr,@>05(ix)        ; LD A,($5E1A)      ;
 ;      movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       .call @set_entity_attrs2        ; CALL $A01A        ; set attrs covering previous and new position
+       bl    @set_entity_attrs2        ; CALL $A01A        ; set attrs covering previous and new position
        sb   *ix,*ix                    ; LD (IX+$00),$00   ;
-       .call @inventory_sound          ; JP $A3BD          ;
+       bl    @inventory_sound          ; JP $A3BD          ;
        .endproc
 
 *********************************************************************
@@ -1320,7 +1320,7 @@ shift_inventory:                       ; >934c
        li   de,inventory3+>0003        ; LD DE,$5E3B       ;
        li   bc,>0008                   ; LD BC,$0008       ; 2 items * 4 bytes
        .lddr                           ; LDDR              ; shift up items
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 
 *********************************************************************
 *
@@ -1357,12 +1357,12 @@ drop_item:                             ; >9358
        movb *hl,a                      ; LD A,(HL)         ; inventory colour
        movb a,*de                      ; LD (DE),A         ; set item attr
        .pop de                         ; POP DE            ;
-       .call @drop_sound               ; CALL $A3C2        ;
+       bl    @drop_sound               ; CALL $A3C2        ;
        .push ix                        ; PUSH IX           ;
 ;      .push de                        ; PUSH DE           ;
 ;      .pop ix                         ; POP IX            ;
        mov  de,ix
-       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl    @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
        .pop ix                         ; POP IX            ;
 drop_item_1:
        .endproc                        ; RET               ;
@@ -1406,7 +1406,7 @@ read_keyboard:                         ; >93cd
 ;       movb @c,a                       ; LD A,C            ;
 ;       andi a,>1c00                    ; AND $1C           ; ___TRE__
 ;       socb @e,a                       ; OR E              ; ___TREQW
-;       .ret                            ; RET               ;
+;       rt                              ; RET               ;
        li   r1,keys_keyboard
        jmp  read_controls_1
 
@@ -1473,7 +1473,7 @@ read_cursor:                           ; >9398
 ;       srl  a,1                        ; RRA               ; 321xxx54
 ;       andi a,>0200                    ; AND $02           ; 5 key
 ;       socb @e,a                       ; OR E              ;
-;      .ret                            ; RET               ;
+;      rt                              ; RET               ;
        li   r1,keys_cursor
        jmp  read_controls_1
 
@@ -1514,7 +1514,7 @@ enter_door:                            ; >954d
        andi a,>f700                    ; AND $F7           ; object is solid
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
        .push ix                        ; PUSH IX           ;
-       .call @get_linked_door          ; CALL $9286        ; get connected door exit
+       bl    @get_linked_door          ; CALL $9286        ; get connected door exit
        movb @>05(ix),a                 ; LD A,(IX+$05)     ;
        andi a,>f700                    ; AND $F7           ; linked object is solid
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
@@ -1528,7 +1528,7 @@ update_door_2_branch:
        socb @bytes+>08,a               ; OR $08            ; object can be passed through
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
        .push ix                        ; PUSH IX           ;
-       .call @get_linked_door          ; CALL $9286        ; get connected door exit
+       bl    @get_linked_door          ; CALL $9286        ; get connected door exit
        movb @>05(ix),a                 ; LD A,(IX+$05)     ;
        socb @bytes+>08,a               ; OR $08            ; linked object can be passed through
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
@@ -1571,7 +1571,7 @@ loc_95a3:                              ; >95a3
        movb b,a                        ; LD A,B            ;
        movb a,@in_doorway              ; LD ($5E2D),A      ; non-zero if in a doorway
        .pop de                         ; POP DE            ;
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 
 *********************************************************************
 *
@@ -1589,7 +1589,7 @@ loc_95b1:                              ; >95b1
        a    de,hl                      ; ADD HL,DE         ; next slot
        sb   one,b                      ; DJNZ $95B1        ;
        jne  loc_95b1                   ;
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 loc_95b9:                              ; >95b9
        movb @bytes+>45,a               ; LD A,$45          ; bright cyan
        movb a,@player_attr             ; LD ($EA95),A      ;
@@ -1614,7 +1614,7 @@ draw_entity_hl:                        ; >95cc
 ;      .push hl                        ; PUSH HL           ;
 ;      .pop ix                         ; POP IX            ;
        mov  hl,ix
-       .call @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl    @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
        .pop ix                         ; POP IX            ;
        .endproc                        ; RET               ;
 
@@ -1627,7 +1627,7 @@ clock_tick:                            ; >95da
        movb @zx_frames,a               ; LD A,($5C78)      ;
        cb   a,@bytes+>32               ; CP $32            ; 1 second elapsed?
        jhe  !                          ; RET C             ; return if not
-       .ret                            ;
+       rt                              ;
 *
 !      .proc
        sb   @bytes+>32,a               ; SUB $32           ; subtract 1 second
@@ -1666,10 +1666,10 @@ clock_tick_1:                          ; >9604
 print_clock:                           ; >9607
        .proc
 print_clock_branch:
-       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       bl    @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        li   de,clock_hours             ; LD DE,$5E3D       ;
        movb @bytes+>02,b               ; LD B,$02          ;
-       .call @print_bcd_digit          ; CALL $A1C9        ; print a single BCD digit
+       bl    @print_bcd_digit          ; CALL $A1C9        ; print a single BCD digit
        li   de,clock_seconds           ; LD DE,$5E3F       ;
        inc  hl                         ; INC HL            ;
        movb one,b                      ; LD B,$01          ;
@@ -1683,14 +1683,14 @@ print_clock_branch:
 *
 chk_trap_exit:                         ; >9731
        li   bc,>1818                   ; LD BC,$1818       ; 24x24
-       .call @check_exit               ; CALL $90CC        ; fallen into trap door?
+       bl    @check_exit               ; CALL $90CC        ; fallen into trap door?
        joc  !                          ; JP NC,$91FE       ; jump if not
        b    @draw_room_item            ;
 !
-       .call @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
+       bl    @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
        movb @bytes+>96,a               ; LD A,$96          ; room 150 is trap door tunnel
        .push ix                        ; PUSH IX           ;
-       .call @draw_room_a              ; CALL $9BF1        ; draw trap door lines
+       bl    @draw_room_a              ; CALL $9BF1        ; draw trap door lines
        .pop ix                         ; POP IX            ;
        movb @bytes+>40,b               ; LD B,$80          ; 128 frames of tunnel animation. TODO: Changed to 64
 loc_9748:                              ; >9748
@@ -1701,7 +1701,7 @@ loc_974c:                              ; >974c
        movb b,a                        ; LD A,B            ;
        inv  a                          ; CPL               ; ~frame counter is effect frequency
        movb a,b                        ; LD B,A            ;
-       .call @click_sound                    ; CALL $A3A8        ; short beep
+       bl    @click_sound                    ; CALL $A3A8        ; short beep
        .pop bc                         ; POP BC            ;
        ab   one,@zx_frames                                 ; Added
        movb @zx_frames,a               ; LD A,($5C78)      ;
@@ -1720,7 +1720,7 @@ loc_9762:                              ; >9762
        movb @l,@zx_attrs+>018b         ; LD ($598B),HL     ;
        movb h,@zx_attrs+>018c          ; LD ($598B),HL     ;
        .push bc                        ; PUSH BC           ;
-       .call @draw_tunnel_attrs        ; CALL $9774        ;
+       bl    @draw_tunnel_attrs        ; CALL $9774        ;
        .pop bc                         ; POP BC            ;
        bl   @ti_upload_zx_screen
        sb   one,b                      ; DJNZ $9748        ; loop until end of effect
@@ -1781,7 +1781,7 @@ loc_9799:                              ; >9799
        sb   one,b                      ; DEC B             ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_977d                   ; JR NZ,$977D       ;
-       .ret                            ; RET               ; OK
+       rt                              ; RET               ; OK
 
 *********************************************************************
 *

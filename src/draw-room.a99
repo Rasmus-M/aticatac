@@ -84,7 +84,7 @@ draw_room_item:
 ;       sb   one,d                      ; DEC D             ;
 ;       movb *ix,@c                     ; LD C,(IX+$00)     ; graphic
 ;       movb @entity_flags(ix),b        ; LD B,(IX+$05)     ; attr
-       .call @draw_bgrnd_attrs         ; CALL $9980        ; B=attr, C=graphic, E=xpos, D=ypos
+       bl    @draw_bgrnd_attrs         ; CALL $9980        ; B=attr, C=graphic, E=xpos, D=ypos
        movb @game_flags,a              ; LD A,($5E14)      ; b0 set if room content drawn
        ; AND A                         ; AND A             ; room content drawn?
        jne  !                          ; RET NZ            ; return if so
@@ -118,7 +118,7 @@ draw_room_a:                           ; >9bf1
        li   hl,zx_attrs                ; LD HL,$5800       ;
        li   bc,>1818                   ; LD BC,$1818       ; 24x24 room area
        movb @room_attr,a               ; LD A,($5E1A)      ;
-       .call @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
+       bl    @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
        .exx                            ; EXX               ;
        movb *hl,@l                     ; LD L,(HL)         ; style?
        sb   h,h                        ; LD H,$00          ;
@@ -184,7 +184,7 @@ loc_9c53:                              ; >9c53
 loc_9c56:                              ; >9c56
        movb @0(ix),d                   ; LD D,(IX+$00)     ; target y
        .push hl                        ; PUSH HL           ;
-       .call @draw_line_bc_de          ; CALL $9C79        ; draw line from (B,C) to (D,E)
+       bl    @draw_line_bc_de          ; CALL $9C79        ; draw line from (B,C) to (D,E)
        .pop hl                         ; POP HL            ;
        .pop bc                         ; POP BC            ;
        jmp  loc_9c43                   ; JR $9C43          ; next target point
@@ -237,7 +237,7 @@ draw_line_bc_de:                       ; >9c79
        sb   d,d                        ; LD D,$00          ; d = 0
        movb d,@l                       ; LD L,D            ; l = 0
        movb b,h                        ; LD H,B            ; h = abs(y1 - y2) vert line size
-       .call @line_slope               ; CALL $A379        ; determine Bresenham line slope step: hl = hl / de, de = hl % de
+       bl    @line_slope               ; CALL $A379        ; determine Bresenham line slope step: hl = hl / de, de = hl % de
        movb @line_flags,a              ; LD A,($5E24)      ;
        movb a,r0                       ; BIT 0,A           ; Are we drawing down?
        andi r0,>0100                   ;
@@ -260,7 +260,7 @@ draw_line_bc_de:                       ; >9c79
 ;      .ex_af_af_                      ; EX AF,AF'         ;
 flat_loop:                             ; >9cc3
        .push bc                        ; PUSH BC           ;
-       .call @plot_l_h                 ; CALL $9C61        ; plot pixel at L,H
+       bl    @plot_l_h                 ; CALL $9C61        ; plot pixel at L,H
        movb @l,a_                      ; LD A,L            ; a_
 ;      .ex_af_af_                      ; EX AF,AF'         ;
        movb a,@l                       ; LD L,A            ;
@@ -286,7 +286,7 @@ line_steep:                            ; >9cd6
        sb   d,d                        ; LD D,$00          ; d = 0
        movb d,@l                       ; LD L,D            ; l = 0
        movb a,h                        ; LD H,A            ; h = abs(x1 - x2)
-       .call @line_slope               ; CALL $A379        ; determine Bresenham line slope step: hl = hl / de, de = hl % de
+       bl    @line_slope               ; CALL $A379        ; determine Bresenham line slope step: hl = hl / de, de = hl % de
        movb @line_flags,a              ; LD A,($5E24)      ;
        movb a,r0                       ; BIT 1,A           ; drawing right?
        andi r0,>0200                   ;
@@ -309,7 +309,7 @@ line_steep:                            ; >9cd6
 ;      .ex_af_af_                      ; EX AF,AF'         ;
 steep_loop:                            ; >9d04
        .push bc                        ; PUSH BC           ;
-       .call @plot_l_h                 ; CALL $9C61        ; plot pixel at L,H
+       bl    @plot_l_h                 ; CALL $9C61        ; plot pixel at L,H
        movb h,a_                       ; LD A,H            ; a_
 ;      .ex_af_af_                      ; EX AF,AF'         ;
        movb @l,h                       ; LD H,L            ;
@@ -350,7 +350,7 @@ line_slope:                            ; >a379
        div  de,r0
        mov  r0,hl
        mov  r1,de
-       .ret
+       rt
 ;
 ;       .proc
 ;;      movb h,@l                       ; LD L,H            ;
@@ -413,7 +413,7 @@ plot_l_h_branch:
 ;       .push af                        ; PUSH AF           ;
 ;       .ex_af_af_                      ; EX AF,AF'         ;
 ;       .push af                        ; PUSH AF           ;
-;       .call @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+;       bl    @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
 ;       .pop af                         ; POP AF            ;
 ;       .ex_af_af_                      ; EX AF,AF'         ;
 ;       .pop af                         ; POP AF            ;
@@ -426,7 +426,7 @@ plot_l_h_branch:
        jeq  !
        srl  r2,0
 !      .push hl
-       .call @xy_to_display
+       bl    @xy_to_display
        socb r2,*hl
        .pop hl
        .endproc                        ; RET               ;
