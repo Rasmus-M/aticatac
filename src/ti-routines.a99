@@ -15,7 +15,8 @@ ti_setup_environment:
 ;      bl   @copy_to_pad
        bl   @graphics_mode
        clr  @double_buffer_flag
-       bl   @ti_clear_sprite_allocation_table
+       bl   @ti_reset_sprite_pattern_allocation_table
+       bl   @ti_reset_sprite_attr_table
        .endproc
 *// ti_setup_environment
 
@@ -503,18 +504,25 @@ upload_screen_part_2:
 
 *********************************************************************
 *
-* Reset sprite allocation table
+* Reset sprite pattern allocation table
 *
-ti_clear_sprite_allocation_table:
+ti_reset_sprite_pattern_allocation_table:
        li   r0,sprite_pattern_allocation_table
-       li   r2,>00a2
-ti_clear_sprite_allocation_table_1:
+       li   r2,n_sprite_patterns
+ti_reset_sprite_pattern_allocation_table_1:
        seto *r0+
        dect r2
-       jne  ti_clear_sprite_allocation_table_1
+       jne  ti_reset_sprite_pattern_allocation_table_1
        clr  @next_sprite_pattern_index
+*
+       li   r0,sprite_pattern_usage_table
+       li   r2,n_sprite_patterns
+ti_reset_sprite_pattern_usage_table_1:
+       seto *r0+
+       dect r2
+       jne  ti_reset_sprite_pattern_usage_table_1
        rt
-*// ti_clear_sprite_allocation_table
+*// ti_reset_sprite_pattern_allocation_table
 
 *********************************************************************
 *
@@ -523,39 +531,81 @@ ti_clear_sprite_allocation_table_1:
 * a: Index (zero based) of sprite graphics
 * de: Address of sprite graphics
 *
+sprite_pattern_table_offset:
+       equ  sprite_pattern_allocation_table-sprite_pattern_usage_table
+
 ti_upload_sprite_patterns:
        mov  af,r1                      ; r14 in ti_wrksp
        mov  de,r2                      ; r15 in ti_wrksp
        lwpi ti_wrksp
-*      Check and update allocation
+*      Check if already allocated
        srl  r14,8
-       movb @sprite_pattern_allocation_table(r14),r0
-       jgt  ti_upload_sprite_patterns_10    ; Already allocated
-       jeq  ti_upload_sprite_patterns_10    ; Already allocated
-       mov  @next_sprite_pattern_index,r0
-       mov  r0,r1
+       cb   @sprite_pattern_allocation_table(r14),@b255
+       jne  ti_upload_sprite_patterns_10    ; Already allocated
+*      Calculate number patterns needed
+       movb *r15,r3                    ; Height
+       jeq  ti_upload_sprite_patterns_10
+       clr  r12
+       srl  r3,8                       ; To LSB
+       mov  r3,r4                      ; Copy height
+       srl  r4,4                       ; height / 16
+       andi r3,15
+       jeq  ti_upload_sprite_patterns_13
+       inc  r4                         ; r4 is number of patterns of 16 rows to use
+       li   r12,>8000                  ; Set bit indicating 2 patterns
+*      Allocate pattern
+ti_upload_sprite_patterns_13:
+       mov  @next_sprite_pattern_index,r0   ; Next pattern index
+       mov  r0,r1                           ; Copy of next pattern index
+       a    r4,r1                           ; Add number of patterns needed
+       ci   r1,64                           ; Are we outside the limit of 64 patterns?
+       jle  ti_upload_sprite_patterns_11    ; Jump if not
+*      Need to reuse patterns
+       li   r1,sprite_pattern_usage_table   ; Search from the start
+       movb @b255,@sprite_pattern_usage_table+n_sprite_patterns-1 ; Ensure we get a hit at the end of the of the table
+ti_upload_sprite_patterns_15:
+       li   r0,>0400                                           ; Look for an entity that hasn't been draw for the last 4 frames
+ti_upload_sprite_patterns_12:
+       cb   *r1+,r0
+       jl   ti_upload_sprite_patterns_12
+       ci   r1,sprite_pattern_usage_table+n_sprite_patterns    ; Was it at the end of the table?
+       jeq  ti_upload_sprite_patterns_10                       ; If so we give up
+       movb @sprite_pattern_table_offset-1(r1),r0              ; Get the sprite pattern index that was allocated to this entity
+       cb   r0,@b255                                       ; Check if it had an alllocated pattern
+       jeq  ti_upload_sprite_patterns_15                   ; If not, continue searching
+       coc  r12,r0                                         ; Check if the same number of patterns are allocated
+       jne  ti_upload_sprite_patterns_15                   ; If not, continue searching
+       dec  r1                                             ; Backtrack one
+       sb   *r1,*r1                                        ; Mark as used
+       movb @b255,@sprite_pattern_table_offset(r1)         ; Unmark old pattern allocation
+       movb r0,@sprite_pattern_allocation_table(r14)       ; Mark new pattern allocation
+       andi r0,>3f00
+       swpb r0
+       jmp  ti_upload_sprite_patterns_16
+ti_upload_sprite_patterns_11:
+       mov  r0,r1                                          ; Copy pattern index
        swpb r1
-       movb r1,@sprite_pattern_allocation_table(r14)
+       socb r12,r1                                         ; Apply bit for 2 patterns
+       movb r1,@sprite_pattern_allocation_table(r14)       ; Mark new pattern allocation
+       a    r4,@next_sprite_pattern_index
 *      VDP address
-       sla  r0,3
+ti_upload_sprite_patterns_16:
+       ci   r0,>003f
+       jne  !
+       nop
+!      sla  r0,5                       ; pattern index * 32
        ai   r0,sprite_pattern_table
        bl   @vwad
        li   r13,vdpwd
-*      Calculate number of rows and sprites
+*      Calculate sprite data source address
        movb *r15+,r3                   ; Height
-       jeq  ti_upload_sprite_patterns_10
        srl  r3,8                       ; To LSB
-       mov  r3,r4                      ; Copy height
-       dec  r4                         ; Height - 1
-       sla  r4,1                       ; 2 bytes per row
-       a    r4,r15                     ; To first row of sprite (sprites are upside down)
-       mov  r3,r4                      ; Copy height
-       srl  r4,4                       ; height / 16
        mov  r3,r5                      ; Copy height
-       andi r5,15                      ; height % 16
-       jeq  ti_upload_sprite_patterns_1
-       inc  r4                         ; r4 if number of sprites of 16 rows to use
-ti_upload_sprite_patterns_1:
+       dec  r5                         ; Height - 1
+       sla  r5,1                       ; 2 bytes per row
+       a    r5,r15                     ; To first row of sprite (sprites are upside down)
+ti_upload_sprite_patterns_1
+*      Calculate number of rows
        li   r5,16                      ; Try to upload 16 rows
        c    r3,r5                      ; Less than 16 rows left?
        jl   ti_upload_sprite_patterns_2
@@ -566,11 +616,11 @@ ti_upload_sprite_patterns_2:
        li   r6,16
        s    r3,r6                      ; Number of blanks to upload
 ti_upload_sprite_patterns_3:
-       mov  r5,r7                      ; Copy number of rows in this sprite
-       mov  r6,r8                      ; Copy number of blanks in this sprite
-       s    r5,r3                      ; Total rows - drawn rows
-*      Column 1
+       mov  r5,r7                      ; Copy number of rows in this pattern
+       mov  r6,r8                      ; Copy number of blanks in this pattern
+       s    r5,r3                      ; Total rows -= drawn rows
        mov  r15,r9                     ; Copy sprite graphics address
+*      Column 1
 ti_upload_sprite_patterns_4:
        movb *r15,*r13                  ; Write pattern byte to VDP
        dect r15                        ; One row up in sprite graphics
@@ -579,7 +629,7 @@ ti_upload_sprite_patterns_4:
        mov  r6,r6                      ; Any blanks?
        jeq  ti_upload_sprite_patterns_6
 ti_upload_sprite_patterns_5:
-       clr  *r13                       ; Upload blank
+       movb @zero,*r13                 ; Upload blank
        dec  r6
        jne  ti_upload_sprite_patterns_5
 *      Column 2
@@ -594,19 +644,49 @@ ti_upload_sprite_patterns_7:
        mov  r8,r8                      ; Any blanks?
        jeq  ti_upload_sprite_patterns_9
 ti_upload_sprite_patterns_8:
-       clr  *r13                       ; Upload blank
+       movb @zero,*r13                 ; Upload blank
        dec  r8
        jne  ti_upload_sprite_patterns_8
 ti_upload_sprite_patterns_9:
 *      Next sprite
-       inct @next_sprite_pattern_index
-       inct @next_sprite_pattern_index
+       dec  r15
        dec  r4
        jne  ti_upload_sprite_patterns_1
 ti_upload_sprite_patterns_10:
        lwpi wrksp
        rt
 *// ti_upload_sprite_patterns
+
+*********************************************************************************
+*
+* Deallocate sprite patterns
+*
+* ix: Address of entity
+*
+ti_deallocate_sprite_patterns:
+       movb *ix,r1
+       srl  r1,8
+       movb @b255,@sprite_pattern_allocation_table(r1)
+       rt
+*// ti_deallocate_sprite_patterns
+
+*********************************************************************************
+*
+* Update sprite pattern usage table
+*
+ti_update_sprite_pattern_usage_table:
+       seto r0
+       li   r1,sprite_pattern_usage_table
+       li   r2,sprite_pattern_usage_table+n_sprite_patterns-1
+       movb @zero,*r2
+ti_update_sprite_pattern_usage_table_1:
+       cb   *r1+,r0
+       jeq  ti_update_sprite_pattern_usage_table_1
+       ab   one,@-1(r1)
+       c    r1,r2
+       jl   ti_update_sprite_pattern_usage_table_1
+       rt
+*// ti_update_sprite_pattern_usage_table
 
 *********************************************************************************
 *
@@ -630,8 +710,6 @@ ti_init_sprite_attr_table:
 *
 ti_draw_sprite:
        .proc
-       mov  @sprite_attr_table_addr,r0 ; Check if enabled
-       jeq  ti_draw_sprite_3           ; Return if not
        bl   @get_sprite_addr_ix        ; Now a=sprite index and de=sprite graphics
        bl   @ti_upload_sprite_patterns ; Upload patterns as needed
        mov  @sprite_attr_table_addr,r0
@@ -641,29 +719,48 @@ ti_draw_sprite:
        jle  ti_draw_sprite_1
        inc  r2                         ; Allocate 2
 ti_draw_sprite_1:
-       clr  r0                         ; y offset
+*      x
+       movb @entity_x(ix),a_
+       movb a_,r0
+       andi r0,>0700
+       jne  !
+       movb @bytes+2,@width_bytes
+       jmp  !!
+!      mov  @bytes+3,@width_bytes
+*      y
+!      movb @entity_y(ix),r0           ; y (bottom)
+       sb   *de,r0                     ; top = y - height
+       movb *de,@height_lines
+*      Pattern
+       srl  af,8
+       movb a,@sprite_pattern_usage_table(af)    ; Mark as used (zero)
+       movb @sprite_pattern_allocation_table(af),a
+       andi a,>3f00
+       sla  a,2
+*      Colour
+       movb @entity_flags(ix),r1
+       srl  r1,8
+       movb @ti_colors(r1),r1          ; Get TI color
+       srl  r1,4
 ti_draw_sprite_2:
 *      y
-       movb @entity_y(ix),r1           ; y (bottom)
-       sb   *de,r1                     ; top = y - height
-       ab   r0,r1                      ; Add offset
-       movb r1,@vdpwd
+       movb r0,@vdpwd
+       ab   @bytes+16,r0
 *      x
-       movb @entity_x(ix),@vdpwd
+       movb a_,@vdpwd
 *      Pattern
-       movb @sprite_pattern_allocation_table(a),@vdpwd
-*      Color
-       movb @entity_flags(ix),r1
-       movb @ti_colors(r1),@vdpwd     ; Get TI color
+       movb a,@vdpwd
+       ab   @bytes+4,a
+*      Colour
+       movb r1,@vdpwd
 *      Update address
-       inct  @sprite_attr_table_addr
-       inct  @sprite_attr_table_addr
-*      Another?
-       ab   @bytes+16,r0               ; Increase offset
+       a    @w4,@sprite_attr_table_addr
+*      Next sprite
        dec  r2
        jne ti_draw_sprite_2
-ti_draw_sprite_3:
+       clr  af
        .endproc
+w4:    data 4
 *// ti_draw_sprite
 
 *********************************************************************
@@ -676,7 +773,7 @@ ti_close_sprite_attr_table:
        bl   @vwad
        li   r0,>d000                    ; Write sprite attribute table terminator
        movb r0,@vdpwd
-       bl   @ti_vsync
+;       bl   @ti_vsync
        mov  @double_buffer_flag,r0
        andi r0,1
        ori  r0,>0500+(sprite_attr_table/>80)

@@ -168,4 +168,7 @@ entity_vx:
 entity_vy:
        equ  7
 
+n_sprite_patterns:
+       equ  >a2                        ; One more than the actual number
+
        copy "sound-defs.a99"
