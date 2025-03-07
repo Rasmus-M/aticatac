@@ -1587,7 +1587,7 @@ h_door_closed:                         ; >917d
        movb a,@door_timer              ; LD ($5E2E),A      ;
        b    @draw_room_item            ; JP $91FE          ; draw room item
 h_door_common:                              ; >9193
-       movb @bytes+>18,@door_timer     ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer ;
+       movb @bytes+>30,@door_timer     ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer ;
                                                            ; processing TODO: RM changed
 ;      movb a,@door_timer              ; LD ($5E2E),A      ;
        movb @>05(ix),a                 ; LD A,(IX+$05)     ; save door attr

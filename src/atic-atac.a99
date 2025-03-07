@@ -22,6 +22,7 @@ start:                                 ; >6000
       limi 0
       lwpi wrksp
       bl   @ti_setup_environment
+      bl   @loading_screen
 ;     limi 0                          ; DI                ;
 ;     li   sp,menu_selection          ; LD SP,$5E00       ;
 ;_6004:                                 ; >6004
@@ -31,6 +32,22 @@ start:                                 ; >6000
 ;      rt                              ;
 ;!
         b    @reset_menu                ; JP $7C19          ;
+
+*********************************************************************
+*
+* Display loading screen
+*
+loading_screen:
+       .proc
+       seto @loading_screen_rom_bank
+       li   hl,>6040
+       li   de,zx_screen
+       li   bc,>1b00
+       .ldir
+       bl   @ti_upload_zx_screen
+       bl   @ti_wait_fire
+       .endproc
+*// loading_screen
 
 *********************************************************************
 *
@@ -659,16 +676,8 @@ gameover_delay:                        ; >8c4f
        li   de,press_fire_msg
        bl   @colour_text
        bl   @ti_upload_zx_screen
-!      li   r0,KEY_SP
-       bl   @ti_check_key
-       jne  !
-       li   r0,KEY_FI
-       bl   @ti_check_key
-       jne  !
-       li   r0,KEY_EN
-       bl   @ti_check_key
-       jeq  -!
-!      b    @main_menu                 ; JP $7C29          ;
+       bl   @ti_wait_fire
+       b    @main_menu                 ; JP $7C29          ;
 
 *********************************************************************
 *

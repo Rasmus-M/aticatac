@@ -1027,6 +1027,26 @@ ti_check_key:
 
 ***************************************************************************
 *
+* Wait for fire key
+*
+ti_wait_fire:
+       .proc
+ti_wait_fire_1:
+       li   r0,KEY_SP
+       bl   @ti_check_key
+       jne  ti_wait_fire_2
+       li   r0,KEY_FI
+       bl   @ti_check_key
+       jne  ti_wait_fire_2
+       li   r0,KEY_EN
+       bl   @ti_check_key
+       jeq  ti_wait_fire_1
+ti_wait_fire_2:
+       .endproc
+*// ti_wait_fire
+
+***************************************************************************
+*
 * Check quit
 *
 ti_check_quit:
