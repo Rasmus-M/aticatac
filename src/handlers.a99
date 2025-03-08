@@ -1595,17 +1595,19 @@ h_door_common:                         ; >9193
 ;      movb @bytes+>5e,a               ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer ;
                                                            ; processing TODO: RM changed
        movb @bytes+>18,@door_timer     ; LD ($5E2E),A      ;
-       movb @>05(ix),a                 ; LD A,(IX+$05)     ; save door attr
-       .push af                        ; PUSH AF           ;
-       socb @bytes+>03,a               ; OR $03            ; Set draw mode to XOR
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       bl   @draw_bgrnd_graphics       ; CALL $9213        ; undraw door
+*      There doesn't seem to be any reason for undrawing and redrawing using XOR -
+*      we can just draw the new door using overwrite.
+;      movb @>05(ix),a                 ; LD A,(IX+$05)     ; save door attr
+;      .push af                        ; PUSH AF           ;
+;      socb @bytes+>03,a               ; OR $03            ; Set draw mode to XOR
+;      movb a,@>05(ix)                 ; LD (IX+$05),A     ;
+;      bl   @draw_bgrnd_graphics       ; CALL $9213        ; undraw door
        movb *ix,a                      ; LD A,(IX+$00)     ; entity type
        xor  one,a                      ; XOR $01           ; toggle open/close state
-       bl   @set_door_type             ; CALL $9260        ; set door type for both linked entities
+       bl   @set_linked_entity_type    ; CALL $9260        ; set door type for both linked entities
        bl   @draw_bgrnd_graphics       ; CALL $9213        ; redraw door
-       .pop af                         ; POP AF            ;
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ; restore door attr
+;     .pop af                          ; POP AF            ;
+;      movb a,@>05(ix)                 ; LD (IX+$05),A     ; restore door attr
        bl   @update_door               ; CALL $9546        ; update solid/passable door state
        .ifeq hw_sprites,0
        bl   @draw_room_item_call       ; CALL $91FE        ; draw room item (attributes)
@@ -1640,26 +1642,32 @@ h_trap_closed:                         ; >91bc
 h_trap_open:                           ; >91c5
        movb @rand8,a                   ; LD A,($5E05)      ; open trapdoor handler
        ; AND A                         ; AND A             ; zero?
-       jeq  !                          ; JP NZ,$9731       ; jump if not
+       jeq  trap_common                ; JP NZ,$9731       ; jump if not
        b    @chk_trap_exit             ;
-!
 trap_common:                           ; >91cc
+*      There doesn't seem to be any reason for undrawing and redrawing using XOR -
+*      we can just draw the new trap using overwrite.
        movb @>05(ix),a                 ; LD A,(IX+$05)     ;
        .push af                        ; PUSH AF           ;
-       socb @bytes+>03,a               ; OR $03            ;
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       bl   @draw_bgrnd_graphics       ; CALL $9213        ;
+       szcb @bytes+>03,@>05(ix)        ; Overwrite mode
+;      socb @bytes+>03,a               ; OR $03            ;
+;      movb a,@>05(ix)                 ; LD (IX+$05),A     ;
+;      bl   @draw_bgrnd_graphics       ; CALL $9213        ;
        movb *ix,a                      ; LD A,(IX+$00)     ;
        xor  one,a                      ; XOR $01           ; toggle open/closed state
        movb a,*ix                      ; LD (IX+$00),A     ;
        bl   @draw_bgrnd_graphics       ; CALL $9213        ;
        .pop af                         ; POP AF            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
+       .ifeq hw_sprites,0
        bl   @draw_room_item_call       ; CALL $91FE        ; draw room item
-       .ifeq hw_sprites,1
+       .else
        movb @room_drawn,r0             ; BIT 0,(HL)        ; room drawn yet?
        jeq  !
+       bl   @draw_bgrnd_attrs
        bl   @ti_upload_zx_screen
+       jmp  !!
+!      bl   @draw_room_item_call
 !
        .endif
        bl   @door_sound                ; JP $A46E          ; door sound (short burst of white noise)
@@ -1698,7 +1706,7 @@ h_door_locked:                         ; >9244
        movb @bytes+>02,a               ; LD A,$02          ; open door graphic
 * This entry point is used by the routine at #R$9252.
 loc_924c:                              ; >924c
-       bl   @set_door_type             ; CALL $9260        ; set door type for both linked entities
+       bl   @set_linked_entity_type             ; CALL $9260        ; set door type for both linked entities
        b    @change_room_branch        ; JP $9117          ; move player to room linked to entity (usually door)
 
 *********************************************************************

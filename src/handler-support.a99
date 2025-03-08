@@ -1223,17 +1223,17 @@ loc_923f:                              ; >923f
 * set door type for both linked entities
 *
 * Used by the routines at #R$915f and #R$9244.
-set_door_type:                         ; >9260
+set_linked_entity_type:                ; >9260
 ;      .push ix                        ; PUSH IX           ;
 ;      .pop hl                         ; POP HL            ;
        mov  ix,hl
        movb a,*hl                      ; LD (HL),A         ; set door graphic
-;       .ex_af_af_                      ; EX AF,AF'         ;
-;       movb @l,a                       ; LD A,L            ;
-;       li   r0,8*256                   ; XOR $08           ; linked entry
-;       xor  r0,a                       ;
-;       movb a,@l                       ; LD L,A            ;
-;       .ex_af_af_                      ; EX AF,AF'         ;
+;      .ex_af_af_                      ; EX AF,AF'         ;
+;      movb @l,a                       ; LD A,L            ;
+;      li   r0,8*256                   ; XOR $08           ; linked entry
+;      xor  r0,a                       ;
+;      movb a,@l                       ; LD L,A            ;
+;      .ex_af_af_                      ; EX AF,AF'         ;
        li   r0,>0008
        xor  r0,hl
        movb a,*hl                      ; LD (HL),A         ; set linked door graphic
@@ -1799,16 +1799,24 @@ add_score_bc_bcd:                      ; >a19c
        li   hl,score_bcd+>0002         ; LD HL,$5E2C       ; end of score is 1s
        movb *hl,a                      ; LD A,(HL)         ;
        ab   @c,a                       ; ADD A,C           ; add 10s and 1s
+       sb   r1,r1                      ; For carry
        .daa                            ; DAA               ;
-       movb a,*hl                      ; LD (HL),A         ;
+       jnc !
+       ab   one,r1                     ; Carry
+!      movb a,*hl                      ; LD (HL),A         ;
        dec  hl                         ; DEC HL            ;
        movb *hl,a                      ; LD A,(HL)         ;
+       ab   r1,a                       ; Add carry
        ab   b,a                        ; ADC A,B           ; add 1000s and 100s
+       sb   r1,r1                      ; For carry
        .daa                            ; DAA               ;
-       movb a,*hl                      ; LD (HL),A         ;
+       jnc !
+       ab   one,r1                     ; Carry
+!      movb a,*hl                      ; LD (HL),A         ;
        dec  hl                         ; DEC HL            ;
        movb *hl,a                      ; LD A,(HL)         ;
-       ab   @zero,a                    ; ADC A,$00         ; carry 10000s
+       ab   r1,a                       ; Add carry
+;      ab   @zero,a                    ; ADC A,$00         ; carry 10000s
        .daa                            ; DAA               ;
        movb a,*hl                      ; LD (HL),A         ;
 * This entry point is used by the routine at #R$a219.
