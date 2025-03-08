@@ -1,18 +1,22 @@
 * paint entity with its current attr colour
 *
 * Used by the routines at #R$a14d and #R$a311.
-set_entity_attrs:                      ; >a00e
+save_and_set_entity_attrs:             ; >a00e
        .proc
        movb @entity_x(ix),@saved_x     ; LD A,(IX+$03)     ; xpos
 ;      movb a,@saved_x                 ; LD ($5E16),A      ;
        movb @entity_y(ix),@saved_y     ; LD A,(IX+$04)     ; ypos
 ;      movb a,@saved_y                 ; LD ($5E17),A      ;
-       jmp  set_entity_attrs2_branch
+       jmp  set_entity_attrs_branch
+*
 * This entry point is used by the routines at #R$81f0, #R$871a, #R$8e26,
 * #R$92e2 and #R$9326.
-set_entity_attrs2:                     ; >a01a
+*
+* ix: entity, width_bytes and height_lines must be set up in advance.
+*
+set_entity_attrs:                      ; >a01a
        .proc
-set_entity_attrs2_branch:
+set_entity_attrs_branch:
        movb @entity_x(ix),@l           ; LD L,(IX+$03)     ; xpos
        movb @entity_y(ix),h            ; LD H,(IX+$04)     ; ypos
        movb @entity_flags(ix),d        ; LD D,(IX+$05)     ; entity attr
@@ -29,7 +33,7 @@ set_entity_attrs2_branch:
 ;      srl  a,1                                            ; (lines / 4 + 1) / 2 = lines / 8 + 0.5
 ;      andi a,>1f00                    ; AND $1F           ; mod 32
 ;      ab   one,a                      ; INC A             ; + 1
-       mov  h,a                                            ; RM: This is more accurate
+       mov  h,a                                            ; RM: This is more accurate than the above
        andi a,>0700
        neg  a
        ai   a,>0700
@@ -44,21 +48,21 @@ set_entity_attrs2_branch:
        sb   b,b                        ; LD B,$00          ;
        movb @saved_x,a                 ; LD A,($5E16)      ;
        cb   a,@l                       ; CP L              ; same as previous xpos?
-       jeq  loc_a043                   ; JR Z,$A043        ; jump if so (no change)
-       jl   loc_a042                   ; JR C,$A042        ; jump if less (moving left, add 1)
+       jeq  set_entity_attrs_2         ; JR Z,$A043        ; jump if so (no change)
+       jl   set_entity_attrs_1         ; JR C,$A042        ; jump if less (moving left, add 1)
        ab   one,b                      ; INC B             ; moving right (add 2)
-loc_a042:                              ; >a042
+set_entity_attrs_1:                    ; >a042
        ab   one,b                      ; INC B             ;
-loc_a043:                              ; >a043
+set_entity_attrs_2:                    ; >a043
        movb @saved_y,a                 ; LD A,($5E17)      ;
        cb   a,h                        ; CP H              ; ypos unchanged?
 ;      movb b,a                        ; LD A,B            ;
-       jeq  loc_a050                   ; JR Z,$A050        ; jump if so (no change)
-       jl   loc_a04e                   ; JR C,$A04E        ; jump if less (moving up, add 4)
+       jeq  set_entity_attrs_4         ; JR Z,$A050        ; jump if so (no change)
+       jl   set_entity_attrs_3         ; JR C,$A04E        ; jump if less (moving up, add 4)
        ab   @bytes+>04,b               ; ADD A,$04         ; moving down (add 8)
-loc_a04e:                              ; >a04e
+set_entity_attrs_3:                    ; >a04e
        ab   @bytes+>04,b               ; ADD A,$04         ;
-loc_a050:                              ; >a050
+set_entity_attrs_4:                     ; >a050
  ;     movb a,b                        ; LD B,A            ; handler table index
        bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        movb b,a                        ; LD A,B            ;

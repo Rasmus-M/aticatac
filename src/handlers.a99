@@ -271,7 +271,7 @@ set_appear_w_h_branch:
        ab   one,a                      ; INC A             ; extra byte needed
 loc_92ef:                              ; >92ef
        movb a,@width_bytes             ; LD ($5E10),A      ;
-       b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
+       b    @set_entity_attrs_branch   ; JP $A01A          ; set attrs covering previous and new position
 
 *********************************************************************
 *
@@ -405,7 +405,7 @@ entry_from_wizard_and_serf:            ; >8e78
 * #R$85f7 and #R$8787.
 redraw_entity_and_attrs:               ; >8e8e
        bl   @redraw_entity             ; CALL $9FCA        ; draw entity to display (no attrs)
-       b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
+       b    @set_entity_attrs_branch   ; JP $A01A          ; set attrs covering previous and new position
 
 * This entry point is used by the routines at #R$8a1e, #R$8ed7 and #R$98c8.
 player_dead:                           ; >8ea0
@@ -794,12 +794,12 @@ loc_825d:                              ; >825d
        .pop bc                         ; POP BC            ;
        jmp  loc_8231                   ; JR $8231          ;
 * This entry point is used by the routine at #R$8787.
-undraw_and_remove_entitiy:             ; >826f
+undraw_and_remove_entitiy:             ; >826f             ; Remove weapon or remains after popped creature
        bl   @undraw_entity             ; CALL $9F56        ;
        bl   @weapon_pop_sound          ; CALL $A445        ; weapon disappearing sound
        movb @room_attr,a               ; LD A,($5E1A)      ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       bl   @set_entity_attrs2         ; CALL $A01A        ; set attrs covering previous and new position
+       bl   @set_entity_attrs          ; CALL $A01A        ; set attrs covering previous and new position
 * This entry point is used by the routine at #R$85b2.
 remove_entity:                         ; >827e
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; clear entity graphic
@@ -1530,7 +1530,10 @@ h_food:                                ; >8c63
 loc_8c6e:                              ; >8c6e
        bl   @undraw_entity_as_bgrnd    ; CALL $9F56        ;
        .ifeq hw_sprites
+       movb @room_drawn,r0             ; BIT 0,(HL)        ; room drawn yet?
+       jeq  !
        bl   @ti_upload_zx_screen
+!
        .endif
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; remove food item
        bl   @eat_sound                 ; CALL $A485        ;
@@ -1559,17 +1562,17 @@ h_door_open:                           ; >915f
 !
        movb @door_timer,a              ; LD A,($5E2E)      ;
        ; AND A                         ; AND A             ; door timer expired?
-       jeq  loc_9174                   ; JR Z,$9174        ; jump if so
+       jeq  h_door_open_1              ; JR Z,$9174        ; jump if so
        sb   one,a                      ; DEC A             ; reduce timer
        movb a,@door_timer              ; LD ($5E2E),A      ;
        b    @h_door_exit               ; JP $91F2          ; jump to check exits
-loc_9174:                              ; >9174
+h_door_open_1:                         ; >9174
        movb @in_doorway,a              ; LD A,($5E2D)      ;
        ; AND A                         ; AND A             ; player standing in doorway?
        jeq  !                          ; JP NZ,$91F2       ; jump if so (run exit logic only)
        b    @h_door_exit               ;
 !
-       jmp  h_door_common                   ; JR $9193          ;
+       jmp  h_door_common              ; JR $9193          ;
 
 *********************************************************************
 *
@@ -1583,16 +1586,15 @@ h_door_closed:                         ; >917d
 !
        movb @door_timer,a              ; LD A,($5E2E)      ;
        ; AND A                         ; AND A             ; door timer expired?
-       jne  !                          ; JP Z,$9193        ; jump if so
-       b    @h_door_common                  ;
-!
+       jeq  h_door_common              ; JP Z,$9193        ; jump if so
        sb   one,a                      ; DEC A             ;
        movb a,@door_timer              ; LD ($5E2E),A      ;
        b    @draw_room_item            ; JP $91FE          ; draw room item
+*      Switch from open to closed or closed to open
 h_door_common:                         ; >9193
-       movb @bytes+>18,@door_timer     ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer ;
+;      movb @bytes+>5e,a               ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer ;
                                                            ; processing TODO: RM changed
-;      movb a,@door_timer              ; LD ($5E2E),A      ;
+       movb @bytes+>18,@door_timer     ; LD ($5E2E),A      ;
        movb @>05(ix),a                 ; LD A,(IX+$05)     ; save door attr
        .push af                        ; PUSH AF           ;
        socb @bytes+>03,a               ; OR $03            ; Set draw mode to XOR
@@ -1605,9 +1607,16 @@ h_door_common:                         ; >9193
        .pop af                         ; POP AF            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; restore door attr
        bl   @update_door               ; CALL $9546        ; update solid/passable door state
-       bl   @draw_room_item_call       ; CALL $91FE        ; draw room item
-       .ifeq hw_sprites,1
+       .ifeq hw_sprites,0
+       bl   @draw_room_item_call       ; CALL $91FE        ; draw room item (attributes)
+       .else
+       movb @room_drawn,r0             ; BIT 0,(HL)        ; room drawn yet?
+       jeq  !
+       bl   @draw_bgrnd_attrs
        bl   @ti_upload_zx_screen
+       jmp  !!
+!      bl   @draw_room_item_call
+!
        .endif
        bl   @door_sound                ; JP $A46E          ; door sound (short burst of white noise)
        .endproc
@@ -1647,6 +1656,12 @@ trap_common:                           ; >91cc
        .pop af                         ; POP AF            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
        bl   @draw_room_item_call       ; CALL $91FE        ; draw room item
+       .ifeq hw_sprites,1
+       movb @room_drawn,r0             ; BIT 0,(HL)        ; room drawn yet?
+       jeq  !
+       bl   @ti_upload_zx_screen
+!
+       .endif
        bl   @door_sound                ; JP $A46E          ; door sound (short burst of white noise)
        .endproc
 

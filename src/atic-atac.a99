@@ -185,7 +185,7 @@ draw_menu_icons_1:                     ; >a31a
        .push hl                        ; PUSH HL           ;
        .push de                        ; PUSH DE           ;
        bl   @draw_entity               ; CALL $9F4A        ; draw entity graphic (no attrs)
-       bl   @set_entity_attrs          ; CALL $A00E        ; paint entity with its current attr colour
+       bl   @save_and_set_entity_attrs ; CALL $A00E        ; paint entity with its current attr colour
        .pop de                         ; POP DE            ;
        .pop hl                         ; POP HL            ;
        .pop bc                         ; POP BC            ;
@@ -338,9 +338,9 @@ main_loop:                             ; >7dc3
        movb a,@num_creatures           ; LD ($5E25),A      ; number of creatures processed this frame
        li   ix,acg_key_1               ; LD IX,$EAA8       ; first entity
 *      Draw room if not already done
-       movb @game_flags,r0             ; LD A,($5E14)      ; b0 set if room content drawn
+       movb @room_drawn,r0             ; LD A,($5E14)      ; b0 set if room content drawn
 ;      movb a,r0                       ; BIT 0,A           ; room content drawn?
-       andi r0,>0100                   ;                   
+;      andi r0,>0100                   ;
        jne  main_loop_1                ; JR NZ,$7DDC       ; jump if so
        li   ix,linked_items            ; LD IX,$EEE0       ; pairs of linked items, including doors
        jmp  draw_room                  ; JR $7E23          ; Draw room and restart main_loop
@@ -411,8 +411,8 @@ draw_room:
        movb h,@counter_high
 *      Draw entities from player to linked_items if not already drawn
 ;      li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
-       movb @game_flags,r0             ; BIT 0,(HL)        ; room drawn yet?
-       andi r0,>0100                   ;                   
+       movb @room_drawn,r0             ; BIT 0,(HL)        ; room drawn yet?
+;      andi r0,>0100                   ;
        jne  loc_7e55                   ; JR NZ,$7E55       ; jump if so
        bl   @draw_entities             ; CALL $9291         ; draw all non-monster entities in the current room
        .ifeq hw_sprites,1
@@ -420,7 +420,7 @@ draw_room:
        .endif
 loc_7e55:                              ; >7e55
 ;      li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
-       socb @bits+0,@game_flags        ; SET 0,(HL)        ; mark room as drawn
+       socb @bits+0,@room_drawn        ; SET 0,(HL)        ; mark room as drawn
 *      Update random number
 ;       mov  @rand8,hl                  ; LD HL,($5E05)     ; another random number source
 ;       mov  @zx_frames,de              ; LD DE,($5C78)     ;
@@ -955,68 +955,67 @@ randomise_doors:                       ; >94f5
        movb @counter_low,a             ; LD A,($5E12)      ;
        movb a,@l                       ; LD L,A            ; set ROM addr LSB
        bl   @ti_rnd
-       movb r0,a                       ; LD A,($5C78)      ; 0-49
+       movb r0,a                       ; LD A,($5C78)      ; zx_frames 0-49
        andi a,>0f00                    ; AND $0F           ; limit to 4K (0000-0FFF)
        socb @bytes+>10,a               ; OR $10            ; add 4K (1000-1FFF)
        movb a,h                        ; LD H,A            ; set ROM addr MSB
-       .exx                            ; EXX               ; 
-       li   hl,linked_items            ; LD HL,$EEE0       ; pairs of linked items, including doors
-       li   de,second_linked_item                   ; LD DE,$EEE8       ; pairs of linked items, including doors
-       li   bc,>0010                   ; LD BC,$0010       ; 16 bytes per entry
-loc_950b:                              ; >950b
-       .exx                            ; EXX               ; 
-       movb *hl,a                      ; LD A,(HL)         ; read ROM byte
-       inc  hl                         ; INC HL            ; 
-       .exx                            ; EXX               ; 
+;      .exx                            ; EXX               ;
+       li   hl_,linked_items           ; LD HL,$EEE0       ; pairs of linked items, including doors
+       li   de_,second_linked_item     ; LD DE,$EEE8       ; pairs of linked items, including doors
+       li   bc_,>0010                  ; LD BC,$0010       ; 16 bytes per entry
+randomise_doors_1:                     ; >950b
+;      .exx                            ; EXX               ;
+       movb *hl+,a                     ; LD A,(HL)         ; read ROM byte
+;      inc  hl                         ; INC HL            ;
+;      .exx                            ; EXX               ;
        cb   a,@bytes+>70               ; CP $70            ; ROM value >= 0x70 (~56% chance)
-       jhe  loc_951f                   ; JR NC,$951F       ; jump if so (door always open)
-       movb *de,a                      ; LD A,(DE)         ; 
-       cb   a,*hl                      ; CP (HL)           ; same value?
-       jne  loc_951f                   ; JR NZ,$951F       ; jump if not (no change)
+       jhe  randomise_doors_2          ; JR NC,$951F       ; jump if so (door always open)
+       movb *de_,a                     ; LD A,(DE)         ; Read linked entity type
+       cb   a,*hl_                     ; CP (HL)           ; same value?
+       jne  randomise_doors_2          ; JR NZ,$951F       ; jump if not (no change)
        cb   a,one                      ; CP $01            ; cave doorway?
-       jeq  loc_9526                   ; JR Z,$9526        ; jump if so
+       jeq  randomise_doors_3          ; JR Z,$9526        ; jump if so
        cb   a,@bytes+>02               ; CP $02            ; normal doorway?
-       jeq  loc_9542                   ; JR Z,$9542        ; jump if so
-loc_951f:                              ; >951f
-       a    bc,hl                      ; ADD HL,BC         ; next entry
-       .ex_de_hl                       ; EX DE,HL          ; 
-       a    bc,hl                      ; ADD HL,BC         ; next entry
-       jnc  !                          ; RET C             ; return if hit end of RAM
+       jeq  randomise_doors_5          ; JR Z,$9542        ; jump if so
+randomise_doors_2:                     ; >951f
+       a    bc_,hl_                    ; ADD HL,BC         ; next entry
+;      .ex_de_hl                       ; EX DE,HL          ;
+       a    bc_,de_                    ; ADD HL,BC         ; next entry
+       ci   hl_,linked_items_end
+       jl  !                           ; RET C             ; return if hit end of RAM
        .endproc                        ;
 !
-       .ex_de_hl                       ; EX DE,HL          ; 
-       jmp  loc_950b                   ; JR $950B          ; 
-loc_9526:                              ; >9526
-       movb @bytes+>22,a               ; LD A,$22          ; mode?
-loc_9528:                              ; >9528
-       movb a,*de                      ; LD (DE),A         ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       .push de                        ; PUSH DE           ; 
+;      .ex_de_hl                       ; EX DE,HL          ;
+       jmp  randomise_doors_1          ; JR $950B          ;
+randomise_doors_3:                     ; >9526
+       movb @bytes+>22,a               ; LD A,$22          ; Shut cave door
+randomise_doors_4:                     ; >9528
+       movb a,*de_                     ; LD (DE),A         ;
+       movb a,*hl_                     ; LD (HL),A         ;
+;      .push de                        ; PUSH DE           ;
 ;      inc  de                         ; INC DE            ;
 ;      inc  de                         ; INC DE            ;
 ;      inc  de                         ; INC DE            ;
 ;      inc  de                         ; INC DE            ;
 ;      inc  de                         ; INC DE            ; + 5
-       ai   de,5
-       movb *de,a                      ; LD A,(DE)         ;
-       socb @bytes+>08,a               ; OR $08            ; 
-       movb a,*de                      ; LD (DE),A         ; 
-       .pop de                         ; POP DE            ; 
-       .push hl                        ; PUSH HL           ; 
+;      movb *de,a                      ; LD A,(DE)         ; flags
+       socb @bytes+>08,@5(de_)         ; OR $08            ;
+;      movb a,*de                      ; LD (DE),A         ;
+;      .pop de                         ; POP DE            ;
+;      .push hl                        ; PUSH HL           ;
 ;      inc  hl                         ; INC HL            ;
 ;      inc  hl                         ; INC HL            ;
 ;      inc  hl                         ; INC HL            ;
 ;      inc  hl                         ; INC HL            ;
 ;      inc  hl                         ; INC HL            ;
-       ai   hl,5
-       movb *hl,a                      ; LD A,(HL)         ;
-       socb @bytes+>08,a               ; OR $08            ; 
-       movb a,*hl                      ; LD (HL),A         ; 
-       .pop hl                         ; POP HL            ; 
-       jmp  loc_951f                   ; JR $951F          ; 
-loc_9542:                              ; >9542
-       movb @bytes+>20,a               ; LD A,$20          ; mode?
-       jmp  loc_9528                   ; JR $9528          ; 
+;      movb *hl,a                      ; LD A,(HL)         ;
+       socb @bytes+>08,@5(hl_)         ; OR $08            ;
+;      movb a,*hl                      ; LD (HL),A         ;
+;      .pop hl                         ; POP HL            ;
+       jmp  randomise_doors_2          ; JR $951F          ;
+randomise_doors_5:                     ; >9542
+       movb @bytes+>20,a               ; LD A,$20          ; Shut normal door
+       jmp  randomise_doors_4          ; JR $9528          ;
 
 *********************************************************************
 *
@@ -1296,7 +1295,7 @@ loc_a15e:                              ; >a15e
        .push hl                        ; PUSH HL           ; 
        bl   @clear_sprite              ; CALL $A185        ;
        bl   @draw_entity               ; CALL $9F4A        ; draw entity graphic (no attrs)
-       bl   @set_entity_attrs          ; CALL $A00E        ; paint entity with its current attr colour
+       bl   @save_and_set_entity_attrs ; CALL $A00E        ; paint entity with its current attr colour
        .pop hl                         ; POP HL            ; 
        .pop ix                         ; POP IX            ; 
        .pop de                         ; POP DE            ; 

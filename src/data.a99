@@ -22,7 +22,7 @@ counter_low:                           ; >5e12
        byte >3A
 counter_high:                          ; >5e13
        byte >F5
-game_flags:                            ; >5e14
+room_drawn:                            ; >5e14
        byte >AC                                                      ; b0 set if room content drawn
 saved_graphic:                         ; >5e15
        byte >36

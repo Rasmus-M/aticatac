@@ -84,12 +84,22 @@ draw_room_item:
 ;       sb   one,d                      ; DEC D             ;
 ;       movb *ix,@c                     ; LD C,(IX+$00)     ; graphic
 ;       movb @entity_flags(ix),b        ; LD B,(IX+$05)     ; attr
+       .ifeq hw_sprites,0
        bl   @draw_bgrnd_attrs          ; CALL $9980        ; B=attr, C=graphic, E=xpos, D=ypos
-       movb @game_flags,a              ; LD A,($5E14)      ; b0 set if room content drawn
+       .endif
+       movb @room_drawn,a              ; LD A,($5E14)      ; b0 set if room content drawn
        ; AND A                         ; AND A             ; room content drawn?
        jne  !                          ; RET NZ            ; return if so
+       .ifeq hw_sprites,1
+       bl   @draw_bgrnd_attrs          ; Only draw attributes in hw_sprites mode the first time
+       .endif
        b    @draw_bgrnd_graphics_branch
 !      .endproc                            ;
+
+draw_room_item_and_attributes:
+       .proc
+       bl   @draw_bgrnd_attrs
+       b    @draw_bgrnd_graphics_branch
 
 *********************************************************************
 *
@@ -100,7 +110,7 @@ draw_room_frame:                       ; >9bea
        .proc
        seto @room_data_rom_bank
        sb   a,a                        ; XOR A             ;
-       movb a,@game_flags              ; LD ($5E14),A      ; b0 set if room content drawn
+       movb a,@room_drawn              ; LD ($5E14),A      ; b0 set if room content drawn
        movb @player_room,a             ; LD A,($EA91)      ;
        jmp  !
 * This entry point is used by the routine at #R$9731.

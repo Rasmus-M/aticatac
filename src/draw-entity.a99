@@ -309,31 +309,43 @@ draw_entity_de:                        ; >9f4d
 * Position/graphics provided in advance by calling save_entity.
 *
 undraw_entity:                         ; >9f56
+       .proc
        .ifeq hw_sprites,1
-       rt
+       movb  @bytes+2,a                ; Just set up the values needed for attribute drawing (for now)
+       movb  @saved_x,r0
+       andi r0,>0700
+       jeq  !
+       ab   one,a
+!      movb a,@width_bytes             ; For attribute drawing
+       bl   @get_saved_sprite_addr     ; CALL $9E86        ; return address of saved_graphic in DE
+       movb *de,@height_lines          ; For attribute drawing
+       .endproc
        .else
-       equ  $
+       jmp  undraw_entity_as_bgrnd_branch
        .endif
 undraw_entity_as_bgrnd:
        .proc
-       bl   @prepare_undraw            ; CALL $9F80        ; prepare for undraw in normal regs
+undraw_entity_as_bgrnd_branch:
+       bl   @prepare_undraw            ; CALL $9F80        ; prepare for undraw in normal regs. Will set undraw_height.
 * This entry point is used by the routine at #R$9f45.
 loc_9f59:                              ; >9f59             ; Was used by undraw_entity_de
        .exx                            ; EXX               ;
        sb   a,a                        ; XOR A             ; EXX
        movb a,@c                       ; LD C,A            ; EXX C_ = 0
        movb a,@draw_height             ; LD ($5E19),A      ; EXX draw_height = 0
-       movb @undraw_height,a           ; LD A,($5E18)      ; EXX
+       movb @undraw_height,a           ; LD A,($5E18)      ; EXX The height of the graphics
        movb a,@height_lines            ; LD ($5E11),A      ; EXX height_lines = undraw_height. For attribute drawing.
        movb @bytes+>02,a               ; LD A,$02          ; EXX 2 bytes wide
-       movb @l,r0                      ; LD A,L            ; EXX L_ low byte of screen address (where was this set up?)
+       movb @l,r0                      ; LD A,L            ; EXX L_ expected low byte of screen address
+                                                           ; This was not set up by prepare_undraw!
        andi r0,>0700                   ; AND $07           ; EXX aligned to cell boundary?
        jeq  loc_9f6d                   ; JR Z,$9F6D        ; EXX jump if so
        ab   one,a                      ; INC A             ; EXX 3 bytes needed
 loc_9f6d:                              ; >9f6d
        movb a,@width_bytes             ; LD ($5E10),A      ; EXX For attribute drawing
        .exx                            ; EXX               ;
-       b    @draw_sprite               ; JP $9E9B          ; Called without EXX?
+       b    @draw_sprite               ; JP $9E9B          ; Called without EXX. How does this work when draw_height=0?
+*      We will never get to this part of the code because draw_sprite will return to the caller.
        .push de                        ; PUSH DE           ; Now points to next sprite?
        bl   @prepare_undraw_de         ; CALL $9F83        ; Now what is all this?
        .exx                            ; EXX               ;

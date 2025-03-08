@@ -537,10 +537,10 @@ hurt_and_pop:                          ; >85ea
 pop_creature:                          ; >875f
        movb @>05(ix),a                 ; LD A,(IX+$05)     ; save creature attr
        .push af                        ; PUSH AF           ;
-       movb @room_attr,a               ; LD A,($5E1A)      ;
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ; undraw to room attr
-       bl   @undraw_entity             ; CALL $9F56        ;
-       bl   @set_entity_attrs2         ; CALL $A01A        ; set attrs covering previous and new position
+;      movb @room_attr,a               ; LD A,($5E1A)      ;
+       movb @room_attr,@>05(ix)        ; LD (IX+$05),A     ; undraw to room attr
+       bl   @undraw_entity             ; CALL $9F56        ; Remove creature before pop animation
+       bl   @set_entity_attrs          ; CALL $A01A        ; set attrs covering previous and new position
        .pop af                         ; POP AF            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
        movb @bytes+>6c,*ix             ; LD (IX+$00),$6C   ; base pop graphic
@@ -548,7 +548,7 @@ pop_creature:                          ; >875f
        li   bc,>0155                   ; LD BC,$0155       ;
        bl   @add_score_bc_bcd          ; CALL $A19C        ; add 155 score
        bl   @draw_entity               ; CALL $9F4A        ; draw entity graphic (no attrs)
-       b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
+       b    @set_entity_attrs_branch   ; JP $A01A          ; set attrs covering previous and new position
 
 *********************************************************************
 * This entry point is used by the routines at #R$8301, #R$845f, #R$85f7,
@@ -1310,7 +1310,7 @@ add_inventory:                         ; >9326
        .endif
        movb @room_attr,@>05(ix)        ; LD A,($5E1A)      ;
 ;      movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       bl   @set_entity_attrs2         ; CALL $A01A        ; set attrs covering previous and new position
+       bl   @set_entity_attrs          ; CALL $A01A        ; set attrs covering previous and new position
        sb   *ix,*ix                    ; LD (IX+$00),$00   ;
        bl   @inventory_sound           ; JP $A3BD          ;
        .endproc
