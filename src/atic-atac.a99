@@ -22,7 +22,9 @@ start:                                 ; >6000
       limi 0
       lwpi wrksp
       bl   @ti_setup_environment
+      .ifeq show_loading_screen,1
       bl   @loading_screen
+      .endif
 ;     limi 0                          ; DI                ;
 ;     li   sp,menu_selection          ; LD SP,$5E00       ;
 ;_6004:                                 ; >6004
@@ -66,29 +68,29 @@ clear_menu_data:                       ; >7c1e
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
 * This entry point is used by the routine at #R$8c35.
 main_menu:                             ; >7c29
-       bl   @clear_screen             ; CALL $80AA        ; clear display, attributes, and set black border
-       bl   @draw_menu_icons          ; CALL $A311        ; draw menu icons for controls and player acharacters
+       bl   @clear_screen              ; CALL $80AA        ; clear display, attributes, and set black border
+       bl   @draw_menu_icons           ; CALL $A311        ; draw menu icons for controls and player acharacters
 menu_loop:                             ; >7c2f
-       bl   @draw_menu_text           ; CALL $7CAF        ;
+       bl   @draw_menu_text            ; CALL $7CAF        ;
 
-;       movb @bytes+>f7,a               ; LD A,$F7          ; xxx54321
-;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
-;       ; IN A,($FE)                    ; IN A,($FE)        ;
-;       inv  a                          ; CPL               ; set bits now mean pressed keys
-;       movb a,@e                       ; LD E,A            ;
+;      movb @bytes+>f7,a               ; LD A,$F7          ; xxx54321
+;      ; OUT ($FD),A                   ; OUT ($FD),A       ;
+;      ; IN A,($FE)                    ; IN A,($FE)        ;
+;      inv  a                          ; CPL               ; set bits now mean pressed keys
+;      movb a,@e                       ; LD E,A            ;
 
        movb @menu_selection,a          ; LD A,($5E00)      ;
 
-;       movb @e,r0                      ; BIT 0,E           ; 1 pressed?
-;       andi r0,>0100                   ;
+;      movb @e,r0                      ; BIT 0,E           ; 1 pressed?
+;      andi r0,>0100                   ;
        li   r0,KEY_1
        bl   @ti_check_key
        jeq  loc_7c43                   ; JR Z,$7C43        ; jump if not
        andi a,>f900                    ; AND $F9           ; select Keyboard
 loc_7c43:                              ; >7c43
 
-;       movb @e,r0                      ; BIT 1,E           ; 2 pressed?
-;       andi r0,>0200                   ;
+;      movb @e,r0                      ; BIT 1,E           ; 2 pressed?
+;      andi r0,>0200                   ;
        li   r0,KEY_2
        bl   @ti_check_key
        jeq  loc_7c4b                   ; JR Z,$7C4B        ; jump if not
@@ -96,8 +98,8 @@ loc_7c43:                              ; >7c43
        socb @bytes+>02,a               ; OR $02            ; select Kempston joystick
 loc_7c4b:                              ; >7c4b
 
-;       movb @e,r0                      ; BIT 2,E           ; 3 pressed?
-;       andi r0,>0400                   ;
+;      movb @e,r0                      ; BIT 2,E           ; 3 pressed?
+;      andi r0,>0400                   ;
        li   r0,KEY_3
        bl   @ti_check_key
        jeq  loc_7c53                   ; JR Z,$7C53        ; jump if not
@@ -113,8 +115,8 @@ loc_7c53:                              ; >7c53
        andi a,>e700                    ; AND $E7           ; select Knight
 loc_7c59:                              ; >7c59
 
-;       movb @e,r0                      ; BIT 4,E           ; 5 pressed?
-;       andi r0,>1000                   ;
+;      movb @e,r0                      ; BIT 4,E           ; 5 pressed?
+;      andi r0,>1000                   ;
        li   r0,KEY_5
        bl   @ti_check_key
        jeq  loc_7c61                   ; JR Z,$7C61        ; jump if not
@@ -122,16 +124,16 @@ loc_7c59:                              ; >7c59
        socb @bytes+>08,a               ; OR $08            ; select Wizard
 loc_7c61:                              ; >7c61
 
-;       movb a,d                        ; LD D,A            ;
-;       movb @bytes+>ef,a               ; LD A,$EF          ; xxx67890
-;       ; OUT ($FD),A                   ; OUT ($FD),A       ;
-;       ; IN A,($FE)                    ; IN A,($FE)        ;
-;       inv  a                          ; CPL               ; set bits now mean pressed keys
-;       movb a,@e                       ; LD E,A            ;
-;       movb d,a                        ; LD A,D            ;
+;      movb a,d                        ; LD D,A            ;
+;      movb @bytes+>ef,a               ; LD A,$EF          ; xxx67890
+;      ; OUT ($FD),A                   ; OUT ($FD),A       ;
+;      ; IN A,($FE)                    ; IN A,($FE)        ;
+;      inv  a                          ; CPL               ; set bits now mean pressed keys
+;      movb a,@e                       ; LD E,A            ;
+;      movb d,a                        ; LD A,D            ;
 
-;       movb @e,r0                      ; BIT 4,E           ; 6 pressed?
-;       andi r0,>1000                   ;
+;      movb @e,r0                      ; BIT 4,E           ; 6 pressed?
+;      andi r0,>1000                   ;
        li   r0,KEY_6
        bl   @ti_check_key
        jeq  loc_7c73                   ; JR Z,$7C73        ; jump if not
@@ -142,8 +144,8 @@ loc_7c73:                              ; >7c73
        movb a,@menu_selection          ; LD ($5E00),A      ;
        movb a,@c                       ; LD C,A            ; 
 
-;       movb @e,r0                      ; BIT 0,E           ; 0 pressed?
-;       andi r0,>0100                   ;
+;      movb @e,r0                      ; BIT 0,E           ; 0 pressed?
+;      andi r0,>0100                   ;
        li   r0,KEY_0
        bl   @ti_check_key
        jeq  !                          ; JP NZ,$7D9A       ; jump if so
@@ -154,13 +156,13 @@ loc_7c73:                              ; >7c73
        li   hl,menu_attrs              ; LD HL,$7CEA       ;
        movb @bytes+>03,b               ; LD B,$03          ; 
        movb @c,a                       ; LD A,C            ; 
-       bl   @set_menu_attrs           ; CALL $7C90        ; highlight keyboard/kempston/cursor
+       bl   @set_menu_attrs            ; CALL $7C90        ; highlight keyboard/kempston/cursor
        movb @bytes+>03,b               ; LD B,$03          ; 
        movb @c,a                       ; LD A,C            ; 
        ; RRCA                          ; RRCA              ; 
        ; RRCA                          ; RRCA              ; 
        srl  a,2
-       bl   @set_menu_attrs           ; CALL $7C90        ; highlight knight/wizard/serf
+       bl   @set_menu_attrs            ; CALL $7C90        ; highlight knight/wizard/serf
 
        bl   @ti_upload_zx_screen
        b    @menu_loop                 ; JP $7C2F          ;
@@ -182,8 +184,8 @@ draw_menu_icons_1:                     ; >a31a
        .ldir                           ; LDIR              ;
        .push hl                        ; PUSH HL           ;
        .push de                        ; PUSH DE           ;
-       bl   @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
-       bl   @set_entity_attrs         ; CALL $A00E        ; paint entity with its current attr colour
+       bl   @draw_entity               ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl   @set_entity_attrs          ; CALL $A00E        ; paint entity with its current attr colour
        .pop de                         ; POP DE            ;
        .pop hl                         ; POP HL            ;
        .pop bc                         ; POP BC            ;
@@ -202,14 +204,14 @@ set_menu_attrs:                        ; >7c90
 set_menu_attrs_1:                      ; >7c91
        andi a,>0300                    ; AND $03           ; 
        jeq  set_menu_attrs_3           ; JR Z,$7C9C        ;
-       bl   @set_flash_off            ; CALL $7CA4        ;
+       bl   @set_flash_off             ; CALL $7CA4        ;
 set_menu_attrs_2:                      ; >7c98
        sb   one,a                      ; DEC A             ; 
        sb   one,b                      ; DJNZ $7C91        ; 
        jne  set_menu_attrs_1           ;
        .endproc                        ; RET               ;
 set_menu_attrs_3:                      ; >7c9c
-       bl   @set_flash_on             ; CALL $7CAB        ;
+       bl   @set_flash_on              ; CALL $7CAB        ;
        jmp  set_menu_attrs_2           ; JR $7C98          ;
        socb @bits+7,*hl                ; SET 7,(HL)        ; flash on
        inc  hl                         ; INC HL            ; 
@@ -263,7 +265,7 @@ loc_7cc1:                              ; >7cc1
        .push hl                        ; PUSH HL           ; 
        movb a,h                        ; LD H,A            ; 
        movb @bytes+>58,@l              ; LD L,$58          ; x coord for text
-       bl   @print_text               ; CALL $7D8A        ;
+       bl   @print_text                ; CALL $7D8A        ;
        .exx                            ; EXX               ; 
        .pop hl                         ; POP HL            ; 
        .pop bc                         ; POP BC            ; 
@@ -272,7 +274,7 @@ loc_7cc1:                              ; >7cc1
        jne  loc_7cc1                   ;                   
        li   hl,>b800                   ; LD HL,$B800       ; copyright at 0,184
        li   de,copyright_msg           ; LD DE,$7D51       ; 
-       bl   @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
+       bl   @colour_text               ; CALL $A1F3        ; show a line of text, first byte is attr
        li   hl,>0020                   ; LD HL,$0020       ; header at 32,0
        li   de,header_msg              ; LD DE,$7D72       ; 
        b    @colour_text_jump_target   ; JP $A1F3          ; show a line of text, first byte is attr
@@ -283,12 +285,12 @@ loc_7cc1:                              ; >7cc1
 print_text:                            ; >7d8a
        .proc
        .push hl                        ; PUSH HL           ; 
-       bl   @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       bl   @xy_to_display             ; CALL $9BA2        ; convert coords in HL to display address in HL
        movb @text_attr,a               ; LD A,($5E22)      ; 
        .ex_af_af_                      ; EX AF,AF'         ; 
        .exx                            ; EXX               ; 
        .pop hl                         ; POP HL            ; 
-       bl   @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        b    @loc_a1ff                  ; JP $A1FF          ; 
 
 *********************************************************************
@@ -297,24 +299,26 @@ print_text:                            ; >7d8a
 * 
 * Used by the routine at #R$7c19.
 start_game:                            ; >7d9a
+       .ifeq hw_sprites,1
        bl   @ti_reset_sprite_attr_table
-       bl   @clear_game_data          ; CALL $80CB        ; clear 5E10-5FFF
+       .endif
+       bl   @clear_game_data           ; CALL $80CB        ; clear 5E10-5FFF
        movb @bytes+>03,a               ; LD A,$03          ; 3 lives on startup
        movb a,@lives                   ; LD ($5E21),A      ; 
        li   hl,food_items              ; LD HL,$EB58       ; 
        mov  hl,@food_ptr               ; LD ($5E55),HL     ; 
-       bl   @clear_screen             ; CALL $80AA        ; clear display, attributes, and set black border
+       bl   @clear_screen              ; CALL $80AA        ; clear display, attributes, and set black border
        bl   @ti_upload_zx_screen
        bl   @ti_display_on
-       bl   @draw_side_panel          ; CALL $A219        ; draw side panel background scroll
-       bl   @draw_lives               ; CALL $A2CE        ; draw lives sprites in side panel
-;      bl   @place_key_pieces         ; CALL $94B6        ; set locations of ACG key pieces (moved)
-;      bl   @set_key_positions        ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy (moved)
-       bl   @reset_game_state         ; CALL $8D61        ; copy initial game state to working state area
-       bl   @place_key_pieces         ; CALL $94B6        ; set locations of ACG key pieces
-       bl   @set_key_positions        ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy
-       bl   @randomise_doors          ; CALL $94F5        ; randomise which doors can open/close
-       bl   @prepare_player           ; CALL $9443        ; prepare player to spawn
+       bl   @draw_side_panel           ; CALL $A219        ; draw side panel background scroll
+       bl   @draw_lives                ; CALL $A2CE        ; draw lives sprites in side panel
+;      bl   @place_key_pieces          ; CALL $94B6        ; set locations of ACG key pieces (moved)
+;      bl   @set_key_positions         ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy (moved)
+       bl   @reset_game_state          ; CALL $8D61        ; copy initial game state to working state area
+       bl   @place_key_pieces          ; CALL $94B6        ; set locations of ACG key pieces
+       bl   @set_key_positions         ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy
+       bl   @randomise_doors           ; CALL $94F5        ; randomise which doors can open/close
+       bl   @prepare_player            ; CALL $9443        ; prepare player to spawn
        b    @enter_room                ; JP $9147          ; Will jump back to main_loop
 
 *********************************************************************
@@ -324,7 +328,9 @@ start_game:                            ; >7d9a
 * Used by the routines at #R$7e13 and #R$9117.
 *
 main_loop:                             ; >7dc3
+       .ifeq hw_sprites,1
        bl   @ti_init_sprite_attr_table
+       .endif
        li   sp,stack                   ; LD SP,$5E00       ;
        ; EI                            ; EI                ; 
        ab   one,@zx_frames             ;                   ; RM added
@@ -345,14 +351,14 @@ main_loop_1:                           ; >7ddc
        movb @last_frames,a             ; LD A,($5E03)      ; 
        cb   a,@c                       ; CP C              ; same frame as last time?
        jeq  !                          ; CALL NZ,$7EB2     ; call if not
-       bl   @run_player               ;
+       bl   @run_player                ;
 !
 *      Process entities from acg_key_1 to creature1
        movb @player_room,a             ; LD A,($EA91)      ; 
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; entity in player room?
        jne  !                          ; JP Z,$7E7E        ; jump if so
        li   hl,loop_return_1           ; LD HL,$7DF3       ;
-       b    @process_action           ;
+       b    @process_action            ;
 !
 loop_return_1:                         ; >7df3
 ;      li   de,>0008                   ; LD DE,$0008       ; entity size
@@ -364,7 +370,9 @@ loop_return_1:                         ; >7df3
 ;       c    de,hl                     ; SBC HL,DE         ; end of list?
        ci   ix,creature1
        jl   main_loop_1                ; JR C,$7DDC        ; jump if not
-;       ab   one,@zx_frames            ;  TODO
+       .ifeq hw_sprites,0
+       ab   one,@zx_frames             ;
+       .endif
 * This entry point is used by the routine at #R$7e13.
 main_loop_2:                           ; >7e03
 *      Process player if a frame has passed
@@ -373,7 +381,7 @@ main_loop_2:                           ; >7e03
        movb @last_frames,a             ; LD A,($5E03)      ; 
        cb   a,@c                       ; CP C              ; same frame as last time?
        jeq  !                          ; CALL NZ,$7EB2     ; call if not
-      bl   @run_player                ;
+       bl   @run_player                ;
 !                                      ;
 *      Process entities from creature1 to linked_items
        li   hl,loop2_return            ; LD HL,$7E13       ;
@@ -406,8 +414,10 @@ draw_room:
        movb @game_flags,r0             ; BIT 0,(HL)        ; room drawn yet?
        andi r0,>0100                   ;                   
        jne  loc_7e55                   ; JR NZ,$7E55       ; jump if so
-       bl   @draw_entities            ; CALL $9291        ; draw all non-monster entities in the current room
+       bl   @draw_entities             ; CALL $9291         ; draw all non-monster entities in the current room
+       .ifeq hw_sprites,1
        bl   @ti_upload_zx_screen                           ; This is only once per room
+       .endif
 loc_7e55:                              ; >7e55
 ;      li   hl,game_flags              ; LD HL,$5E14       ; b0 set if room content drawn
        socb @bits+0,@game_flags        ; SET 0,(HL)        ; mark room as drawn
@@ -422,17 +432,20 @@ loc_7e55:                              ; >7e55
        bl   @ti_rnd
        mov  r0,@rand8
 *      Final actions
-       bl   @check_pickup_key         ; CALL $938B        ; check whether pick-up key has been pressed
-       bl   @check_pause              ; CALL $9489        ; check for pause key, return when not paused
-       bl   @replenish_food           ; CALL $9924        ; periodically replenish consumed food
+       bl   @check_pickup_key          ; CALL $938B        ; check whether pick-up key has been pressed
+       bl   @check_pause               ; CALL $9489        ; check for pause key, return when not paused
+       bl   @replenish_food            ; CALL $9924        ; periodically replenish consumed food
        movb @player_room,a             ; LD A,($EA91)      ; 
        cb   a,@bytes+>8e               ; CP $8E            ; end room?
        jne  !                          ; JP Z,$96EC        ; congratulate player on completion
        b    @game_complete             ;
 !
-;      bl   @ti_upload_zx_screen
+       .ifeq hw_sprites,0
+       bl   @ti_upload_zx_screen
+       .else
        bl   @ti_close_sprite_attr_table
        bl   @ti_update_sprite_pattern_usage_table
+       .endif
        b    @main_loop                 ; JP $7DC3          ;
 
 *********************************************************************
@@ -475,8 +488,8 @@ loc_809f:                              ; >809f
 * Used by the routines at #R$7c19 and #R$7d9a.
 clear_screen:                          ; >80aa
        .proc
-       bl   @clear_attrs             ; CALL $80C2         ; clear attribute file
-       bl   @clear_display           ; CALL $80B4         ; clear display file
+       bl   @clear_attrs               ; CALL $80C2        ; clear attribute file
+       bl   @clear_display             ; CALL $80B4        ; clear display file
        sb   a,a                        ; XOR A             ; 
        bl   @ti_set_border_color
        ; OUT ($FE),A                   ; OUT ($FE),A       ; black border
@@ -516,9 +529,9 @@ clear_display_1:
 clear_attrs:                           ; >80c2
        .proc
        li   hl,zx_attrs                ; LD HL,$5800       ; 
-;       movb @bytes+zx_attrs_msb+3,b    ; LD B,$5B          ;
-;       sb   @c,@c                      ; LD C,$00          ;
-;       jmp  loc_80bb                   ; JR $80BB          ;
+;      movb @bytes+zx_attrs_msb+3,b    ; LD B,$5B          ;
+;      sb   @c,@c                      ; LD C,$00          ;
+;      jmp  loc_80bb                   ; JR $80BB          ;
        li   bc,>300
        jmp  clear_display_1
 
@@ -573,7 +586,7 @@ draw_chicken_branch:
        sb   d,d                        ; LD D,$00          ; de = width
        movb @c,a                       ; LD A,C            ; a = desired height
 ;      .push bc                        ; PUSH BC           ;
-       bl   @mpy_de_a                 ; CALL $9AAD        ; HL = DE * A = width * desired height
+       bl   @mpy_de_a                  ; CALL $9AAD        ; HL = DE * A = width * desired height
 ;      .pop bc                         ; POP BC            ;
        mov  @chicken_empty_addr,de     ; LD DE,($A626)     ; de = address of empty chicken graphics
        .push de                        ; PUSH DE           ; Save address
@@ -600,11 +613,11 @@ draw_chicken_branch:
 ;      mov  hl,@chicken_entity+>0003   ; LD ($8C30),HL     ; coords
        movb @l,@chicken_entity+entity_x                    ; Write x
        movb h,@chicken_entity+entity_y                     ; Write y
-       bl   @draw_bgrnd_graphics      ; CALL $9213        ;
+       bl   @draw_bgrnd_graphics       ; CALL $9213        ;
 ;      mov  @chicken_entity+>0003,hl   ; LD HL,($8C30)     ;
        movb @chicken_entity+entity_x,@l                    ; Get coordinates back
        movb @chicken_entity+entity_y,h
-       bl   @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       bl   @xy_to_display             ; CALL $9BA2        ; convert coords in HL to display address in HL
        movb @g_chicken_empty,a         ; LD A,($C48C)      ; a = Width
        movb a,b                        ; LD B,A            ; b = width
 draw_chicken_1:                        ; >8bf2
@@ -640,7 +653,7 @@ draw_chicken_4:                        ; >8c12
 ;      mov  hl,@chicken_entity+>0003   ; LD ($8C30),HL     ; coords
        movb @l,@chicken_entity+entity_x
        movb h,@chicken_entity+entity_y
-       bl   @draw_bgrnd_graphics      ; CALL $9213        ;
+       bl   @draw_bgrnd_graphics       ; CALL $9213        ;
        movb @bytes+>06,b               ; LD B,$06          ; Width
 draw_chicken_5:                        ; >8c26
        sb   *hl,*hl                    ; LD (HL),$00       ; Clear screen byte
@@ -656,13 +669,13 @@ draw_chicken_5:                        ; >8c26
 * 
 * Used by the routine at #R$8e26.
 game_over:                             ; >8c35
-       bl   @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
+       bl   @clear_play_area           ; CALL $8093        ; clear screen and attrs of play area
        li   hl,charset_base            ; LD HL,$BE4C       ;
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
        li   hl,>3040                   ; LD HL,$3040       ; game over at 64,48
        li   de,gameover_msg            ; LD DE,$8C59       ;
-       bl   @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
-       bl   @game_stats               ; CALL $9641        ; show game statistics
+       bl   @colour_text               ; CALL $A1F3        ; show a line of text, first byte is attr
+       bl   @game_stats                ; CALL $9641        ; show game statistics
 * This entry point is used by the routine at #R$96c9.
 loc_8c4a:                              ; >8c4a
        bl   @ti_upload_zx_screen
@@ -710,7 +723,10 @@ reset_game_state:                      ; >8d61
 change_room:                           ; >9117
        .proc
 change_room_branch:
-       bl   @get_linked_door          ; CALL $9286        ; get connected door exit
+       .ifeq hw_sprites,1
+       bl   @ti_close_sprite_attr_table
+       .endif
+       bl   @get_linked_door           ; CALL $9286        ; get connected door exit
        movb @>01(ix),a                 ; LD A,(IX+$01)     ; 
        movb a,@player_room             ; LD ($EA91),A      ; move player to connected room
        movb @>02(ix),a                 ; LD A,(IX+$02)     ; bits 3-0 used for x offset
@@ -727,7 +743,7 @@ change_room_branch:
        neg  a                          ; NEG               ; invert
        ab   @>04(ix),a                 ; ADD A,(IX+$04)    ; add y
        movb a,@player_y                ; LD ($EA94),A      ; set player y to exit
-       bl   @set_entry_walk           ; CALL $986A        ; auto-walk into the room
+       bl   @set_entry_walk            ; CALL $986A        ; auto-walk into the room
        movb @player_contact,a          ; LD A,($EA92)      ; 
        socb @bytes+>0f,a               ; OR $0F            ; 
        movb a,@player_contact          ; LD ($EA92),A      ; 
@@ -738,14 +754,16 @@ change_room_branch:
 * This entry point is used by the routine at #R$7d9a.
 *
 enter_room:                            ; >9147
-       bl   @ti_reset_sprite_pattern_allocation_table
        movb @player_room,a             ; LD A,($EA91)      ;
-       bl   @visit_room               ; CALL $96AF        ; mark room A as visited
-       bl   @clear_play_area          ; CALL $8093        ; clear screen and attrs of play area
-       bl   @draw_room_frame          ; CALL $9BEA        ; draw lines that make up outer room frame
-       bl   @draw_panel_attrs         ; CALL $A240        ; draw side-panel colours, which follow room colour
-       bl   @draw_inventory           ; CALL $A13B        ; draw any items in player inventory
-       bl   @entry_sound              ; CALL $A403        ; room entry sound effect
+       bl   @visit_room                ; CALL $96AF        ; mark room A as visited
+       bl   @clear_play_area           ; CALL $8093        ; clear screen and attrs of play area
+       bl   @draw_room_frame           ; CALL $9BEA        ; draw lines that make up outer room frame
+       bl   @draw_panel_attrs          ; CALL $A240        ; draw side-panel colours, which follow room colour
+       bl   @draw_inventory            ; CALL $A13B        ; draw any items in player inventory
+       bl   @entry_sound               ; CALL $A403        ; room entry sound effect
+       .ifeq hw_sprites,1
+       bl   @ti_reset_sprite_pattern_allocation_table
+       .endif
        b    @main_loop                 ; JP $7DC3          ;
 
 *********************************************************************
@@ -756,15 +774,19 @@ enter_room:                            ; >9147
 draw_entities:                         ; >9291
        .proc
 *      From player to creature1
+       .ifeq hw_sprites,0
        li   ix,player                  ; LD IX,$EA90       ;
+       .else
+       li   ix,acg_key_1               ; LD IX,$EA90       ; We don't want to draw the player into the background
+       .endif
 draw_entities_1:                       ; >9295
        movb *ix,a                      ; LD A,(IX+$00)     ; 
        ; AND A                         ; AND A             ; slot used?
        jeq  draw_entities_2            ; JR Z,$92A6        ; jump if not
 ;      movb @player_room,a             ; LD A,($EA91)      ;
-       cb   @player_room,@entity_screen(ix) ; CP (IX+$01)       ; in player room?
+       cb   @player_room,@entity_screen(ix) ; CP (IX+$01)  ; in player room?
        jne  draw_entities_2            ; JR NZ,$92A6       ; jump if not
-       bl   @draw_entity_as_bckground ; CALL $9F4A        ; draw entity graphic (no attrs)  TODO
+       bl   @draw_entity_as_bgrnd      ; CALL $9F4A        ; draw entity graphic (no attrs)
 draw_entities_2:                       ; >92a6
 ;      li   de,>0008                   ; LD DE,$0008       ; 8 bytes per entry
        ai   ix,8                       ; ADD IX,DE         ;
@@ -781,9 +803,9 @@ draw_entities_3:                       ; >92b6
        ; AND A                         ; AND A             ; slot used?
        jeq  draw_entities_4            ; JR Z,$92C7        ; jump if not
 ;      movb @player_room,a             ; LD A,($EA91)      ;
-       cb   @player_room,@entity_screen(ix) ; CP (IX+$01)       ; in player room?
+       cb   @player_room,@entity_screen(ix) ; CP (IX+$01)  ; in player room?
        jne  draw_entities_4            ; JR NZ,$92C7       ; jump if not
-       bl    @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl   @draw_entity               ; CALL $9F4A         ; draw entity graphic (no attrs)
 draw_entities_4:                       ; >92c7
 ;      li   de,>0010                   ; LD DE,$0010       ; 16 bytes per entry
        ai   ix,16                      ; ADD IX,DE         ;
@@ -822,12 +844,12 @@ prepare_player_branch:
        jeq  loc_9476                   ; JR Z,$9476        ; jump if so (skip drawing player)
        .push ix                        ; PUSH IX           ; 
        li   ix,player                  ; LD IX,$EA90       ; 
-       bl    @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl   @draw_entity               ; CALL $9F4A        ; draw entity graphic (no attrs)
        .pop ix                         ; POP IX            ; 
 loc_9476:                              ; >9476
        movb @bytes+>f0,@player_energy  ; LD A,$F0          ; starting energy
 ;      movb a,@player_energy           ; LD ($5E28),A      ;
-       bl   @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
+       bl   @draw_chicken              ; CALL $8B8A        ; draw chicken energy bar
        b    @draw_lives_branch         ; JP $A2CE          ; draw lives sprites in side panel
 
 *********************************************************************
@@ -1003,24 +1025,24 @@ loc_9542:                              ; >9542
 * Used by the routines at #R$8c35 and #R$96c9.
 game_stats:                            ; >9641
        .proc
-       bl   @calc_visited             ; CALL $96C9        ; calculate percentage of rooms visited
+       bl   @calc_visited              ; CALL $96C9        ; calculate percentage of rooms visited
        li   hl,>4040                   ; LD HL,$4040       ; time header at 64,64
        li   de,time_msg                ; LD DE,$967F       ; 
-       bl   @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
+       bl   @colour_text               ; CALL $A1F3        ; show a line of text, first byte is attr
        li   hl,>5040                   ; LD HL,$5040       ; score header at 64,80
        li   de,score_msg               ; LD DE,$968F       ;
-       bl   @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
+       bl   @colour_text               ; CALL $A1F3        ; show a line of text, first byte is attr
        li   hl,>6040                   ; LD HL,$6040       ; percent header at 64,96
        li   de,percent_msg             ; LD DE,$969F       ; 
-       bl   @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
+       bl   @colour_text               ; CALL $A1F3        ; show a line of text, first byte is attr
        li   hl,digit_charset           ; LD HL,$BFCC       ; 
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
        li   hl,>4080                   ; LD HL,$4080       ; clock at 128,64
-       bl   @print_clock              ; CALL $9607        ; print clock time at position HL
+       bl   @print_clock               ; CALL $9607        ; print clock time at position HL
        li   hl,>5080                   ; LD HL,$5080       ; score at 128,80
-       bl   @print_score              ; CALL $A1B7        ; print player score at position HL
+       bl   @print_score               ; CALL $A1B7        ; print player score at position HL
        li   hl,>6080                   ; LD HL,$6080       ; percent at 128,96
-       bl   @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       bl   @xy_to_display             ; CALL $9BA2        ; convert coords in HL to display address in HL
        li   de,visited_percent         ; LD DE,$5E54       ; 
        movb one,b                      ; LD B,$01          ; 
        b    @print_bcd_bytes           ; JP $A1BF          ; print B BCD bytes at DE
@@ -1096,16 +1118,16 @@ loc_96e1:                              ; >96e1
 * This entry point is used by the routine at #R$7e13.
 game_complete:                         ; >96ec
        li   hl,player                  ; LD HL,$EA90       ; congratulate player on completion
-       bl   @draw_entity_hl           ; CALL $95CC        ; undraw player
+       bl   @draw_entity_hl            ; CALL $95CC        ; undraw player
        li   hl,charset_base            ; LD HL,$BE4C       ;
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
        li   hl,>2040                   ; LD HL,$2040       ; congratulations at 64,32
        li   de,congrat_msg             ; LD DE,$9710       ; 
-       bl   @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
+       bl   @colour_text               ; CALL $A1F3        ; show a line of text, first byte is attr
        li   hl,>3040                   ; LD HL,$3040       ; escaped message at 64,48
        li   de,escape_msg              ; LD DE,$9720       ; 
-       bl   @colour_text              ; CALL $A1F3        ; show a line of text, first byte is attr
-       bl   @game_stats               ; CALL $9641        ; show game statistics
+       bl   @colour_text               ; CALL $A1F3        ; show a line of text, first byte is attr
+       bl   @game_stats                ; CALL $9641        ; show game statistics
        b    @loc_8c4a                  ; JP $8C4A          ; 
 
 *********************************************************************
@@ -1143,7 +1165,7 @@ set_key_positions:                     ; >98d2
        bl   @ti_rnd
        movb r0,a                       ; LD A,($5C78)      ; zx_frames
        li   hl,green_key_rooms         ; LD HL,$990C       ; 
-       bl   @get_key_room             ; CALL $9904        ;
+       bl   @get_key_room              ; CALL $9904        ;
 ;      movb a,@green_key_init+>0001    ; LD ($603E),A      ; set green key room
        movb a,@green_key+>0001         ; LD ($603E),A      ; set green key room
 *      Red
@@ -1153,7 +1175,7 @@ set_key_positions:                     ; >98d2
        movb @counter_low,a             ; LD A,($5E12)      ; 
        ab   @c,a                       ; ADD A,C           ; 
        li   hl,red_key_rooms           ; LD HL,$9914       ; 
-       bl   @get_key_room             ; CALL $9904        ;
+       bl   @get_key_room              ; CALL $9904        ;
 ;      movb a,@red_key_init+1          ; LD ($6046),A      ; set red key room
        movb a,@red_key+1               ; LD ($6046),A      ; set red key room
 ;      movb a,@mummy_init+1            ; LD ($640E),A      ; set Mummy room to match
@@ -1165,7 +1187,7 @@ set_key_positions:                     ; >98d2
        movb @counter_high,a            ; LD A,($5E13)      ; 
        ab   @c,a                       ; ADD A,C           ; 
        li   hl,cyan_key_rooms          ; LD HL,$991C       ; 
-       bl   @get_key_room             ; CALL $9904        ;
+       bl   @get_key_room              ; CALL $9904        ;
 ;      movb a,@cyan_key_init+1         ; LD ($604E),A      ; set cyan key room
        movb a,@cyan_key+1              ; LD ($604E),A      ; set cyan key room
        .endproc                        ; RET               ;
@@ -1235,7 +1257,7 @@ draw_inventory_branch:
        li   hl,inventory1              ; LD HL,$5E30       ; 
        movb @bytes+>03,b               ; LD B,$03          ; 3 items to draw
 loc_a143:                              ; >a143
-       bl   @draw_inv_item            ; CALL $A14D        ; draw inventory item at position DE
+       bl   @draw_inv_item             ; CALL $A14D        ; draw inventory item at position DE
 ;      movb @e,a                       ; LD A,E            ;
        ab   @bytes+>10,@e              ; ADD A,$10         ; next inventory position
 ;      movb a,@e                       ; LD E,A            ;
@@ -1272,9 +1294,9 @@ loc_a15e:                              ; >a15e
 ;      inc  hl                         ; INC HL            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; set attr
        .push hl                        ; PUSH HL           ; 
-       bl   @clear_sprite             ; CALL $A185        ;
-       bl   @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
-       bl   @set_entity_attrs         ; CALL $A00E        ; paint entity with its current attr colour
+       bl   @clear_sprite              ; CALL $A185        ;
+       bl   @draw_entity               ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl   @set_entity_attrs          ; CALL $A00E        ; paint entity with its current attr colour
        .pop hl                         ; POP HL            ; 
        .pop ix                         ; POP IX            ; 
        .pop de                         ; POP DE            ; 
@@ -1289,7 +1311,7 @@ loc_a15e:                              ; >a15e
 print_score:                           ; >a1b7
        .proc
 print_score_branch:
-       bl   @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       bl   @xy_to_display             ; CALL $9BA2        ; convert coords in HL to display address in HL
        li   de,score_bcd               ; LD DE,$5E2A       ; 
        movb @bytes+>03,b               ; LD B,$03          ; 3 bytes = 6 digits
 * This entry point is used by the routines at #R$9607, #R$9641 and #R$a1c9.
@@ -1301,7 +1323,7 @@ print_bcd_bytes:                       ; >a1bf
        ; RRCA                          ; RRCA              ; 
        srl  a,4
        andi a,>0f00                    ; AND $0F           ;
-       bl   @print_char               ; CALL $A1D3        ; print a single character
+       bl   @print_char                ; CALL $A1D3        ; print a single character
        jmp  print_bcd_digit_branch
 
 *********************************************************************
@@ -1314,7 +1336,7 @@ print_bcd_digit:                       ; >a1c9
 print_bcd_digit_branch:
        movb *de,a                      ; LD A,(DE)         ;
        andi a,>0f00                    ; AND $0F           ; 
-       bl   @print_char               ; CALL $A1D3        ; print a single character
+       bl   @print_char                ; CALL $A1D3        ; print a single character
        inc  de                         ; INC DE            ; 
        sb   one,b                      ; DJNZ $A1BF        ; print B BCD bytes at DE
        jne  print_bcd_bytes            ;                   
@@ -1373,13 +1395,13 @@ colour_text:                           ; >a1f3
        .proc
 colour_text_jump_target:
        .push hl                        ; PUSH HL           ;
-       bl   @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       bl   @xy_to_display             ; CALL $9BA2        ; convert coords in HL to display address in HL
        movb *de+,a                     ; LD A,(DE)         ; text attr colour
        .ex_af_af_                      ; EX AF,AF'         ;
 ;      inc  de                         ; INC DE            ;
        .exx                            ; EXX               ; display addr in HL
        .pop hl                         ; POP HL            ; 
-       bl   @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
 * This entry point is used by the routine at #R$7d8a.
 loc_a1ff:                              ; >a1ff
        .exx                            ; EXX               ; attr addr in HL'
@@ -1387,7 +1409,7 @@ loc_a1ff:                              ; >a1ff
        movb a,r0                       ; BIT 7,A           ; last character?
        andi r0,>8000                   ;                   
        jne  loc_a210                   ; JR NZ,$A210       ; jump if so
-       bl   @print_char               ; CALL $A1D3        ; print a single character
+       bl   @print_char                ; CALL $A1D3        ; print a single character
        inc  de                         ; INC DE            ;
        .exx                            ; EXX               ; 
        .ex_af_af_                      ; EX AF,AF'         ; 
@@ -1397,7 +1419,7 @@ loc_a1ff:                              ; >a1ff
        jmp  loc_a1ff                   ; JR $A1FF          ; 
 loc_a210:                              ; >a210
        andi a,>7f00                    ; AND $7F           ; strip end marker b7
-       bl   @print_char               ; CALL $A1D3        ; print a single character
+       bl   @print_char                ; CALL $A1D3        ; print a single character
        .exx                            ; EXX               ; 
        .ex_af_af_                      ; EX AF,AF'         ; 
        movb a,*hl                      ; LD (HL),A         ; set attr
@@ -1419,11 +1441,11 @@ draw_side_panel:                       ; >a219
 draw_side_panel_1:                     ; >a228
        .push bc                        ; PUSH BC           ; 
        .push hl                        ; PUSH HL           ; 
-       bl   @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       bl   @xy_to_display             ; CALL $9BA2        ; convert coords in HL to display address in HL
 draw_side_panel_2:                     ; >a22d
        movb *de+,a                     ; LD A,(DE)         ;
 ;      inc  de                         ; INC DE            ;
-       bl   @print_char               ; CALL $A1D3        ; print a single character
+       bl   @print_char                ; CALL $A1D3        ; print a single character
        sb   one,b                      ; DJNZ $A22D        ; 
        jne  draw_side_panel_2          ;
        .pop hl                         ; POP HL            ; 
@@ -1443,7 +1465,7 @@ draw_side_panel_2:                     ; >a22d
 draw_panel_attrs:                      ; >a240
        .proc
        li   hl,>00c0                   ; LD HL,$00C0       ;
-       bl   @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        li   bc,>0818                   ; LD BC,$0818       ; 8x24
        movb @room_attr,a               ; LD A,($5E1A)      ; 
        inv  a                          ; CPL               ; invert for colour contrast
@@ -1470,45 +1492,45 @@ loc_a259:                              ; >a259
        jne  loc_a257                   ; JR NZ,$A257       ;
 ;      Now set special attributes
        li   hl,>90c8                   ; LD HL,$90C8       ;
-       bl   @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        movb @room_attr,a               ; LD A,($5E1A)      ;
        li   bc,>0303                   ; LD BC,$0303       ; 3x3 (rosette body)
-       bl   @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
+       bl   @fill_bc_hl_a              ; CALL $809A        ; fill C rows of B columns of value A at address HL
        ab   one,@l                     ; INC L             ; 
        movb a,*hl                      ; LD (HL),A         ; 
        a    de,hl                      ; ADD HL,DE         ; 
        li   bc,>0202                   ; LD BC,$0202       ; 2x2 (rosette tail)
-       bl   @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
+       bl   @fill_bc_hl_a              ; CALL $809A        ; fill C rows of B columns of value A at address HL
        li   hl,>98d0                   ; LD HL,$98D0       ;
-       bl   @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
-       .pop de                         ; POP DE            ; 
+       bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       .pop de                         ; POP DE            ;
        movb @e,*hl                     ; LD (HL),E         ; rosette centre
        li   hl,>7dc8                   ; LD HL,$7DC8       ;
-       bl   @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        li   bc,>0603                   ; LD BC,$0603       ; 6x3
        movb @bytes+>47,a               ; LD A,$47          ; bright white (lives)
-       bl   @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
+       bl   @fill_bc_hl_a              ; CALL $809A        ; fill C rows of B columns of value A at address HL
        li   hl,>5fc8                   ; LD HL,$5FC8       ;
-       bl   @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        li   bc,>0604                   ; LD BC,$0604       ; 6x4
        movb @bytes+>46,a               ; LD A,$46          ; bright yellow (chicken)
-       bl   @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
+       bl   @fill_bc_hl_a              ; CALL $809A        ; fill C rows of B columns of value A at address HL
        li   hl,>48C8                   ; LD HL,$48C8       ;
-       bl   @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        li   bc,>0601                   ; LD BC,$0601       ; 6x1
        movb @bytes+>45,a               ; LD A,$45          ; bright cyan (score caption)
-       bl   @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
+       bl   @fill_bc_hl_a              ; CALL $809A        ; fill C rows of B columns of value A at address HL
        li   bc,>0601                   ; LD BC,$0601       ; 6x1
        movb @bytes+>47,a               ; LD A,$47          ; bright white (score)
-       bl   @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
+       bl   @fill_bc_hl_a              ; CALL $809A        ; fill C rows of B columns of value A at address HL
        li   hl,>38c8                   ; LD HL,$38C8       ; 
-       bl   @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        li   bc,>0601                   ; LD BC,$0601       ; 6x1
        movb @bytes+>43,a               ; LD A,$43          ; bright magenta (time caption)
-       bl   @fill_bc_hl_a             ; CALL $809A        ; fill C rows of B columns of value A at address HL
+       bl   @fill_bc_hl_a              ; CALL $809A        ; fill C rows of B columns of value A at address HL
        li   bc,>0601                   ; LD BC,$0601       ; 
        movb @bytes+>47,a               ; LD A,$47          ; bright white (time)
-       bl   @fill_bc_hl_a             ; JP $809A          ; fill C rows of B columns of value A at address HL
+       bl   @fill_bc_hl_a              ; JP $809A          ; fill C rows of B columns of value A at address HL
        .endproc
 
 *********************************************************************
@@ -1535,11 +1557,11 @@ draw_lives_branch:
        movb @bytes+>03,b               ; LD B,$03          ; up to 3 lives to draw
 loc_a2f2:                              ; >a2f2
        .push bc                        ; PUSH BC           ; 
-       bl   @clear_sprite             ; CALL $A185        ; clear lives location
+       bl   @clear_sprite              ; CALL $A185        ; clear lives location
        movb @c,a                       ; LD A,C            ; 
        ; AND A                         ; AND A             ; life to show?
        jeq  loc_a2fd                   ; JR Z,$A2FD        ; jump if not
-       bl   @draw_entity              ; CALL $9F4A        ; draw player character
+       bl   @draw_entity               ; CALL $9F4A        ; draw player character
 loc_a2fd:                              ; >a2fd
 ;      movb @>03(ix),a                 ; LD A,(IX+$03)     ;
        ab   @bytes+>10,@>03(ix)        ; ADD A,$10         ; offset to next life position

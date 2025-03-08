@@ -42,10 +42,10 @@ disp_funcs:                            ; >9970
 *
 draw_disp_0:                           ; >99c9
        .pop bc                         ; POP BC            ; Now B has the entity_flags orientation and C has the graphics index
-       bl    @get_blend_instr          ; CALL $9D19        ; map B=0-2 to Z80 opcode used to blend graphics data
+       bl   @get_blend_instr          ; CALL $9D19        ; map B=0-2 to Z80 opcode used to blend graphics data
        mov  af,@blend_instr_0          ; LD ($99D7),A      ;
        mov  af_,@blend_instr_0+2
-       bl    @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coordinates. On return b contain the width, c contains the height, and de contains the data address
+       bl   @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coordinates. On return b contain the width, c contains the height, and de contains the data address
 loc_99d3:                              ; >99d3
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
@@ -60,7 +60,7 @@ blend_instr_0:                         ; >99d7
        sb   one,b                      ; DJNZ $99D5        ;
        jne  loc_99d5                   ;
        .pop hl                         ; POP HL            ;
-       bl    @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
+       bl   @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_99d3                   ; JR NZ,$99D3       ;
@@ -72,18 +72,18 @@ blend_instr_0:                         ; >99d7
 *
 draw_disp_1:                           ; >99e5
        .pop bc                         ; POP BC            ;
-       bl    @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
+       bl   @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
        mov  af,@blend_instr_1          ; LD ($99F9),A      ;
        mov  af_,@blend_instr_1+2
-       bl    @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
+       bl   @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
 loc_99ef:                              ; >99ef
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
-       bl    @add_de_b                 ; CALL $9A9D        ; add B to DE (move to end of line)
+       bl   @add_de_b                 ; CALL $9A9D        ; add B to DE (move to end of line)
 loc_99f4:                              ; >99f4
        dec  de                         ; DEC DE            ;
        movb *de,a                      ; LD A,(DE)         ; graphic data byte
-       bl    @mirror_a                 ; CALL $9A92        ; mirror bits in A
+       bl   @mirror_a                 ; CALL $9A92        ; mirror bits in A
 blend_instr_1:                         ; >99f9
        nop                             ; NOP               ;
        nop
@@ -92,9 +92,9 @@ blend_instr_1:                         ; >99f9
        sb   one,b                      ; DJNZ $99F4        ;
        jne  loc_99f4                   ;
        .pop hl                         ; POP HL            ;
-       bl    @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
+       bl   @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop bc                         ; POP BC            ;
-       bl    @add_de_b                 ; CALL $9A9D        ; add B to DE (move to end of line)
+       bl   @add_de_b                 ; CALL $9A9D        ; add B to DE (move to end of line)
        sb   one,@c                     ; DEC C             ;
        jne  loc_99ef                   ; JR NZ,$99EF       ;
        .endproc                        ; RET               ;
@@ -105,16 +105,16 @@ blend_instr_1:                         ; >99f9
 *
 draw_disp_2:                           ; >9a0a
        .pop bc                         ; POP BC            ;
-       bl    @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
+       bl   @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
        mov  af,@blend_instr_2          ; LD ($9A36),A      ;
        mov  af_,@blend_instr_2+2
-       bl    @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
+       bl   @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
        movb b,a                        ; LD A,B            ; Width
 ;      .exx                            ; EXX               ;
        movb one,@l_                    ; LD L,$01          ; X
        movb a,b_                       ; LD B,A            ; X
 ;      .exx                            ; EXX               ;
-       bl    @add_de_b                 ; CALL $9A9D        ; add B to DE
+       bl   @add_de_b                 ; CALL $9A9D        ; add B to DE
        dec  de                         ; DEC DE            ;
 loc_9a1e:                              ; >9a1e
        .push bc                        ; PUSH BC           ;
@@ -136,7 +136,7 @@ loc_9a27:                              ; >9a27
        szcb one,r0
 !      movb r0,h_                      ; RL H
 ;      .exx                            ; EXX               ;
-       bl    @add_de_b                 ; CALL $9A9D        ; add B to DE
+       bl   @add_de_b                 ; CALL $9A9D        ; add B to DE
        sb   one,@c                     ; DEC C             ;
        movb @c,a                       ; LD A,C            ;
        andi a,>0700                    ; AND $07           ;
@@ -153,7 +153,7 @@ blend_instr_2:                         ; >9a36
        ; AND A                         ; AND A             ;
        jne  loc_9a21                   ; JR NZ,$9A21       ;
        .pop hl                         ; POP HL            ;
-       bl    @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
+       bl   @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
 ;      .exx                            ; EXX               ;
@@ -179,10 +179,10 @@ blend_instr_2:                         ; >9a36
 *
 draw_disp_3:                           ; >9a50
        .pop bc                         ; POP BC            ;
-       bl    @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
+       bl   @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
        mov  af,@blend_instr_3          ; LD ($9A78),A      ;
        mov  af_,@blend_instr_3+2
-       bl    @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
+       bl   @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
        movb b,a                        ; LD A,B            ; Width
 ;      .exx                            ; EXX               ;
        movb a,b_                       ; LD B,A            ; X b_ = width
@@ -208,7 +208,7 @@ draw_disp_3_3:                         ; >9a69
        szcb one,r0
 !      movb r0,h_                      ; RL H              ; X Moved
 ;      .exx                            ; EXX               ;
-       bl    @add_de_b                 ; CALL $9A9D        ; add B to DE
+       bl   @add_de_b                 ; CALL $9A9D        ; add B to DE
        sb   one,@c                     ; DEC C             ; height
        movb @c,a                       ; LD A,C            ;
        andi a,>0700                    ; AND $07           ;
@@ -225,7 +225,7 @@ blend_instr_3:                         ; >9a78
        ; AND A                         ; AND A             ;
        jne  draw_disp_3_2              ; JR NZ,$9A63       ;
        .pop hl                         ; POP HL            ;
-       bl    @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
+       bl   @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
 ;      .exx                            ; EXX               ;
@@ -251,11 +251,11 @@ blend_instr_3:                         ; >9a78
 *
 draw_disp_4:                           ; >9acb
        .pop bc                         ; POP BC            ;
-       bl    @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
+       bl   @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
        mov  af,@blend_instr_4          ; LD ($9ADD),A      ;
        mov  af_,@blend_instr_4+2
-       bl    @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
-       bl    @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       bl   @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
+       bl   @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9ad8:                              ; >9ad8
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
@@ -271,10 +271,10 @@ blend_instr_4:                         ; >9add
        sb   one,b                      ; DJNZ $9ADB        ;
        jne  loc_9adb                   ;
        .pop hl                         ; POP HL            ;
-       bl    @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
+       bl   @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
-       bl    @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
+       bl   @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
        sb   one,@c                     ; DEC C             ;
        jne  loc_9ad8                   ; JR NZ,$9AD8       ;
        .endproc                        ; RET               ;
@@ -285,19 +285,19 @@ blend_instr_4:                         ; >9add
 *
 draw_disp_5:                           ; >9aef
        .pop bc                         ; POP BC            ;
-       bl    @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
+       bl   @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
        mov  af,@blend_instr_5          ; LD ($9B06),A      ;
        mov  af_,@blend_instr_5+2
-       bl    @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
-       bl    @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
-       bl    @add_de_b                 ; CALL $9A9D        ; add B to DE
+       bl   @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
+       bl   @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       bl   @add_de_b                 ; CALL $9A9D        ; add B to DE
 loc_9aff:                              ; >9aff
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ;
 loc_9b01:                              ; >9b01
        dec  de                         ; DEC DE            ;
        movb *de,a                      ; LD A,(DE)         ;
-       bl    @mirror_a                 ; CALL $9A92        ; mirror bits in A
+       bl   @mirror_a                 ; CALL $9A92        ; mirror bits in A
 blend_instr_5:                         ; >9b06
        nop                             ; NOP               ;
        nop
@@ -306,7 +306,7 @@ blend_instr_5:                         ; >9b06
        sb   one,b                      ; DJNZ $9B01        ;
        jne  loc_9b01                   ;
        .pop hl                         ; POP HL            ;
-       bl    @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
+       bl   @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop bc                         ; POP BC            ;
        sb   one,@c                     ; DEC C             ;
        jne  loc_9aff                   ; JR NZ,$9AFF       ;
@@ -318,18 +318,18 @@ blend_instr_5:                         ; >9b06
 *
 draw_disp_6:                           ; >9b14
        .pop bc                         ; POP BC            ;
-       bl    @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
+       bl   @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
        mov  af,@blend_instr_6          ; LD ($9B43),A      ;
        mov  af_,@blend_instr_6+2
-       bl    @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
+       bl   @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
        movb b,a                        ; LD A,B            ;
 ;      .exx                            ; EXX               ;
        movb a,b_                       ; LD B,A            ;
        movb one,@l_                    ; LD L,$01          ;
 ;      .exx                            ; EXX               ;
-       bl    @add_de_b                 ; CALL $9A9D        ; add B to DE
+       bl   @add_de_b                 ; CALL $9A9D        ; add B to DE
        dec  de                         ; DEC DE            ;
-       bl    @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       bl   @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9b2b:                              ; >9b2b
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
@@ -350,7 +350,7 @@ loc_9b34:                              ; >9b34
        szcb one,r0
 !      movb r0,h_                      ; RL H              ;
 ;      .exx                            ; EXX               ;
-       bl    @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
+       bl   @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
        sb   one,@c                     ; DEC C             ;
        movb @c,a                       ; LD A,C            ;
        andi a,>0700                    ; AND $07           ;
@@ -367,7 +367,7 @@ blend_instr_6:                              ; >9b43
        ; AND A                         ; AND A             ;
        jne  loc_9b2e                   ; JR NZ,$9B2E       ;
        .pop hl                         ; POP HL            ;
-       bl    @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
+       bl   @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
 ;      .exx                            ; EXX               ;
@@ -393,16 +393,16 @@ blend_instr_6:                              ; >9b43
 *
 draw_disp_7:                           ; >9b5d
        .pop bc                         ; POP BC            ;
-       bl    @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
+       bl   @get_blend_instr          ; CALL $9D19        ; map A=0-2 to Z80 opcode used to blend graphics data
        mov  af,@blend_instr_7          ; LD ($9B88),A      ;
        mov  af_,@blend_instr_7+2
-       bl    @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
+       bl   @get_gfx_data             ; CALL $9995        ; C=gfx idx, DE=coords
        movb b,a                        ; LD A,B            ;
 ;      .exx                            ; EXX               ;
        movb a,b_                       ; LD B,A            ;
        movb @bytes+>80,@l_             ; LD L,$80          ;
 ;      .exx                            ; EXX               ;
-       bl    @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
+       bl   @de_plus_b_mpy_c                ; CALL $9ABA        ; DE = DE + B * (C - 1)
 loc_9b70:                              ; >9b70
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
@@ -423,7 +423,7 @@ loc_9b79:                              ; >9b79
        szcb one,r0
 !      movb r0,h_                      ; RL H              ;
 ;      .exx                            ; EXX               ;
-       bl    @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
+       bl   @sbc_de_b                 ; CALL $9AA5        ; subtract B from DE
        sb   one,@c                     ; DEC C             ;
        movb @c,a                       ; LD A,C            ;
        andi a,>0700                    ; AND $07           ;
@@ -440,7 +440,7 @@ blend_instr_7:                         ; >9b88
        ; AND A                         ; AND A             ;
        jne  loc_9b73                   ; JR NZ,$9B73       ;
        .pop hl                         ; POP HL            ;
-       bl    @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
+       bl   @pixel_line_up            ; CALL $9F03        ; move up 1 display line in HL
        .pop de                         ; POP DE            ;
        .pop bc                         ; POP BC            ;
 ;      .exx                            ; EXX               ;
@@ -504,7 +504,7 @@ get_gfx_data_2:
 ;      inc  de                         ; INC DE            ;
 get_gfx_data_3:
        .ex_de_hl                       ; EX DE,HL          ;
-       bl    @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
+       bl   @xy_to_display            ; CALL $9BA2        ; convert coords in HL to display address in HL
        .endproc                        ; RET               ;
 
 * map B=0-2 to Z80 opcode used to blend graphics data

@@ -245,7 +245,7 @@ de_plus_b_mpy_c:                             ; >9aba
 ;       sb   one,@e                     ; DEC E             ; E=c-1 convert 1-based to 0-based
 ;       sb   d,d                        ; LD D,$00          ; D=0, DE=0 c-1
 ;       .push bc                        ; PUSH BC           ;
-;       bl    @mult_de_a                ; CALL $9AAD        ; HL = b * (c-1)
+;       bl   @mult_de_a                ; CALL $9AAD        ; HL = b * (c-1)
 ;       .pop bc                         ; POP BC            ;
 ;       .pop de                         ; POP DE            ;
 ;       a    de,hl                      ; ADD HL,DE         ; HL = de + b * (c-1)

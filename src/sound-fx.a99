@@ -136,7 +136,7 @@ axe_sound:                             ; >a41b
 ;       movb d,a                        ; LD A,D            ;
 ;       ; RRCA                          ; RRCA              ;
 ;       movb a,b                        ; LD B,A            ; set freq
-;       bl    @click                    ; CALL $A3A8        ;
+;       bl   @click                    ; CALL $A3A8        ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  loc_a41d                   ; JR NZ,$A41D       ;
        rt                              ; RET               ;
@@ -155,7 +155,7 @@ sword_sound:                           ; >a427
 ;       sla  a,1                        ; RLCA              ; TODO: check code.
 ;       sla  a,1                        ; RLCA              ; TODO: check code.
 ;       movb a,b                        ; LD B,A            ; set freq
-;       bl    @click                    ; CALL $A3A8        ;
+;       bl   @click                    ; CALL $A3A8        ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  loc_a429                   ; JR NZ,$A429       ;
        rt                              ; RET               ;
@@ -170,7 +170,7 @@ fireball_sound:                        ; >a438
 ;       inv  a                          ; CPL               ;
 ;       sla  a,1                        ; RLCA              ; TODO: check code.
 ;       movb a,b                        ; LD B,A            ; set freq
-;       bl    @click                    ; CALL $A3A8        ;
+;       bl   @click                    ; CALL $A3A8        ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  loc_a43a                   ; JR NZ,$A43A       ;
        rt                              ; RET               ;
@@ -193,7 +193,7 @@ weapon_pop_sound:                       ; >a445
 ;       li   r0,32*256                  ; XOR $20           ;
 ;       xor  r0,a                       ;
 ;       movb a,b                        ; LD B,A            ;
-;       bl    @click                    ; CALL $A3A8        ;
+;       bl   @click                    ; CALL $A3A8        ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  !                          ; RET Z             ;
 ;       rt                              ;

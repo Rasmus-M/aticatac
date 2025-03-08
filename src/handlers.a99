@@ -46,7 +46,7 @@ handler_loop:                          ; >7ec5
        ai   ix,8
        ci   ix,acg_key_1
        jl   loc_7ebe
-       bl    @clock_tick               ; CALL $95DA        ; advance the clock 1 frame
+       bl   @clock_tick                ; CALL $95DA        ; advance the clock 1 frame
        movb @zx_frames,@last_frames    ; LD A,($5C78)      ;
 ;      movb a,@last_frames             ; LD ($5E03),A      ;
        sb   a,a                        ; XOR A             ;
@@ -145,15 +145,15 @@ h_blank:                               ; >93e3
        jne  h_blank_1                  ; JR NZ,$940E       ; jump if not
        socb @bytes+>02,a               ; OR $02            ; pickup key pressed
        movb a,@pickup_flags            ; LD ($5E1F),A      ;
-       bl    @drop_item                ; CALL $9358        ; drop last item in inventory
-       bl    @shift_inventory          ; CALL $934C        ; move items 1+2 to slots 2+3
+       bl   @drop_item                 ; CALL $9358        ; drop last item in inventory
+       bl   @shift_inventory           ; CALL $934C        ; move items 1+2 to slots 2+3
        li   hl,inventory1
        sb   a,a                        ; LD HL,$0000       ;
        movb a,*hl+                     ; LD ($5E30),HL     ;
        movb a,*hl+                     ; LD ($5E32),HL     ;
        movb a,*hl+
        movb a,*hl
-       bl    @draw_inventory           ; CALL $A13B        ; draw any items in player inventory
+       bl   @draw_inventory            ; CALL $A13B        ; draw any items in player inventory
 h_blank_1:                             ; >940e
        movb @pickup_flags,a            ; LD A,($5E1F)      ;
        andi a,>fe00                    ; AND $FE           ; pickup key not processed
@@ -180,7 +180,7 @@ h_player_appear:                       ; >8cb7
        jne  h_player_appear_2          ; JP NZ,$8D12       ; jump if not
        ab   one,@>06(ix)               ; INC (IX+$06)      ; increase drawn height
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
-       bl    @get_sprite_addr          ; CALL $9E89        ; return address of sprite A in DE
+       bl   @get_sprite_addr           ; CALL $9E89        ; return address of sprite A in DE
        movb *de,a                      ; LD A,(DE)         ; normal player sprite height
        cb   a,@>06(ix)                 ; CP (IX+$06)       ; reached full reveal height?
        jeq  h_player_appear_4          ; JR Z,$8D32        ; jump if so
@@ -211,7 +211,7 @@ h_player_appear_1:                     ; >8cd4
 ;      movb one,*hl                    ; LD (HL),$01       ; Set height to one. TODO: in ROM
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
        movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
-       bl    @draw_entity              ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl   @draw_entity               ; CALL $9F4A        ; draw entity graphic (no attrs)
        .pop bc                         ; POP BC            ;
        .pop hl                         ; POP HL            ;
 ;      movb @c,*hl                     ; LD (HL),C         ; Restore data that was there. TODO: in ROM
@@ -239,14 +239,14 @@ h_player_appear_3:                     ; >8d20
        movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; set player attr
 ;      movb @>06(ix),a                 ; LD A,(IX+$06)     ; Drawn height
        movb @bytes+>12,a                                   ; Added, draw full height.
-       bl    @draw_appear_attr         ; CALL $92E2        ; set spawn appearance width/height
+       bl   @draw_appear_attr          ; CALL $92E2        ; set spawn appearance width/height
        .pop af                         ; POP AF            ;
        movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; Restore flags
 ;      b    @appear_sound              ; JP $A45F          ; player appearance sound
        jmp  h_player_appear_5                              ; appear_sound would return
 h_player_appear_4:                     ; >8d32
        movb @>07(ix),*ix               ; LD A,(IX+$07)     ; player spawn sprite
-       bl    @draw_entity                                  ; Added to undraw.
+       bl   @draw_entity                                  ; Added to undraw.
 ;      movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
        clr  af
        movb a,@entity_vx(ix)           ; LD (IX+$06),$00   ; no x movement
@@ -284,11 +284,11 @@ flash_score:                           ; >8c8c             ;
        jeq  loc_8ca7                   ; JR Z,$8CA7        ; jump if so (stop flash)
        andi a,>0400                    ; AND $0F           ; 16th frame? TODO: Changed to 4
        jne  !                          ; CALL Z,$A3E0      ; call if so (beep)
-      bl    @start_beep                ;
+      bl   @start_beep                 ;
        jmp  loc_8ca7                   ;                   ; Added
 !
        li   hl,>50C8                   ; LD HL,$50C8       ;
-       bl    @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        movb @bytes+>06,b               ; LD B,$06          ;
 loc_8c9f:                              ; >8c9f
        movb *hl,a                      ; LD A,(HL)         ;
@@ -300,7 +300,7 @@ loc_8c9f:                              ; >8c9f
        jmp  flash_score_1              ; RET               ;
 loc_8ca7:                              ; >8ca7
        li   hl,>50c8                   ; LD HL,$50C8       ;
-       bl    @xy_to_attr               ; CALL $9BD2        ; convert pixel coords in HL to attribute address
+       bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
        movb @bytes+>06,b               ; LD B,$06          ;
 loc_8caf:                              ; >8caf
        movb *hl,a                      ; LD A,(HL)         ;
@@ -324,12 +324,12 @@ h_death:                               ; >8d45
 !      sb   one,@>06(ix)               ; DEC (IX+$06)      ; reduce player visible height
        jlt  loc_8d5b                   ; JP M,$8D5B        ; jump if after zero
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
-       bl    @get_sprite_addr          ; CALL $9E89        ; return address of sprite A in DE
+       bl   @get_sprite_addr           ; CALL $9E89        ; return address of sprite A in DE
        b    @h_player_appear_1         ; JP $8CD4          ;
 loc_8d5b:                              ; >8d5b
        movb @>07(ix),*ix               ;                   ; Added. Player spawn sprite
-       bl    @draw_entity              ;                   ; Added to undraw.
-       bl    @place_tombstone          ; CALL $95A9        ; place a tombstone at the player position
+       bl   @draw_entity               ;                   ; Added to undraw.
+       bl   @place_tombstone           ; CALL $95A9        ; place a tombstone at the player position
        b    @prepare_player_branch     ; JP $9443          ; prepare player to spawn
 
 *********************************************************************
@@ -340,7 +340,7 @@ h_knight:                              ; >8e26
        li   bc,>2020                   ; LD BC,$2020       ; walk deceleration
        li   de,>0303                   ; LD DE,$0303       ; walk acceleration
        li   hl,>0707                   ; LD HL,$0707       ; unused
-       bl    @control_player           ; CALL $8D77        ; read controls and apply player movement
+       bl   @control_player            ; CALL $8D77        ; read controls and apply player movement
        movb @>06(ix),@e                ; LD E,(IX+$06)     ; current x velocity
        movb @>07(ix),d                 ; LD D,(IX+$07)     ; current y velocity
        movb d,a                        ; LD A,D            ;
@@ -375,12 +375,12 @@ loc_8e68:                              ; >8e68
        ab   @bytes+>08,*ix             ; ADD A,$08         ; offset to right sprites
 loc_8e6a:                              ; >8e6a
 ;      movb a,*ix                      ; LD (IX+$00),A     ;
-       bl    @walk_sound               ; CALL $A3C7        ; play walk clicks if due
+       bl   @walk_sound                ; CALL $A3C7        ; play walk clicks if due
 loc_8e70:                              ; >8e70
-       bl    @read_controls            ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
+       bl   @read_controls             ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
        andi a,>1000                    ; AND $10           ; fire pressed?
        jne  !                          ; CALL Z,$8134      ; call if so (fire weapon)
-       bl    @knight_fire              ;
+       bl   @knight_fire               ;
 !      jmp  entry_from_wizard_and_serf
 loc_8e94:                              ; >8e94
        movb @e,a                       ; LD A,E            ;
@@ -392,7 +392,7 @@ loc_8e94:                              ; >8e94
 
 * This entry point is used by the routines at #R$80d2 and #R$8dc4.
 entry_from_wizard_and_serf:            ; >8e78
-       bl    @chk_creatures            ; CALL $83EA        ; check whether to add new room creatures
+       bl   @chk_creatures             ; CALL $83EA        ; check whether to add new room creatures
        movb @counter_low,a             ; LD A,($5E12)      ;
        andi a,>0f00                    ; AND $0F           ; 16th game loop?
        jne  redraw_entity_and_attrs    ; JR NZ,$8E8E       ; jump if not
@@ -400,11 +400,11 @@ entry_from_wizard_and_serf:            ; >8e78
        sb   one,a                      ; DEC A             ; reduce health by 1
        jeq  player_dead                ; JR Z,$8EA0        ;
        movb a,@player_energy           ; LD ($5E28),A      ;
-       bl    @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
+       bl   @draw_chicken              ; CALL $8B8A        ; draw chicken energy bar
 * This entry point is used by the routines at #R$81f0, #R$8301, #R$845f,
 * #R$85f7 and #R$8787.
 redraw_entity_and_attrs:               ; >8e8e
-       bl    @redraw_entity            ; CALL $9FCA        ; draw entity to display (no attrs)
+       bl   @redraw_entity             ; CALL $9FCA        ; draw entity to display (no attrs)
        b    @set_entity_attrs2_branch  ; JP $A01A          ; set attrs covering previous and new position
 
 * This entry point is used by the routines at #R$8a1e, #R$8ed7 and #R$98c8.
@@ -423,7 +423,7 @@ player_dead:                           ; >8ea0
        movb @player,a                  ; LD A,($EA90)      ;
 player_dead_1:                         ; >8eb6
        movb a,@player_steps_y          ; LD ($EA97),A      ;
-       bl    @get_sprite_addr          ; CALL $9E89        ; return address of sprite A in DE
+       bl   @get_sprite_addr           ; CALL $9E89        ; return address of sprite A in DE
        movb *de,a                      ; LD A,(DE)         ;
        movb a,@player_steps_x          ; LD ($EA96),A      ;
        movb @bytes+>67,@player         ; LD A,$67          ; blank graphic, death handler
@@ -445,7 +445,7 @@ h_wizard:                              ; >80d2
        li   bc,>2020                   ; LD BC,$2020       ; walk deceleration
        li   de,>2020                   ; LD DE,$2020       ; walk acceleration
        li   hl,>2020                   ; LD HL,$2020       ; unused
-       bl    @control_player           ; CALL $8D77        ; read controls and apply player movement
+       bl   @control_player            ; CALL $8D77        ; read controls and apply player movement
        movb @>06(ix),@e                ; LD E,(IX+$06)     ; x velocity
        movb @>07(ix),d                 ; LD D,(IX+$07)     ; y velocity
        movb d,a                        ; LD A,D            ;
@@ -480,12 +480,12 @@ loc_8115:                              ; >8115
        ab   @bytes+>08,*ix             ; ADD A,$08         ; offset to right sprites
 loc_8117:                              ; >8117
 ;      movb a,*ix                      ; LD (IX+$00),A     ; set animation graphic
-       bl    @walk_sound               ; CALL $A3C7        ; play walk clicks if due
+       bl   @walk_sound                ; CALL $A3C7        ; play walk clicks if due
 loc_811d:                              ; >811d
-       bl    @read_controls            ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
+       bl   @read_controls             ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
        andi a,>1000                    ; AND $10           ; fire pressed?
        jne  !                          ; CALL Z,$814B      ; call if so (fire weapon)
-       bl    @wizard_fire              ;
+       bl   @wizard_fire               ;
 !
        b   @entry_from_wizard_and_serf ; JP $8E78          ;
 loc_8128:                              ; >8128
@@ -504,7 +504,7 @@ h_serf:                                ; >8dc4
        li   bc,>2020                   ; LD BC,$2020       ; walk deceleration
        li   de,>0101                   ; LD DE,$0101       ; walk acceleration
        li   hl,>0707                   ; LD HL,$0707       ; unused
-       bl    @control_player           ; CALL $8D77        ; read controls and apply player movement
+       bl   @control_player            ; CALL $8D77        ; read controls and apply player movement
        movb @>06(ix),@e                ; LD E,(IX+$06)     ; x velocity
        movb @>07(ix),d                 ; LD D,(IX+$07)     ; y velocity
        movb d,a                        ; LD A,D            ;
@@ -539,12 +539,12 @@ loc_8e07:                              ; >8e07
        ab   @bytes+>08,*ix             ; ADD A,$08         ; offset to right sprites
 loc_8e09:                              ; >8e09
 ;      movb a,*ix                      ; LD (IX+$00),A     ;
-       bl    @walk_sound               ; CALL $A3C7        ; play walk clicks if due
+       bl   @walk_sound                ; CALL $A3C7        ; play walk clicks if due
 loc_8e0f:                              ; >8e0f
-       bl    @read_controls            ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
+       bl   @read_controls             ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
        andi a,>1000                    ; AND $10           ; fire pressed?
        jne  !                          ; CALL Z,$8283      ; call if so (fire weapon)
-       bl    @serf_fire                ;
+       bl   @serf_fire                 ;
 !
        b   @entry_from_wizard_and_serf ; JP $8E78          ;
 loc_8e1a:                              ; >8e1a
@@ -560,11 +560,11 @@ loc_8e1a:                              ; >8e1a
 * Mummy handler
 *
 h_mummy:                               ; >8862
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  !                          ; CALL Z,$8A1E      ; call if so (reduce health by 8)
-       bl    @damage_8                 ;
+       bl   @damage_8                  ;
 !
        li   hl,leaf                    ; LD HL,$EAE0       ;
        movb *hl,a                      ; LD A,(HL)         ;
@@ -594,7 +594,7 @@ loc_8881:                              ; >8881
        jne  loc_88f9                   ; JR NZ,$88F9       ; jump if not
        movb @>0c(ix),d                 ; LD D,(IX+$0C)     ; current target x
        movb @>0b(ix),@e                ; LD E,(IX+$0B)     ; current target y
-       bl    @attract_de               ; CALL $882D        ; set movement towards coords in DE
+       bl   @attract_de                ; CALL $882D        ; set movement towards coords in DE
        movb @c,a                       ; LD A,C            ;
        cb   a,@bytes+>03               ; CP $03            ; reached target x+y position?
        jeq  loc_88b5                   ; JR Z,$88B5        ; jump if so
@@ -621,7 +621,7 @@ loc_88c9:                              ; >88c9
        socb @bits+6,@>06(ix)           ; SET 6,(IX+$06)    ; move down-right
        jmp  loc_88a3                   ; JR $88A3          ;
 loc_88d7:                              ; >88d7
-       bl    @attract_de               ; CALL $882D        ; set movement towards coords in DE
+       bl   @attract_de                ; CALL $882D        ; set movement towards coords in DE
        movb @c,a                       ; LD A,C            ;
        cb   a,@bytes+>03               ; CP $03            ; has mummy reached leaf position?
        jne  loc_88a3                   ; JR NZ,$88A3       ; jump if not
@@ -630,7 +630,7 @@ loc_88d7:                              ; >88d7
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; if leaf in player room?
        jne  loc_88f0                   ; JR NZ,$88F0       ;
-       bl    @draw_entity              ; CALL $9F4A        ; undraw leaf
+       bl   @draw_entity               ; CALL $9F4A        ; undraw leaf
 loc_88f0:                              ; >88f0
        .pop ix                         ; POP IX            ;
        movb @bytes+>6b,a               ; LD A,$6B          ; room 6B
@@ -641,7 +641,7 @@ loc_88f9:                              ; >88f9
 loc_88fd:                              ; >88fd
        movb @player_x,@e               ; LD DE,($EA93)     ;
        movb @player_y,d
-       bl    @attract_de               ; CALL $882D        ; set movement towards coords in DE
+       bl   @attract_de                ; CALL $882D        ; set movement towards coords in DE
        jmp  loc_88a3                   ; JR $88A3          ;
 
 *********************************************************************
@@ -649,18 +649,18 @@ loc_88fd:                              ; >88fd
 * Dracula handler
 *
 h_dracula:                             ; >8906
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; is touching player?
        jne  !                          ; CALL Z,$8A1E      ; call if so (reduce health by 8)
-       bl    @damage_8                 ;
+       bl   @damage_8                  ;
 !
        li   de,zx_screen+>068a         ; LD DE,$468A       ; yellow crucafix object
-       bl    @check_carrying           ; CALL $9273        ; is player carrying crucafix?
+       bl   @check_carrying            ; CALL $9273        ; is player carrying crucafix?
        jne  loc_8931                   ; JR NZ,$8931       ; jump if not
        movb @player_x,@e               ; LD DE,($EA93)     ; current player position
        movb @player_y,d
-       bl    @attract_de               ; CALL $882D        ; set movement towards coords in DE
+       bl   @attract_de                ; CALL $882D        ; set movement towards coords in DE
        movb @>08(ix),a                 ; LD A,(IX+$08)     ; x velocity
        neg a                           ; NEG               ; invert (run away!)
        movb a,@>08(ix)                 ; LD (IX+$08),A     ;
@@ -674,7 +674,7 @@ loc_8931:                              ; >8931
        jne  loc_8952                   ; JR NZ,$8952       ; jump if not
        movb @player_x,@e               ; LD DE,($EA93)     ;
        movb @player_y,d
-       bl    @attract_de               ; CALL $882D        ; set movement towards coords in DE
+       bl   @attract_de                ; CALL $882D        ; set movement towards coords in DE
 loc_8940:                              ; >8940
        movb @counter_low,a             ; LD A,($5E12)      ;
 ;      srl  a,1                        ; RRA               ;
@@ -687,7 +687,7 @@ loc_8940:                              ; >8940
 loc_8952:                              ; >8952
        movb @bytes+>68,@>0b(ix)        ; LD (IX+$0B),$68   ; new target x (centre)
        movb @bytes+>68,@>0c(ix)        ; LD (IX+$0C),$68   ; new target y (centre)
-       bl    @attract_de               ; CALL $882D        ; set movement towards coords in DE
+       bl   @attract_de                ; CALL $882D        ; set movement towards coords in DE
        movb @zx_frames,a               ; LD A,($5C78)      ;
        ; AND A                         ; AND A             ; frame 0 of 50?
        jeq  !                          ; JP NZ,$8940       ; jump if not
@@ -697,7 +697,7 @@ loc_8952:                              ; >8952
        movb r,a                        ; LD A,R            ;
        andi a,>7f00                    ; AND $7F           ; random 7-bit room number
        movb a,@c                       ; LD C,A            ;
-       bl    @get_room_style           ; CALL $897D        ; get style of room in A, returns style (0-B)
+       bl   @get_room_style            ; CALL $897D        ; get style of room in A, returns style (0-B)
        cb   a,@bytes+>03               ; CP $03            ; non-square room?
        jl   !                          ; JP NC,$8940       ; jump if so (ignore)
        b    @loc_8940                  ;
@@ -714,7 +714,7 @@ loc_8952:                              ; >8952
 *
 * axe animation handler
 h_axe:                                 ; >81db
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @zx_frames,a               ; LD A,($5C78)      ;
        inv  a                          ; CPL               ; cycle backwards
        srl  a,1                        ; RRA               ; 1/2 animation rate
@@ -729,7 +729,7 @@ h_axe:                                 ; >81db
 * fireball animation handler
 *
 h_fireball:                            ; >81f0
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb *ix,a                      ; LD A,(IX+$00)     ;
        ab   one,a                      ; INC A             ; cycle &0eac processing loop
        andi a,>0300                    ; AND $03           ; 4 animation frames
@@ -781,7 +781,7 @@ loc_824b:                              ; >824b
        neg a                           ; NEG               ; invert (bounce)
        movb a,@>07(ix)                 ; LD (IX+$07),A     ;
        .push bc                        ; PUSH BC           ;
-       bl    @bounce_sound             ; CALL $A4B0        ; weapon bounce sound
+       bl   @bounce_sound              ; CALL $A4B0        ; weapon bounce sound
        .pop bc                         ; POP BC            ;
        jmp  loc_8242                   ; JR $8242          ;
 loc_825d:                              ; >825d
@@ -790,16 +790,16 @@ loc_825d:                              ; >825d
        neg a                           ; NEG               ; invert (bounce)
        movb a,@>06(ix)                 ; LD (IX+$06),A     ;
        .push bc                        ; PUSH BC           ;
-       bl    @bounce_sound             ; CALL $A4B0        ; weapon bounce sound
+       bl   @bounce_sound              ; CALL $A4B0        ; weapon bounce sound
        .pop bc                         ; POP BC            ;
        jmp  loc_8231                   ; JR $8231          ;
 * This entry point is used by the routine at #R$8787.
 undraw_and_remove_entitiy:             ; >826f
-       bl    @undraw_entity            ; CALL $9F56        ;
-       bl    @weapon_pop_sound         ; CALL $A445        ; weapon disappearing sound
+       bl   @undraw_entity             ; CALL $9F56        ;
+       bl   @weapon_pop_sound          ; CALL $A445        ; weapon disappearing sound
        movb @room_attr,a               ; LD A,($5E1A)      ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       bl    @set_entity_attrs2        ; CALL $A01A        ; set attrs covering previous and new position
+       bl   @set_entity_attrs2         ; CALL $A01A        ; set attrs covering previous and new position
 * This entry point is used by the routine at #R$85b2.
 remove_entity:                         ; >827e
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; clear entity graphic
@@ -809,10 +809,10 @@ remove_entity:                         ; >827e
 *
 * sword animation handler
 h_sword:                               ; >82f1
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @bytes+>46,@>05(ix)        ; LD (IX+$05),$46   ; bright yellow
        li   hl,weapon+>0007            ; LD HL,$EA9F       ;
-       bl    @set_sword_dir            ; CALL $82C3        ; set sword direction to match player direction
+       bl   @set_sword_dir             ; CALL $82C3        ; set sword direction to match player direction
        b    @weapon_handler            ; JP $8209          ;
 
 *********************************************************************
@@ -825,15 +825,15 @@ h_batlet:                              ; >8301
        jeq  !                          ; JP NZ,$85F0       ;
        b    @delay_remove              ;
 !
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        li   hl,num_creatures           ; LD HL,$5E25       ; number of creatures processed this frame
        ab   one,*hl                    ; INC (HL)          ;
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  !                          ; JP Z,$85EA        ; jump if so
        b    @hurt_and_pop              ;
 !
-       bl    @chk_weapon_hit           ; CALL $8566        ; check if weapon has hit entity
+       bl   @chk_weapon_hit            ; CALL $8566        ; check if weapon has hit entity
        sb   one,@e                     ; DEC E             ; hit by weapon?
        jne  !                          ; JP Z,$875F        ; jump if so
        b    @pop_creature              ;
@@ -854,7 +854,7 @@ h_batlet:                              ; >8301
        movb a,@>08(ix)                 ; LD (IX+$08),A     ;
 loc_833a:                              ; >833a
        movb @bytes+>43,@>05(ix)        ; LD (IX+$05),$43   ; bright magenta
-       bl    @get_rnd_velocity         ; CALL $83BA        ; random velocity used for batlet
+       bl   @get_rnd_velocity          ; CALL $83BA        ; random velocity used for batlet
        jne  loc_8344                   ; JR NZ,$8344       ; jump if using first (decreasing) entry
        inc  hl                         ; INC HL            ; advance to second (increasing) entry
 loc_8344:                              ; >8344
@@ -880,7 +880,7 @@ loc_835a:                              ; >835a
 loc_835f:                              ; >835f
        movb @c,@entity_y(ix)           ; LD (IX+$04),C     ; update ypos
 loc_8362:                              ; >8362
-       bl    @get_rnd_velocity         ; CALL $83BA        ; random velocity used for batlet
+       bl   @get_rnd_velocity          ; CALL $83BA        ; random velocity used for batlet
        jeq  loc_8368                   ; JR Z,$8368        ; jump if using first (decreasing) entry
        inc  hl                         ; INC HL            ; advance to second (increasing) entry
 loc_8368:                              ; >8368
@@ -951,7 +951,7 @@ get_rnd_velocity:                      ; >83ba
 *
 * pumpkin and spider handler
 h_pumpkin_spider:                      ; >845f
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jeq  !                          ; JP NZ,$85F0       ; jump if not
@@ -959,12 +959,12 @@ h_pumpkin_spider:                      ; >845f
 !
        li   hl,num_creatures           ; LD HL,$5E25       ; number of creatures processed this frame
        ab   one,*hl                    ; INC (HL)          ;
-       bl    @chk_weapon_hit           ; CALL $8566        ; check if weapon has hit entity
+       bl   @chk_weapon_hit            ; CALL $8566        ; check if weapon has hit entity
        sb   one,@e                     ; DEC E             ; hit by weapon?
        jne  !                          ; JP Z,$875F        ; jump if so
        b    @pop_creature              ;
 !
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  !                          ; JP Z,$85EA        ; jump if so
        b    @hurt_and_pop              ;
@@ -976,7 +976,7 @@ h_pumpkin_spider:                      ; >845f
 * monster appearance sparkle handler
 *
 h_sparkles:                            ; >85f7
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jeq  !                          ; JP NZ,$85F0       ; jump if not
@@ -1006,7 +1006,7 @@ to_creature:                           ; >8625
 *
 * small ghost handler
 h_ghostlet:                            ; >862e
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jeq  !                          ; JP NZ,$85F0       ; jump if not
@@ -1014,12 +1014,12 @@ h_ghostlet:                            ; >862e
 !
        li   hl,num_creatures           ; LD HL,$5E25       ; number of creatures processed this frame
        ab   one,*hl                    ; INC (HL)          ;
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  !                          ; JP Z,$85EA        ; jump if so
        b    @hurt_and_pop              ;
 !
-       bl    @chk_weapon_hit           ; CALL $8566        ; check if weapon has hit entity
+       bl   @chk_weapon_hit            ; CALL $8566        ; check if weapon has hit entity
        sb   one,@e                     ; DEC E             ; hit by weapon?
        jne  !                          ; JP Z,$875F        ; jump if so
        b    @pop_creature              ;
@@ -1027,7 +1027,7 @@ h_ghostlet:                            ; >862e
        movb @bytes+>45,@>05(ix)        ; LD (IX+$05),$45   ; bright cyan
        ab   one,@>07(ix)               ; INC (IX+$07)      ; increment movement counter
        jne  !                          ; CALL Z,$86F2      ; change movement every 256 frames
-       bl    @rnd_movement             ;
+       bl   @rnd_movement              ;
 !
        movb @>07(ix),a                 ; LD A,(IX+$07)     ;
 ;      srl  a,1                        ; RRA               ;
@@ -1047,7 +1047,7 @@ h_ghostlet:                            ; >862e
 *
 * spikey ghost handler
 h_spikey_ghost:                        ; >8672
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jeq  !                          ; JP NZ,$85F0       ; jump if not
@@ -1056,12 +1056,12 @@ h_spikey_ghost:                        ; >8672
        li   hl,num_creatures           ; LD HL,$5E25       ; number of creatures processed this frame
        ab   one,*hl                    ; INC (HL)          ;
        sb   @>0f(ix),@>0f(ix)          ; LD (IX+$0F),$00   ; live for 256 frames in different room
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  !                          ; JP Z,$85EA        ; jump if so
        b    @hurt_and_pop              ;
 !
-       bl    @chk_weapon_hit           ; CALL $8566        ; check if weapon has hit entity
+       bl   @chk_weapon_hit            ; CALL $8566        ; check if weapon has hit entity
        sb   one,@e                     ; DEC E             ; hit by weapon?
        jne  !                          ; JP Z,$875F        ; jump if so
        b    @pop_creature              ;
@@ -1080,7 +1080,7 @@ h_spikey_ghost:                        ; >8672
        movb @>0a(ix),a                 ; LD A,(IX+$0A)     ;
        cb   a,@bytes+>07               ; CP $07            ; max bounce speed?
        jne  loc_86b9                   ; JR NZ,$86B9       ; jump if not
-       bl    @rnd_movement             ; CALL $86F2        ; random vertical offset
+       bl   @rnd_movement              ; CALL $86F2        ; random vertical offset
        movb @bytes+>f9,@>0a(ix)        ; LD (IX+$0A),$F9   ; bounce back up
 loc_86b9:                              ; >86b9
        sra  a,1                        ; SRA A             ; 1/2 bounce speed
@@ -1113,7 +1113,7 @@ loc_86e1:                              ; >86e1
 * Routine at 871a
 *
 h_blob:                                ; >871a
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ;
        jeq  !                          ; JP NZ,$85F0       ;
@@ -1122,12 +1122,12 @@ h_blob:                                ; >871a
        li   hl,num_creatures           ; LD HL,$5E25       ; number of creatures processed this frame
        ab   one,*hl                    ; INC (HL)          ;
        sb   @>0f(ix),@>0f(ix)          ; LD (IX+$0F),$00   ; live for 256 frames in different room
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  !                          ; JP Z,$85EA        ; jump if so
        b    @hurt_and_pop              ;
 !
-       bl    @chk_weapon_hit           ; CALL $8566        ; check if weapon has hit entity
+       bl   @chk_weapon_hit            ; CALL $8566        ; check if weapon has hit entity
        sb   one,@e                     ; DEC E             ; hit by weapon?
        jne  !                          ; JP Z,$875F        ; jump if so
        b    @pop_creature              ;
@@ -1137,7 +1137,7 @@ h_blob:                                ; >871a
        sb   one,@>0d(ix)               ; DEC (IX+$0D)      ;
        jne  loc_874c                   ; JR NZ,$874C       ;
        movb @bytes+>11,@>0d(ix)        ; LD (IX+$0D),$11   ;
-       bl    @rnd_movement             ; CALL $86F2        ; set random movement
+       bl   @rnd_movement              ; CALL $86F2        ; set random movement
 loc_874c:                              ; >874c
        movb @>0d(ix),a                 ; LD A,(IX+$0D)     ;
        srl  a,1                        ; RRA               ;
@@ -1154,7 +1154,7 @@ loc_874c:                              ; >874c
 * creature death pop animation handler
 *
 h_pop:                                 ; >8787
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jeq  !                          ; JP NZ,$85F0       ; jump if not
@@ -1175,7 +1175,7 @@ h_pop:                                 ; >8787
 * Ghoul handler
 *
 h_ghoul:                               ; >87a6
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jeq  !                          ; JP NZ,$85F0       ; jump if not
@@ -1183,12 +1183,12 @@ h_ghoul:                               ; >87a6
 !
        li   hl,num_creatures           ; LD HL,$5E25       ; number of creatures processed this frame
        ab   one,*hl                    ; INC (HL)          ;
-       bl    @chk_weapon_hit           ; CALL $8566        ; check if weapon has hit entity
+       bl   @chk_weapon_hit            ; CALL $8566        ; check if weapon has hit entity
        sb   one,@e                     ; DEC E             ; hit by weapon?
        jne  !                          ; JP Z,$875F        ; jump if so
        b    @pop_creature              ;
 !
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  !                          ; JP Z,$85EA        ; jump if so
        b    @hurt_and_pop              ;
@@ -1248,22 +1248,22 @@ loc_8821:                              ; >8821
 *
 * Frankenstein handler
 h_frankenstein:                        ; >8988
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  loc_89a5                   ; JR NZ,$89A5       ; jump if not
        li   de,>458B                   ; LD DE,$458B       ; cyan spanner
-       bl    @check_carrying           ; CALL $9273        ; carrying spanner?
+       bl   @check_carrying            ; CALL $9273        ; carrying spanner?
        jne  loc_89a2                   ; JR NZ,$89A2       ; jump if not
        li   bc,>1000                   ; LD BC,$1000       ;
-       bl    @add_score_bc_bcd         ; CALL $A19C        ; add 1000 points
+       bl   @add_score_bc_bcd          ; CALL $A19C        ; add 1000 points
        b    @pop_creature              ; JP $875F          ;
 loc_89a2:                              ; >89a2
-       bl    @damage_8                 ; CALL $8A1E        ; reduce health by 8
+       bl   @damage_8                  ; CALL $8A1E        ; reduce health by 8
 loc_89a5:                              ; >89a5
        movb @player_x,@e               ; LD DE,($EA93)     ;
        movb @player_y,d
-       bl    @attract_de               ; CALL $882D        ; set movement towards coords in DE
+       bl   @attract_de                ; CALL $882D        ; set movement towards coords in DE
        movb @counter_low,a             ; LD A,($5E12)      ;
 ;      srl  a,1                        ; RRA               ;
        srl  a,2                        ; RRA               ;
@@ -1280,7 +1280,7 @@ chk_move_away:                         ; >89bb
 !
        movb @player_x,@e               ; LD DE,($EA93)     ;
        movb @player_y,d                ; LD DE,($EA93)     ;
-       bl    @attract_de               ; CALL $882D        ; set movement towards coords in DE
+       bl   @attract_de                ; CALL $882D        ; set movement towards coords in DE
        movb @>08(ix),a                 ; LD A,(IX+$08)     ; x movement
        neg a                           ; NEG               ; away from player
        movb a,@>08(ix)                 ; LD (IX+$08),A     ;
@@ -1302,15 +1302,15 @@ chk_move_away:                         ; >89bb
 * Devil handler
 *
 h_devil:                               ; >89ed
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  !                          ; CALL Z,$8A1E      ; call if so (reduce health by 8)
-       bl    @damage_8                 ;
+       bl   @damage_8                  ;
 !
        movb  @player_x,@e              ; LD DE,($EA93)     ;
        movb  @player_y,d
-       bl    @attract_de               ; CALL $882D        ; set movement towards coords in DE
+       bl   @attract_de                ; CALL $882D        ; set movement towards coords in DE
        movb *ix,a                      ; LD A,(IX+$00)     ;
        andi a,>fc00                    ; AND $FC           ; strip animation frame bits
        movb a,@c                       ; LD C,A            ;
@@ -1327,7 +1327,7 @@ h_devil:                               ; >89ed
 *
 * witch handler
 h_witch:                               ; >8a2f
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jeq  !                          ; JP NZ,$85F0       ; jump if not
@@ -1335,19 +1335,19 @@ h_witch:                               ; >8a2f
 !
        li   hl,num_creatures           ; LD HL,$5E25       ; number of creatures processed this frame
        ab   one,*hl                    ; INC (HL)          ;
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  !                          ; JP Z,$85EA        ; jump if so
        b    @hurt_and_pop              ;
 !
-       bl    @chk_weapon_hit           ; CALL $8566        ; check if weapon has hit entity
+       bl   @chk_weapon_hit            ; CALL $8566        ; check if weapon has hit entity
        sb   one,@e                     ; DEC E             ; hit by weapon?
        jne  !                          ; JP Z,$875F        ; jump if so
        b    @pop_creature              ;
 !
        sb   one,@>0d(ix)               ; DEC (IX+$0D)      ; movement timer expired?
        jne  loc_8a5d                   ; JR NZ,$8A5D       ; jump if not
-       bl    @rnd_movement             ; CALL $86F2        ; set random movement
+       bl   @rnd_movement              ; CALL $86F2        ; set random movement
        movb @>09(ix),r0                ; SRA (IX+$09)      ; halve y velocity (to 1 or 0)
        srl  r0,1
        movb r0,@>09(ix)
@@ -1376,7 +1376,7 @@ loc_8a6a:                              ; >8a6a
 * monk and large bat handler
 *
 h_monk_bat:                            ; >8a80
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jeq  !                          ; JP NZ,$85F0       ; jump if not
@@ -1384,24 +1384,24 @@ h_monk_bat:                            ; >8a80
 !
        li   hl,num_creatures           ; LD HL,$5E25       ; number of creatures processed this frame
        ab   one,*hl                    ; INC (HL)          ;
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  !                          ; JP Z,$85EA        ; jump if so
        b    @hurt_and_pop              ;
 !
-       bl    @chk_weapon_hit           ; CALL $8566        ; check if weapon has hit entity
+       bl   @chk_weapon_hit            ; CALL $8566        ; check if weapon has hit entity
        sb   one,@e                     ; DEC E             ; hit by weapon?
        jne  !                          ; JP Z,$875F        ; jump if so (pop)
        b    @pop_creature              ;
 !
        sb   one,@>0d(ix)               ; DEC (IX+$0D)      ; movement timer expired?
        jne  loc_8ab8                   ; JR NZ,$8AB8       ; jump if not
-       bl    @rnd_movement             ; CALL $86F2        ; set random movement
+       bl   @rnd_movement              ; CALL $86F2        ; set random movement
        movb @zx_frames,a               ; LD A,($5C78)      ;
        andi a,>0400                    ; AND $04           ;
        sb   @bytes+>02,a               ; SUB $02           ; +/- 2
        movb a,@>08(ix)                 ; LD (IX+$08),A     ; set x velocity
-       movb @>09(ix),r0                 ; SRA (IX+$09)     ; halve y velocity (to 1 or 0)
+       movb @>09(ix),r0                ; SRA (IX+$09)     ; halve y velocity (to 1 or 0)
        srl  r0,1
        movb r0,@>09(ix)
        movb @bytes+>20,@>0d(ix)        ; LD (IX+$0D),$20   ; 32 frames before changing behaviour
@@ -1428,25 +1428,25 @@ loc_8ac5:                              ; >8ac5
 *
 * Hunchback handler
 h_hunchback:                           ; >8aff
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
-       bl    @enemy_touching           ; CALL $85B2        ; check if enemy is touching player (returns E=1)
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
+       bl   @enemy_touching            ; CALL $85B2        ; check if enemy is touching player (returns E=1)
        sb   one,@e                     ; DEC E             ; touching player?
        jne  !                          ; CALL Z,$8A15      ; call if so (reduce health by 16)
-       bl    @damage_16                ;
+       bl   @damage_16                 ;
 !
        sb   a,a                        ; XOR A             ;
        movb a,@>09(ix)                 ; LD (IX+$09),A     ; no x movement
        movb a,@>08(ix)                 ; LD (IX+$08),A     ; no y movement
-       bl    @chk_hunch_loot           ; CALL $8ADB        ; check for hunchback items on the floor (return C=1)
+       bl   @chk_hunch_loot            ; CALL $8ADB        ; check for hunchback items on the floor (return C=1)
        sb   one,@c                     ; DEC C             ; hunchback item in room?
        jeq  !                          ; JP NZ,$8B59       ; jump if not
        b    @loc_8b59                  ;
 !
-       bl    @attract_de               ; CALL $882D        ; hunchback attracted to item
+       bl   @attract_de                ; CALL $882D        ; hunchback attracted to item
        movb @c,a                       ; LD A,C            ;
        cb   a,@bytes+>03               ; CP $03            ; hunchback reached item?
        jne  loc_8b45                   ; JR NZ,$8B45       ; jump if not
-       bl    @chk_hunch_loot           ; CALL $8ADB        ; check for hunchback items on the floor (return C=1)
+       bl   @chk_hunch_loot            ; CALL $8ADB        ; check for hunchback items on the floor (return C=1)
        li   de,>0004                   ; LD DE,$0004       ; HL is 4 bytes into entity
        ; AND A                         ; AND A             ;
        s    de,hl                      ; SBC HL,DE         ; start of item entity
@@ -1457,7 +1457,7 @@ h_hunchback:                           ; >8aff
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jne  loc_8b3c                   ; JR NZ,$8B3C       ; jump if not
-       bl    @draw_entity              ; CALL $9F4A        ; undraw item
+       bl   @draw_entity               ; CALL $9F4A        ; undraw item
 loc_8b3c:                              ; >8b3c
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; remove item
        .pop ix                         ; POP IX            ;
@@ -1480,7 +1480,7 @@ loc_8b59:                              ; >8b59
        b    @monster_move              ;
 !
        li   de,>3a58                   ; LD DE,$3A58       ; coords below top door
-       bl    @attract_de               ; CALL $882D        ; move towards door
+       bl   @attract_de                ; CALL $882D        ; move towards door
        b    @monster_move              ; JP $84CD          ; common monster movement
 
 *********************************************************************
@@ -1522,15 +1522,18 @@ chk_hunch_loot_1:
 * food item handler
 *
 h_food:                                ; >8c63
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
-       bl    @check_touching           ; CALL $90FB        ; touching food?
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
+       bl   @check_touching            ; CALL $90FB        ; touching food?
        jnc  !
        jmp  loc_8c6e                   ; JR C,$8C6E        ; jump if so
 !      b    @draw_16x16                ; JP $92E0          ; draw 16x16 entity
 loc_8c6e:                              ; >8c6e
-       bl   @undraw_entity_as_bckground ; CALL $9F56        ; TODO
+       bl   @undraw_entity_as_bgrnd    ; CALL $9F56        ;
+       .ifeq hw_sprites
+       bl   @ti_upload_zx_screen
+       .endif
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; remove food item
-       bl    @eat_sound                ; CALL $A485        ;
+       bl   @eat_sound                 ; CALL $A485        ;
        movb @bytes+>40,@c              ; LD C,$40          ; food adds 64 health
        movb @player_energy,a           ; LD A,($5E28)      ;
        ab   @c,a                       ; ADD A,C           ; add food value
@@ -1586,24 +1589,27 @@ h_door_closed:                         ; >917d
        sb   one,a                      ; DEC A             ;
        movb a,@door_timer              ; LD ($5E2E),A      ;
        b    @draw_room_item            ; JP $91FE          ; draw room item
-h_door_common:                              ; >9193
-       movb @bytes+>30,@door_timer     ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer ;
+h_door_common:                         ; >9193
+       movb @bytes+>18,@door_timer     ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer ;
                                                            ; processing TODO: RM changed
 ;      movb a,@door_timer              ; LD ($5E2E),A      ;
        movb @>05(ix),a                 ; LD A,(IX+$05)     ; save door attr
        .push af                        ; PUSH AF           ;
        socb @bytes+>03,a               ; OR $03            ; Set draw mode to XOR
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-;      bl   @draw_bgrnd_graphics      ; CALL $9213        ; undraw door TODO
+       bl   @draw_bgrnd_graphics       ; CALL $9213        ; undraw door
        movb *ix,a                      ; LD A,(IX+$00)     ; entity type
        xor  one,a                      ; XOR $01           ; toggle open/close state
-       bl   @set_door_type            ; CALL $9260        ; set door type for both linked entities
-;      bl   @draw_bgrnd_graphics      ; CALL $9213        ; redraw door TODO
+       bl   @set_door_type             ; CALL $9260        ; set door type for both linked entities
+       bl   @draw_bgrnd_graphics       ; CALL $9213        ; redraw door
        .pop af                         ; POP AF            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; restore door attr
-       bl    @update_door              ; CALL $9546        ; update solid/passable door state
-       bl    @draw_room_item_call      ; CALL $91FE        ; draw room item
-       bl    @door_sound               ; JP $A46E          ; door sound (short burst of white noise)
+       bl   @update_door               ; CALL $9546        ; update solid/passable door state
+       bl   @draw_room_item_call       ; CALL $91FE        ; draw room item
+       .ifeq hw_sprites,1
+       bl   @ti_upload_zx_screen
+       .endif
+       bl   @door_sound                ; JP $A46E          ; door sound (short burst of white noise)
        .endproc
 
 *********************************************************************
@@ -1633,15 +1639,15 @@ trap_common:                           ; >91cc
        .push af                        ; PUSH AF           ;
        socb @bytes+>03,a               ; OR $03            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       bl    @draw_bgrnd_graphics      ; CALL $9213        ;
+       bl   @draw_bgrnd_graphics       ; CALL $9213        ;
        movb *ix,a                      ; LD A,(IX+$00)     ;
        xor  one,a                      ; XOR $01           ; toggle open/closed state
        movb a,*ix                      ; LD (IX+$00),A     ;
-       bl    @draw_bgrnd_graphics      ; CALL $9213        ;
+       bl   @draw_bgrnd_graphics       ; CALL $9213        ;
        .pop af                         ; POP AF            ;
        movb a,@>05(ix)                 ; LD (IX+$05),A     ;
-       bl    @draw_room_item_call      ; CALL $91FE        ; draw room item
-       bl    @door_sound               ; JP $A46E          ; door sound (short burst of white noise)
+       bl   @draw_room_item_call       ; CALL $91FE        ; draw room item
+       bl   @door_sound                ; JP $A46E          ; door sound (short burst of white noise)
        .endproc
 
 *********************************************************************
@@ -1660,9 +1666,9 @@ h_door_exit:                           ; >91f2
        li   bc,>1111                   ; LD BC,$1111       ; 17x17 exit size
 * This entry point is used by the routines at #R$91ed and #R$961b.
 h_door_exit_1:                         ; >91f5
-       bl    @check_exit               ; CALL $90CC        ; check if player has left through a door
+       bl   @check_exit                ; CALL $90CC        ; check if player has left through a door
        jnc  !
-       bl    @change_room              ; CALL C,$9117      ; move player to room linked to entity (usually door)
+       bl   @change_room               ; CALL C,$9117      ; move player to room linked to entity (usually door)
 !      b    @draw_room_item            ; JP $91FE          ; draw room item
 
 *********************************************************************
@@ -1670,14 +1676,14 @@ h_door_exit_1:                         ; >91f5
 * coloured locked door handler
 *
 h_door_locked:                         ; >9244
-       bl    @check_key_colour         ; CALL $9222        ; does player have the required key colour?
+       bl   @check_key_colour          ; CALL $9222        ; does player have the required key colour?
        joc  !                          ; JP NC,$91FE       ; jump if not
        b    @draw_room_item            ;
 !
        movb @bytes+>02,a               ; LD A,$02          ; open door graphic
 * This entry point is used by the routine at #R$9252.
 loc_924c:                              ; >924c
-       bl    @set_door_type            ; CALL $9260        ; set door type for both linked entities
+       bl   @set_door_type             ; CALL $9260        ; set door type for both linked entities
        b    @change_room_branch        ; JP $9117          ; move player to room linked to entity (usually door)
 
 *********************************************************************
@@ -1685,7 +1691,7 @@ loc_924c:                              ; >924c
 * coloured cave locked door handler
 *
 h_cave_locked:                         ; >9252
-       bl    @check_key_colour         ; CALL $9222        ; return if player has required key (C if opened, NC if locked)
+       bl   @check_key_colour          ; CALL $9222        ; return if player has required key (C if opened, NC if locked)
        joc  !                          ; JP NC,$91FE       ; draw room item
        b    @draw_room_item            ;
 !
@@ -1697,7 +1703,7 @@ h_cave_locked:                         ; >9252
 * pickup item handler
 *
 h_pickup_item:                         ; >92f5
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        movb @pickup_pressed,a          ; LD A,($5E20)      ;
        ; AND A                         ; AND A             ; if pick-up key pressed?
        jeq  pickup_released            ; JR Z,$92D8        ; jump if not
@@ -1708,14 +1714,14 @@ h_pickup_item:                         ; >92f5
        sb   one,a                      ; DEC A             ;
        cb   a,@bytes+>30               ; CP $30            ; is player active?
        jhe  draw_16x16                 ; JR NC,$92E0       ; jump if not
-       bl    @check_touching           ; CALL $90FB        ; is player touching item?
+       bl   @check_touching            ; CALL $90FB        ; is player touching item?
        jnc  draw_16x16                 ; JR NC,$92E0       ; jump if not
 ;      movb @pickup_flags,a            ; LD A,($5E1F)      ;
        socb @bytes+>03,@pickup_flags   ; OR $03            ; disallow further pickups
 ;      movb a,@pickup_flags            ; LD ($5E1F),A      ;
-       bl    @drop_item                ; CALL $9358        ; drop last item in inventory
-       bl    @shift_inventory          ; CALL $934C        ; move items 1+2 to slots 2+3
-       bl    @add_inventory            ; CALL $9326        ; add item to inventory slot 1
+       bl   @drop_item                 ; CALL $9358        ; drop last item in inventory
+       bl   @shift_inventory           ; CALL $934C        ; move items 1+2 to slots 2+3
+       bl   @add_inventory             ; CALL $9326        ; add item to inventory slot 1
        b    @draw_inventory_branch     ; JP $A13B          ; draw any items in player inventory
 *
 * clear pickup key flag
@@ -1764,10 +1770,10 @@ h_clock:                               ; >942f
 h_clock_1:                             ; >9433
        cb   a,@bytes+>10               ; CP $10            ; required player type to pass through?
        jhe  h_clock_2                  ; JR NC,$943D       ; jump if not
-       bl    @enter_door               ; CALL $954D        ; enter linked object (door etc.)
+       bl   @enter_door                ; CALL $954D        ; enter linked object (door etc.)
        b    @h_door_exit               ; JP $91F2          ; door exit handler
 h_clock_2:                             ; >943d
-       bl    @update_door_2            ; CALL $9565        ;
+       bl   @update_door_2             ; CALL $9565        ;
        b    @draw_room_item            ; JP $91FE          ; draw room item
 
 *********************************************************************
@@ -1788,11 +1794,11 @@ h_acg_exit:                            ; >961b
        movb *hl,a                      ; LD A,(HL)         ;
        cb   a,@bytes+>8e               ; CP $8E            ; ACG key part 3?
        jne  loc_963b                   ; JR NZ,$963B       ; jump if not
-       bl    @enter_door               ; CALL $954D        ; enter linked object (door etc.)
+       bl   @enter_door                ; CALL $954D        ; enter linked object (door etc.)
        li   bc,>3020                   ; LD BC,$3020       ; 48x32
        b    @h_door_exit_1             ; JP $91F5          ;
 loc_963b:                              ; >963b
-       bl    @update_door_2            ; CALL $9565        ;
+       bl   @update_door_2             ; CALL $9565        ;
        b    @draw_room_item            ; JP $91FE          ; draw room item
 
 *********************************************************************
@@ -1800,8 +1806,8 @@ loc_963b:                              ; >963b
 * mushroom handler
 *
 h_mushroom:                            ; >988b
-       bl    @save_entity              ; CALL $9FFB        ; save entity position for undraw
-       bl    @check_touching           ; CALL $90FB        ; check if player is touching entity
+       bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
+       bl   @check_touching            ; CALL $90FB        ; check if player is touching entity
        joc  loc_98b1                   ; JR C,$98B1        ;
 loc_9893:                              ; >9893
        movb @counter_low,a             ; LD A,($5E12)      ;
@@ -1826,15 +1832,18 @@ loc_98b1:                              ; >98b1
        jne  !                          ; JP Z,$98C8        ;
        b    @mushroom_death            ;
 !
-       bl    @draw_chicken             ; CALL $8B8A        ; draw chicken energy bar
-       bl    @touching_sound           ; CALL $A3E5        ; play monster touched sound
+       bl   @draw_chicken              ; CALL $8B8A        ; draw chicken energy bar
+       bl   @touching_sound            ; CALL $A3E5        ; play monster touched sound
        b    @loc_9893                  ; JP $9893          ;
 
 * Routine at 98c8
 *
 * Used by the routine at #R$988b.
 mushroom_death:                        ; >98c8
-       bl   @undraw_entity_as_bckground ; CALL $9F56        ;  TODO
+       bl   @undraw_entity_as_bgrnd    ; CALL $9F56       ;
+       .ifeq hw_sprites
+       bl   @ti_upload_zx_screen
+       .endif
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; remove mushroom
        b    @player_dead               ; JP $8EA0          ;
 

@@ -15,8 +15,10 @@ ti_setup_environment:
 ;      bl   @copy_to_pad
        bl   @graphics_mode
        clr  @double_buffer_flag
+       .ifeq hw_sprites,1
        bl   @ti_reset_sprite_pattern_allocation_table
        bl   @ti_reset_sprite_attr_table
+       .endif
        .endproc
 *// ti_setup_environment
 
