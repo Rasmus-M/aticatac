@@ -1218,6 +1218,7 @@ daa_routine:
        jle  !
        ab   @bytes+>06,a
 !      mov  a,r0
+       andi r0,>f000                   ; Ensure carry is cleared by shift
        srl  r0,4
        cb   r0,@bytes+>09
        jle  !
