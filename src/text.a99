@@ -2,9 +2,9 @@
 menu_options:                          ; >7cf8
        text '1  KEYBOAR'
        byte >C4
-       text '2  KEMPSTON JOYSTIC'
+       text '2  JOYSTIC'
        byte >CB
-       text '3  CURSOR   JOYSTIC'
+       text '3  CURSOR JOYSTIC'
        byte >CB
        text '4  KNIGH'
        byte >D4

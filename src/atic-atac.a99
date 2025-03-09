@@ -70,6 +70,7 @@ clear_menu_data:                       ; >7c1e
 main_menu:                             ; >7c29
        bl   @clear_screen              ; CALL $80AA        ; clear display, attributes, and set black border
        bl   @draw_menu_icons           ; CALL $A311        ; draw menu icons for controls and player acharacters
+       seto @redraw_menu
 menu_loop:                             ; >7c2f
        bl   @draw_menu_text            ; CALL $7CAF        ;
 
@@ -87,6 +88,7 @@ menu_loop:                             ; >7c2f
        bl   @ti_check_key
        jeq  loc_7c43                   ; JR Z,$7C43        ; jump if not
        andi a,>f900                    ; AND $F9           ; select Keyboard
+       seto @redraw_menu
 loc_7c43:                              ; >7c43
 
 ;      movb @e,r0                      ; BIT 1,E           ; 2 pressed?
@@ -96,6 +98,7 @@ loc_7c43:                              ; >7c43
        jeq  loc_7c4b                   ; JR Z,$7C4B        ; jump if not
        andi a,>f900                    ; AND $F9           ; 
        socb @bytes+>02,a               ; OR $02            ; select Kempston joystick
+       seto @redraw_menu
 loc_7c4b:                              ; >7c4b
 
 ;      movb @e,r0                      ; BIT 2,E           ; 3 pressed?
@@ -105,6 +108,7 @@ loc_7c4b:                              ; >7c4b
        jeq  loc_7c53                   ; JR Z,$7C53        ; jump if not
        andi a,>f900                    ; AND $F9           ; 
        socb @bytes+>04,a               ; OR $04            ; select Cursor joystick
+       seto @redraw_menu
 loc_7c53:                              ; >7c53
 
 ;       movb @e,r0                      ; BIT 3,E           ; 4 pressed?
@@ -113,6 +117,7 @@ loc_7c53:                              ; >7c53
        bl   @ti_check_key
        jeq  loc_7c59                   ; JR Z,$7C59        ; jump if not
        andi a,>e700                    ; AND $E7           ; select Knight
+       seto @redraw_menu
 loc_7c59:                              ; >7c59
 
 ;      movb @e,r0                      ; BIT 4,E           ; 5 pressed?
@@ -122,6 +127,7 @@ loc_7c59:                              ; >7c59
        jeq  loc_7c61                   ; JR Z,$7C61        ; jump if not
        andi a,>e700                    ; AND $E7           ; 
        socb @bytes+>08,a               ; OR $08            ; select Wizard
+       seto @redraw_menu
 loc_7c61:                              ; >7c61
 
 ;      movb a,d                        ; LD D,A            ;
@@ -139,6 +145,7 @@ loc_7c61:                              ; >7c61
        jeq  loc_7c73                   ; JR Z,$7C73        ; jump if not
        andi a,>e700                    ; AND $E7           ; 
        socb @bytes+>10,a               ; OR $10            ; select Serf
+       seto @redraw_menu
 loc_7c73:                              ; >7c73
 
        movb a,@menu_selection          ; LD ($5E00),A      ;
@@ -164,7 +171,11 @@ loc_7c73:                              ; >7c73
        srl  a,2
        bl   @set_menu_attrs            ; CALL $7C90        ; highlight knight/wizard/serf
 
+       abs  @redraw_menu
+       jeq  !
        bl   @ti_upload_zx_screen
+       clr  @redraw_menu
+!
        b    @menu_loop                 ; JP $7C2F          ;
 
 *********************************************************************
@@ -266,7 +277,7 @@ loc_7cc1:                              ; >7cc1
        movb a,h                        ; LD H,A            ; 
        movb @bytes+>58,@l              ; LD L,$58          ; x coord for text
        bl   @print_text                ; CALL $7D8A        ;
-       .exx                            ; EXX               ; 
+       .exx                            ; EXX               ;
        .pop hl                         ; POP HL            ; 
        .pop bc                         ; POP BC            ; 
        inc  de                         ; INC DE            ; 
@@ -277,7 +288,8 @@ loc_7cc1:                              ; >7cc1
        bl   @colour_text               ; CALL $A1F3        ; show a line of text, first byte is attr
        li   hl,>0020                   ; LD HL,$0020       ; header at 32,0
        li   de,header_msg              ; LD DE,$7D72       ; 
-       b    @colour_text_jump_target   ; JP $A1F3          ; show a line of text, first byte is attr
+       bl   @colour_text               ; JP $A1F3          ; show a line of text, first byte is attr
+       .endproc
 
 * Routine at 7d8a
 * 
@@ -291,7 +303,7 @@ print_text:                            ; >7d8a
        .exx                            ; EXX               ; 
        .pop hl                         ; POP HL            ; 
        bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
-       b    @loc_a1ff                  ; JP $A1FF          ; 
+       b    @colour_text_1                  ; JP $A1FF          ;
 
 *********************************************************************
 *
@@ -1308,11 +1320,11 @@ draw_inv_item:                         ; >a14d
 ;      inc  hl                         ; INC HL            ;
        socb *hl+,a                     ; OR (HL)           ; object in this slot?
 ;      inc  hl                         ; INC HL            ;
-       jne  loc_a15e                   ; JR NZ,$A15E       ; jump if so
+       jne  draw_inv_item_1            ; JR NZ,$A15E       ; jump if so
        movb @bytes+>31,a               ; LD A,$31          ; blank space
        inc  hl                         ; INC HL            ;
        jmp  !
-loc_a15e:                              ; >a15e
+draw_inv_item_1:                       ; >a15e
        movb *hl+,a                     ; LD A,(HL)         ;
 !:
        movb a,*ix                      ; LD (IX+$00),A     ; set graphic
@@ -1398,13 +1410,13 @@ print_char:                            ; >a1d3
 ;      .ex_de_hl                       ; EX DE,HL          ;
 ;      .pop hl                         ; POP HL            ;
        movb @bytes+>08,b               ; LD B,$08          ; 8 lines in character cell
-loc_a1e5:                              ; >a1e5
+print_char_1:                          ; >a1e5
        movb *de+,*hl                   ; LD A,(DE)         ;
 ;      movb a,*hl                      ; LD (HL),A         ;
 ;      inc  de                         ; INC DE            ; next source byte
        ab   one,h                      ; INC H             ; next pixel line
        sb   one,b                      ; DJNZ $A1E5        ; 
-       jne  loc_a1e5                   ;                   
+       jne  print_char_1               ;
        .pop de                         ; POP DE            ; 
        .pop bc                         ; POP BC            ; 
 ;      movb h,a                        ; LD A,H            ;
@@ -1424,7 +1436,6 @@ loc_a1e5:                              ; >a1e5
 *
 colour_text:                           ; >a1f3
        .proc
-colour_text_jump_target:
        .push hl                        ; PUSH HL           ;
        bl   @xy_to_display             ; CALL $9BA2        ; convert coords in HL to display address in HL
        movb *de+,a                     ; LD A,(DE)         ; text attr colour
@@ -1434,12 +1445,12 @@ colour_text_jump_target:
        .pop hl                         ; POP HL            ; 
        bl   @xy_to_attr                ; CALL $9BD2        ; convert pixel coords in HL to attribute address
 * This entry point is used by the routine at #R$7d8a.
-loc_a1ff:                              ; >a1ff
+colour_text_1:                         ; >a1ff
        .exx                            ; EXX               ; attr addr in HL'
        movb *de,a                      ; LD A,(DE)         ;
        movb a,r0                       ; BIT 7,A           ; last character?
        andi r0,>8000                   ;                   
-       jne  loc_a210                   ; JR NZ,$A210       ; jump if so
+       jne  colour_text_2              ; JR NZ,$A210       ; jump if so
        bl   @print_char                ; CALL $A1D3        ; print a single character
        inc  de                         ; INC DE            ;
        .exx                            ; EXX               ; 
@@ -1447,8 +1458,8 @@ loc_a1ff:                              ; >a1ff
        movb a,*hl                      ; LD (HL),A         ; set attr
        ab   one,@l                     ; INC L             ;
        .ex_af_af_                      ; EX AF,AF'         ; 
-       jmp  loc_a1ff                   ; JR $A1FF          ; 
-loc_a210:                              ; >a210
+       jmp  colour_text_1              ; JR $A1FF          ;
+colour_text_2:                         ; >a210
        andi a,>7f00                    ; AND $7F           ; strip end marker b7
        bl   @print_char                ; CALL $A1D3        ; print a single character
        .exx                            ; EXX               ; 
