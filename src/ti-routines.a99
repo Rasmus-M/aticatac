@@ -509,6 +509,36 @@ upload_screen_part_2:
 *
 * ix: entity
 *
+ti_upload_zx_attributes:
+       .proc
+       li   r0,color_table
+       bl   @vwad
+       li   r0,zx_attrs
+       li   r2,768
+       li   af_,vdpwd
+ti_upload_zx_attributes_1:
+       movb *r0+,r1
+       srl  r1,8
+       movb @ti_colors(r1),r1
+       movb r1,*af_
+       movb r1,*af_
+       movb r1,*af_
+       movb r1,*af_
+       movb r1,*af_
+       movb r1,*af_
+       movb r1,*af_
+       movb r1,*af_
+       dec  r2
+       jne  ti_upload_zx_attributes_1
+       .endproc
+*// ti_upload_zx_attributes
+
+*********************************************************************************
+*
+* Upload the area covered by a background graphics entity
+*
+* ix: entity
+*
 ti_upload_bgrnd_entity_area:
        .proc
        movb *ix,@c

@@ -157,8 +157,8 @@ loc_7c73:                              ; >7c73
        li   r0,KEY_0
        bl   @ti_check_key
        jeq  !                          ; JP NZ,$7D9A       ; jump if so
-       bl   @ti_display_off
-       b    @start_game                ;
+      bl   @ti_display_off
+      b    @start_game                ;
 !
 
        li   hl,menu_attrs              ; LD HL,$7CEA       ;
@@ -477,27 +477,27 @@ clear_play_area:                       ; >8093
        li   hl,zx_screen               ; LD HL,$4000       ;
        li   bc,>18c0                   ; LD BC,$18C0       ; 24x192
        sb   a,a                        ; XOR A             ; 
-       jmp  !
+       jmp  fill_bc_hl_a_1
 
 * fill C rows of B columns of value A at address HL
 * 
 * Used by the routines at #R$9bea and #R$a240.
 fill_bc_hl_a:                          ; >809a
        .proc
-!:
+fill_bc_hl_a_1:
        .push bc                        ; PUSH BC           ;
        .push hl                        ; PUSH HL           ; 
        li   de,>0020                   ; LD DE,$0020       ; line stride is 32 bytes
-loc_809f:                              ; >809f
+fill_bc_hl_a_2:                        ; >809f
        movb a,*hl+                     ; LD (HL),A         ;
 ;      inc  hl                         ; INC HL            ;
        sb   one,b                      ; DJNZ $809F        ; 
-       jne  loc_809f                   ;                   
+       jne  fill_bc_hl_a_2             ;
        .pop hl                         ; POP HL            ; 
        a    de,hl                      ; ADD HL,DE         ; 
        .pop bc                         ; POP BC            ; 
        sb   one,@c                     ; DEC C             ; 
-       jne  -!                         ; JR NZ,$809A       ; fill C rows of B columns of value A at address HL
+       jne  fill_bc_hl_a_1             ; JR NZ,$809A       ; fill C rows of B columns of value A at address HL
        .endproc                        ; RET               ;
 
 *********************************************************************

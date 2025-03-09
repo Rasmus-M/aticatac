@@ -111,6 +111,7 @@ draw_room_frame:                       ; >9bea
 * This entry point is used by the routine at #R$9731.
 draw_room_a:                           ; >9bf1
        .proc
+       seto @room_data_rom_bank
 !      li   bc,room_attrs              ; LD BC,$A854       ; room attr colour and style (0-B)
        movb a,@l                       ; LD L,A            ;
        sb   h,h                        ; LD H,$00          ;

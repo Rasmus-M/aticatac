@@ -1691,51 +1691,52 @@ print_clock_branch:
 chk_trap_exit:                         ; >9731
        li   bc,>1818                   ; LD BC,$1818       ; 24x24
        bl   @check_exit                ; CALL $90CC        ; fallen into trap door?
-       joc  !                          ; JP NC,$91FE       ; jump if not
+       joc  trap_exit                  ; JP NC,$91FE       ; jump if not
        b    @draw_room_item            ;
-!
+*
+trap_exit:
+       bl   @ti_display_off
+       bl   @ti_reset_sprite_attr_table
        bl   @clear_play_area           ; CALL $8093        ; clear screen and attrs of play area
        movb @bytes+>96,a               ; LD A,$96          ; room 150 is trap door tunnel
        .push ix                        ; PUSH IX           ;
        bl   @draw_room_a               ; CALL $9BF1        ; draw trap door lines
        .pop ix                         ; POP IX            ;
-       .ifeq hw_sprites,1
-       movb @bytes+>40,b               ; LD B,$80          ; 128 frames of tunnel animation.
-       .else
-       movb @bytes+>40,b               ; LD B,$80          ; 128 frames of tunnel animation.
-       .endif
-loc_9748:                              ; >9748
+       bl   @ti_upload_zx_screen
+       movb @bytes+>40,b               ; LD B,$80          ; 128 frames of tunnel animation. RM: Changed
+trap_exit_1:                           ; >9748
        movb @zx_frames,a               ; LD A,($5C78)      ;
        movb a,@c                       ; LD C,A            ;
-loc_974c:                              ; >974c
+trap_exit_2:                           ; >974c
        .push bc                        ; PUSH BC           ;
        movb b,a                        ; LD A,B            ;
        inv  a                          ; CPL               ; ~frame counter is effect frequency
        movb a,b                        ; LD B,A            ;
        bl   @click_sound               ; CALL $A3A8        ; short beep
        .pop bc                         ; POP BC            ;
-       ab   one,@zx_frames                                 ; Added
+       ab   one,@zx_frames                                 ; Added to make time pass
        movb @zx_frames,a               ; LD A,($5C78)      ;
        cb   a,@c                       ; CP C              ; same frame?
-       jeq  loc_974c                   ; JR Z,$974C        ; loop back to continue sound effect
-       andi a,>0700                    ; AND $07           ; frame 1-7?
+       jeq  trap_exit_2                ; JR Z,$974C        ; loop back to continue sound effect
+       andi a,>0300                    ; AND $07           ; frame 1-7? RM: Changed
        jeq  !
        sb   a,a                        ; LD A,$00          ; black
-       jmp  loc_9762                   ; JR NZ,$9762       ; jump if so (use black)
+       jmp  trap_exit_3                ; JR NZ,$9762       ; jump if so (use black)
 !      movb @bytes+>47,a               ; LD A,$47          ; bright white
-loc_9762:                              ; >9762
+trap_exit_3:                           ; >9762
        movb a,@l                       ; LD L,A            ;
        movb a,h                        ; LD H,A            ;
-       movb @l,@zx_attrs+>016b         ; LD ($596B),HL     ;
+       movb @l,@zx_attrs+>016b         ; LD ($596B),HL     ; Set 4 attributes at the center of screen
        movb h,@zx_attrs+>016c          ; LD ($596B),HL     ;
        movb @l,@zx_attrs+>018b         ; LD ($598B),HL     ;
        movb h,@zx_attrs+>018c          ; LD ($598B),HL     ;
        .push bc                        ; PUSH BC           ;
        bl   @draw_tunnel_attrs         ; CALL $9774        ;
        .pop bc                         ; POP BC            ;
-       bl   @ti_upload_zx_screen
+       bl   @ti_upload_zx_attributes
+       bl   @ti_display_on
        sb   one,b                      ; DJNZ $9748        ; loop until end of effect
-       jne  loc_9748                   ;
+       jne  trap_exit_1                ;
        b    @change_room_branch        ; JP $9117          ; move player to room linked to entity (usually door)
 
 *********************************************************************
@@ -1748,50 +1749,50 @@ draw_tunnel_attrs:                     ; >9774
        li   bc,>170b                   ; LD BC,$170B       ; 23x11 (for 24x24 final area)
        li   hl,zx_attrs+>02e0          ; LD HL,$5AE0       ;
        li   de,>0020                   ; LD DE,$0020       ; line pitch is 32 bytes
-loc_977d:                              ; >977d
+draw_tunnel_attrs_1:                   ; >977d
        .push hl                        ; PUSH HL           ;
        ; AND A                         ; AND A             ;
-       s    de,hl                      ; SBC HL,DE         ;
+       s    de,hl                      ; SBC HL,DE         ; Find the attribute to draw one row above and to the right
        ab   one,@l                     ; INC L             ;
        movb *hl,a                      ; LD A,(HL)         ;
        .pop hl                         ; POP HL            ;
        .push bc                        ; PUSH BC           ;
-loc_9785:                              ; >9785
+draw_tunnel_attrs_2:                   ; >9785
        movb a,*hl                      ; LD (HL),A         ; draw horizontal bar
        ab   one,@l                     ; INC L             ; forwards
        sb   one,b                      ; DJNZ $9785        ;
-       jne  loc_9785                   ;
+       jne  draw_tunnel_attrs_2        ;
        .pop bc                         ; POP BC            ;
        .push bc                        ; PUSH BC           ;
-loc_978b:                              ; >978b
+draw_tunnel_attrs_3:                   ; >978b
        movb a,*hl                      ; LD (HL),A         ; draw vertical bar
        ; AND A                         ; AND A             ; backwards
        s    de,hl                      ; SBC HL,DE         ;
        sb   one,b                      ; DJNZ $978B        ;
-       jne  loc_978b                   ;
+       jne  draw_tunnel_attrs_3        ;
        .pop bc                         ; POP BC            ;
        .push bc                        ; PUSH BC           ;
-loc_9793:                              ; >9793
+draw_tunnel_attrs_4:                   ; >9793
        movb a,*hl                      ; LD (HL),A         ; draw horizontal bar
        sb   one,@l                     ; DEC L             ; backwards
        sb   one,b                      ; DJNZ $9793        ;
-       jne  loc_9793                   ;
+       jne  draw_tunnel_attrs_4        ;
        .pop bc                         ; POP BC            ;
        .push bc                        ; PUSH BC           ;
-loc_9799:                              ; >9799
+draw_tunnel_attrs_5:                   ; >9799
        movb a,*hl                      ; LD (HL),A         ; draw vertical bar
        a    de,hl                      ; ADD HL,DE         ; forwards
        sb   one,b                      ; DJNZ $9799        ;
-       jne  loc_9799                   ;
+       jne  draw_tunnel_attrs_5        ;
        movb a,*hl                      ; LD (HL),A         ;
        ; AND A                         ; AND A             ;
-       s    de,hl                      ; SBC HL,DE         ;
+       s    de,hl                      ; SBC HL,DE         ; Move one row up and to the right
        ab   one,@l                     ; INC L             ;
        .pop bc                         ; POP BC            ;
-       sb   one,b                      ; DEC B             ;
+       sb   one,b                      ; DEC B             ; Reduce size by 2
        sb   one,b                      ; DEC B             ;
        sb   one,@c                     ; DEC C             ;
-       jne  loc_977d                   ; JR NZ,$977D       ;
+       jne  draw_tunnel_attrs_1        ; JR NZ,$977D       ;
        rt                              ; RET               ; OK
 
 *********************************************************************
