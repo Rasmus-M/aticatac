@@ -4,8 +4,8 @@ menu_options:                          ; >7cf8
        byte >C4
        text '2  JOYSTIC'
        byte >CB
-       text '3  CURSOR JOYSTIC'
-       byte >CB
+       text '3  CURSOR KEY'
+       byte >D3
        text '4  KNIGH'
        byte >D4
        text '5  WIZAR'

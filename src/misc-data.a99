@@ -125,3 +125,5 @@ menu_entities:                         ; >a331
 
 redraw_menu:
        data 0
+redraw_menu_selections:
+       data 0

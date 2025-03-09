@@ -71,6 +71,7 @@ main_menu:                             ; >7c29
        bl   @clear_screen              ; CALL $80AA        ; clear display, attributes, and set black border
        bl   @draw_menu_icons           ; CALL $A311        ; draw menu icons for controls and player acharacters
        seto @redraw_menu
+       clr  @redraw_menu_selections
 menu_loop:                             ; >7c2f
        bl   @draw_menu_text            ; CALL $7CAF        ;
 
@@ -88,7 +89,7 @@ menu_loop:                             ; >7c2f
        bl   @ti_check_key
        jeq  loc_7c43                   ; JR Z,$7C43        ; jump if not
        andi a,>f900                    ; AND $F9           ; select Keyboard
-       seto @redraw_menu
+       seto @redraw_menu_selections
 loc_7c43:                              ; >7c43
 
 ;      movb @e,r0                      ; BIT 1,E           ; 2 pressed?
@@ -98,7 +99,7 @@ loc_7c43:                              ; >7c43
        jeq  loc_7c4b                   ; JR Z,$7C4B        ; jump if not
        andi a,>f900                    ; AND $F9           ; 
        socb @bytes+>02,a               ; OR $02            ; select Kempston joystick
-       seto @redraw_menu
+       seto @redraw_menu_selections
 loc_7c4b:                              ; >7c4b
 
 ;      movb @e,r0                      ; BIT 2,E           ; 3 pressed?
@@ -108,7 +109,7 @@ loc_7c4b:                              ; >7c4b
        jeq  loc_7c53                   ; JR Z,$7C53        ; jump if not
        andi a,>f900                    ; AND $F9           ; 
        socb @bytes+>04,a               ; OR $04            ; select Cursor joystick
-       seto @redraw_menu
+       seto @redraw_menu_selections
 loc_7c53:                              ; >7c53
 
 ;       movb @e,r0                      ; BIT 3,E           ; 4 pressed?
@@ -117,7 +118,7 @@ loc_7c53:                              ; >7c53
        bl   @ti_check_key
        jeq  loc_7c59                   ; JR Z,$7C59        ; jump if not
        andi a,>e700                    ; AND $E7           ; select Knight
-       seto @redraw_menu
+       seto @redraw_menu_selections
 loc_7c59:                              ; >7c59
 
 ;      movb @e,r0                      ; BIT 4,E           ; 5 pressed?
@@ -127,7 +128,7 @@ loc_7c59:                              ; >7c59
        jeq  loc_7c61                   ; JR Z,$7C61        ; jump if not
        andi a,>e700                    ; AND $E7           ; 
        socb @bytes+>08,a               ; OR $08            ; select Wizard
-       seto @redraw_menu
+       seto @redraw_menu_selections
 loc_7c61:                              ; >7c61
 
 ;      movb a,d                        ; LD D,A            ;
@@ -145,7 +146,7 @@ loc_7c61:                              ; >7c61
        jeq  loc_7c73                   ; JR Z,$7C73        ; jump if not
        andi a,>e700                    ; AND $E7           ; 
        socb @bytes+>10,a               ; OR $10            ; select Serf
-       seto @redraw_menu
+       seto @redraw_menu_selections
 loc_7c73:                              ; >7c73
 
        movb a,@menu_selection          ; LD ($5E00),A      ;
@@ -175,6 +176,12 @@ loc_7c73:                              ; >7c73
        jeq  !
        bl   @ti_upload_zx_screen
        clr  @redraw_menu
+!      abs  @redraw_menu_selections
+       jeq  !
+       li   hl,>1058
+       li   bc,>0e68
+       bl   @ti_upload_specified_area
+       clr  @redraw_menu_selections
 !
        b    @menu_loop                 ; JP $7C2F          ;
 
