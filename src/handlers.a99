@@ -276,7 +276,7 @@ flash_score:                           ; >8c8c             ;
        movb a,@flash_timer             ; LD ($5E3C),A      ; score flash timer
        jeq  loc_8ca7                   ; JR Z,$8CA7        ; jump if so (stop flash)
        .ifeq hw_sprites,1
-       andi a,>1000                    ; AND $0F           ; 16th frame?
+       andi a,>0800                    ; AND $0F           ; 16th frame?
        .else
        andi a,>0400                    ; AND $0F           ; 16th frame?
        .endif

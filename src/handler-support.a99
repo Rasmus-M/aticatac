@@ -1597,39 +1597,27 @@ loc_95b1:                              ; >95b1
        jne  loc_95b1                   ;
        rt                              ; RET               ; OK
 loc_95b9:                              ; >95b9
-       movb @bytes+>45,a               ; LD A,$45          ; bright cyan
-       movb a,@player_attr             ; LD ($EA95),A      ;
-       .push hl                        ; PUSH HL           ;
-       movb @bytes+>8f,*hl             ; LD (HL),$8F       ; tombstone graphic
-       .ex_de_hl                       ; EX DE,HL          ;
-       inc  de                         ; INC DE            ;
+       .proc
+;      movb @bytes+>45,a               ; LD A,$45          ; bright cyan (handled below)
+;      movb a,@player_attr             ; LD ($EA95),A      ;
+       .push hl                        ; PUSH HL           ; Push tombstone entity address
+       movb @bytes+>8f,*hl             ; LD (HL),$8F       ; Set tombstone graphic
+       .ex_de_hl                       ; EX DE,HL          ; DE becomes tombstone entity address
+       inc  de                         ; INC DE            ; Skip graphics byte
        li   hl,player_room             ; LD HL,$EA91       ; copy remaining details from player entity
        li   bc,>0007                   ; LD BC,$0007       ; 8 bytes minus the graphic we've written
        .ldir                           ; LDIR              ;
-       .pop hl                         ; POP HL            ; jump return address (?)
-       bl   @draw_entity_hl
+       .pop hl                         ; POP HL            ; Restore tombstone entity address
+       movb @bytes+>45,@5(hl)          ; Set colour to cyan
+       bl   @draw_entity_hl_as_bgrnd
        .ifeq hw_sprites,1
        .push ix
        mov  hl,ix
-       bl   @ti_upload_entity_area
+       bl   @save_and_set_entity_attrs_as_bgrnd
+       bl   @ti_upload_sprite_entity_area
        .pop ix
        .endif
        .endproc
-
-*********************************************************************
-*
-* draw entity in HL
-*
-* Used by the routine at #R$96c9.
-draw_entity_hl:                        ; >95cc
-       .proc
-       .push ix                        ; PUSH IX           ;
-;      .push hl                        ; PUSH HL           ;
-;      .pop ix                         ; POP IX            ;
-       mov  hl,ix
-       bl   @draw_entity               ; CALL $9F4A        ; draw entity graphic (no attrs)
-       .pop ix                         ; POP IX            ;
-       .endproc                        ; RET               ;
 
 *********************************************************************
 *
@@ -1686,7 +1674,13 @@ print_clock_branch:
        li   de,clock_seconds           ; LD DE,$5E3F       ;
        inc  hl                         ; INC HL            ;
        movb one,b                      ; LD B,$01          ;
-       b    @print_bcd_bytes           ; JP $A1BF          ; print B BCD bytes at DE
+       bl   @print_bcd_bytes           ; JP $A1BF          ; print B BCD bytes at DE
+       .ifeq hw_sprites,1
+       li   hl,>40C8
+       li   bc,>0601
+       bl   @ti_upload_specified_area
+       .endif
+       .endproc
 
 *********************************************************************
 *

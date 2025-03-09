@@ -263,6 +263,24 @@ shift_draw:                                                ; or into the instruc
 *      Second and third bytes
        jmp  draw_2_bytes               ; JR $9EF9          ;
 
+
+*********************************************************************
+*
+* draw entity in HL
+*
+* Used by the routine at #R$96c9.
+draw_entity_hl_as_bgrnd:               ; >95cc
+       .proc
+       .push ix                        ; PUSH IX           ;
+;      .push hl                        ; PUSH HL           ;
+;      .pop ix                         ; POP IX            ;
+       mov  hl,ix
+       .push hl
+       bl   @draw_entity_as_bgrnd      ; CALL $9F4A        ; draw entity graphic (no attrs)
+       .pop hl
+       .pop ix                         ; POP IX            ;
+       .endproc                        ; RET               ;
+
 *********************************************************************
 *
 * Routine at 9f4a

@@ -676,6 +676,9 @@ draw_chicken_5:                        ; >8c26
 * 
 * Used by the routine at #R$8e26.
 game_over:                             ; >8c35
+       .ifeq hw_sprites,1
+       bl   @ti_reset_sprite_attr_table
+       .endif
        bl   @clear_play_area           ; CALL $8093        ; clear screen and attrs of play area
        li   hl,charset_base            ; LD HL,$BE4C       ;
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
@@ -794,6 +797,9 @@ draw_entities_1:                       ; >9295
        cb   @player_room,@entity_screen(ix) ; CP (IX+$01)  ; in player room?
        jne  draw_entities_2            ; JR NZ,$92A6       ; jump if not
        bl   @draw_entity_as_bgrnd      ; CALL $9F4A        ; draw entity graphic (no attrs)
+       .ifeq hw_sprites,1
+       bl   @save_and_set_entity_attrs_as_bgrnd
+       .endif
 draw_entities_2:                       ; >92a6
 ;      li   de,>0008                   ; LD DE,$0008       ; 8 bytes per entry
        ai   ix,8                       ; ADD IX,DE         ;
@@ -1055,7 +1061,7 @@ game_stats:                            ; >9641
        bl   @xy_to_display             ; CALL $9BA2        ; convert coords in HL to display address in HL
        li   de,visited_percent         ; LD DE,$5E54       ; 
        movb one,b                      ; LD B,$01          ; 
-       b    @print_bcd_bytes           ; JP $A1BF          ; print B BCD bytes at DE
+       b    @print_bcd_bytes_branch           ; JP $A1BF          ; print B BCD bytes at DE
 
 *********************************************************************
 *
@@ -1127,8 +1133,12 @@ loc_96e1:                              ; >96e1
 *
 * This entry point is used by the routine at #R$7e13.
 game_complete:                         ; >96ec
+       .ifeq hw_sprites,0
        li   hl,player                  ; LD HL,$EA90       ; congratulate player on completion
-       bl   @draw_entity_hl            ; CALL $95CC        ; undraw player
+       bl   @draw_entity_hl_as_bgrnd   ; CALL $95CC        ; undraw player
+       .else
+       bl   @ti_reset_sprite_attr_table
+       .endif
        li   hl,charset_base            ; LD HL,$BE4C       ;
        mov  hl,@charset_addr           ; LD ($5E01),HL     ; 
        li   hl,>2040                   ; LD HL,$2040       ; congratulations at 64,32
@@ -1328,12 +1338,15 @@ loc_a15e:                              ; >a15e
 * Used by the routine at #R$9641.
 print_score:                           ; >a1b7
        .proc
-print_score_branch:
        bl   @xy_to_display             ; CALL $9BA2        ; convert coords in HL to display address in HL
        li   de,score_bcd               ; LD DE,$5E2A       ; 
        movb @bytes+>03,b               ; LD B,$03          ; 3 bytes = 6 digits
+       jmp  print_bcd_bytes_branch
+*
 * This entry point is used by the routines at #R$9607, #R$9641 and #R$a1c9.
-print_bcd_bytes:                       ; >a1bf
+print_bcd_bytes:
+       .proc
+print_bcd_bytes_branch:                       ; >a1bf
        movb *de,a                      ; LD A,(DE)         ; print B BCD bytes at DE
        ; RRCA                          ; RRCA              ; 
        ; RRCA                          ; RRCA              ; 
@@ -1357,7 +1370,7 @@ print_bcd_digit_branch:
        bl   @print_char                ; CALL $A1D3        ; print a single character
        inc  de                         ; INC DE            ; 
        sb   one,b                      ; DJNZ $A1BF        ; print B BCD bytes at DE
-       jne  print_bcd_bytes            ;                   
+       jne  print_bcd_bytes_branch            ;
        .endproc                        ; RET               ;
 
 *********************************************************************

@@ -96,11 +96,6 @@ draw_room_item:
        b    @draw_bgrnd_graphics_branch
 !      .endproc                            ;
 
-draw_room_item_and_attributes:
-       .proc
-       bl   @draw_bgrnd_attrs
-       b    @draw_bgrnd_graphics_branch
-
 *********************************************************************
 *
 * draw lines that make up outer room frame
