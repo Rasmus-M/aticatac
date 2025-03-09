@@ -639,7 +639,14 @@ draw_chicken_3:                        ; >8c00
        movb @e,@chicken_full_size+1    ; LD ($C543),A       ; Restore height.
 ;      movb d,a                        ; LD A,D            ;
        movb d,@chicken_empty_size+1    ; LD ($C48D),A       ; Restore height.
-       .pop ix                         ; POP IX            ; 
+       .ifeq hw_sprites,1
+       movb @room_drawn,r0
+       jeq  !
+       movb @bytes+>77,@entity_y(ix)
+       bl   @ti_upload_bgrnd_entity_area
+!
+       .endif
+       .pop ix                         ; POP IX            ;
        movb @player_energy,@chicken_level ; LD A,($5E28)   ; Save new level
 ;      movb a,@chicken_level           ; LD ($5E29),A      ; last drawn chicken height
 draw_chicken_end:

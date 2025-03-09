@@ -1306,7 +1306,7 @@ add_inventory:                         ; >9326
 ;      movb a,*hl                      ; LD (HL),A         ;
        bl   @undraw_entity_as_bgrnd    ; CALL $9F56        ; Remove from play field
        .ifeq hw_sprites
-       bl   @ti_upload_zx_screen
+       bl   @ti_upload_sprite_entity_area
        .endif
        movb @room_attr,@>05(ix)        ; LD A,($5E1A)      ;
 ;      movb a,@>05(ix)                 ; LD (IX+$05),A     ;
@@ -1607,7 +1607,14 @@ loc_95b9:                              ; >95b9
        li   bc,>0007                   ; LD BC,$0007       ; 8 bytes minus the graphic we've written
        .ldir                           ; LDIR              ;
        .pop hl                         ; POP HL            ; jump return address (?)
-;      Continue into draw_entity_hl
+       bl   @draw_entity_hl
+       .ifeq hw_sprites,1
+       .push ix
+       mov  hl,ix
+       bl   @upload_entity_area
+       .pop ix
+       .endif
+       .endproc
 
 *********************************************************************
 *

@@ -437,7 +437,7 @@ ti_upload_zx_screen:
        bl   @upload_screen_part
        lwpi wrksp
        rt
-*// upload_zx_screen
+*// ti_upload_zx_screen
 
 *********************************************************************************
 *
@@ -501,8 +501,161 @@ upload_screen_part_2:
        dec  r2
        jne  upload_screen_part_2
        .endproc
-*// upload_screen_buffer
+*// upload_screen_part
 
+*********************************************************************************
+*
+* Upload the area covered by a background graphics entity
+*
+* ix: entity
+*
+ti_upload_bgrnd_entity_area:
+       .proc
+       movb *ix,@c
+       bl   @get_gfx_data
+       jmp  upload_entity_area
+*// ti_upload_bgrnd_entity_area:
+
+*********************************************************************************
+*
+* Upload the area covered by a sprite graphics entity
+*
+* ix: entity
+*
+ti_upload_sprite_entity_area:
+       .proc
+       bl   @get_sprite_addr_ix
+       movb *de,@c
+       movb @bytes+2,b
+       movb @entity_x(ix),r0
+       andi r0,>0700
+       jeq  !
+       ab   one,b
+!
+       jmp  upload_entity_area
+*// ti_upload_sprite_entity_area
+
+*********************************************************************************
+*
+* Upload the specified area
+*
+* h: y in pixels
+* l: x in pixels
+* b: Width in bytes
+* c: Height in pixels
+*
+ti_upload_specified_area:
+       .proc
+       jmp  upload_area
+*// ti_upload_spcified_area:
+
+*********************************************************************************
+*
+* Upload the area covered by a graphics entity
+*
+* ix: entity
+* b: Width in bytes
+* c: Height in pixels
+*
+* Branch target
+*
+upload_entity_area:
+*      Source address
+       movb @entity_y(ix),h            ; y
+       sb   @c,h                       ; y - height
+       ab   one,h                      ; y - height + 1
+       movb @entity_x(ix),@l           ; x
+upload_area:
+       andi hl,>f8f8                   ; Align to character
+       mov  hl,hl_                     ; Save coordinates
+       bl   @xy_to_display             ; Calculate source screen address
+*      Height
+       movb @c,a                       ; Height
+       czc  @w0700,a                   ; Aligned?
+       jeq  !                          ; Jump if so
+       ab   @bytes+8,a                 ; If not, h = (h + 8) % 8
+       andi a,>f800
+!      srl  a,3                        ; Height in characters
+*      VDP address
+       mov  hl_,r0                     ; yyyyy000xxxxx000
+       mov  r0,r1                      ; yyyyy000xxxxx000
+       srl  r1,3                       ; 000yyyyy000xxxxx
+       movb r1,r0                      ; 000yyyyyxxxxx000 This is the VDP address
+*      Prepare for drawing
+       srl af,8
+       mov af,af_
+       srl  bc,8
+       mov  bc,bc_
+       li   r1,vdpwd
+       mov  r0,r2                      ; Save VDP address
+*      Patterns
+upload_entity_area_1:
+       bl   @vwad
+       mov  bc_,bc
+upload_entity_area_2:
+       movb *hl,*r1
+       ab   one,hl
+       movb *hl,*r1
+       ab   one,hl
+       movb *hl,*r1
+       ab   one,hl
+       movb *hl,*r1
+       ab   one,hl
+       movb *hl,*r1
+       ab   one,hl
+       movb *hl,*r1
+       ab   one,hl
+       movb *hl,*r1
+       ab   one,hl
+       movb *hl,*r1
+       ab   one,hl
+       ai   hl,->0800+1
+       dec  bc
+       jne  upload_entity_area_2
+*      End of row
+       s    bc_,hl
+       coc  @w00e0,hl
+       jne  !
+       szc  @w00e0,hl
+       ai   hl,>0800
+       jmp  !!
+!      ai   hl,32
+!      ai   r0,>0100
+       dec  af
+       jne  upload_entity_area_1
+*      Colours
+       mov  hl_,hl
+       bl   @xy_to_attr
+       mov  r2,r0                      ; Saved VDP address
+       ai   r0,>2000                   ; Move to colours
+       mov  af_,af
+upload_entity_area_3:
+       bl   @vwad
+       mov  bc_,bc
+upload_entity_area_4:
+       movb *hl+,d
+       srl  de,8
+       movb @ti_colors(de),d
+       movb d,*r1
+       movb d,*r1
+       movb d,*r1
+       movb d,*r1
+       movb d,*r1
+       movb d,*r1
+       movb d,*r1
+       movb d,*r1
+       dec  bc
+       jne  upload_entity_area_4
+       s    bc_,hl
+       ai   hl,32
+       ai   r0,>0100
+       dec  af
+       jne  upload_entity_area_3
+upload_entity_area_5:
+       .endproc
+w0700: data >0700
+w00e0: data >00e0
+*// ti_upload_entity_area:
 
 *********************************************************************
 *
@@ -775,7 +928,7 @@ ti_close_sprite_attr_table:
        bl   @vwad
        li   r0,>d000                    ; Write sprite attribute table terminator
        movb r0,@vdpwd
-;       bl   @ti_vsync
+       bl   @ti_vsync
        mov  @double_buffer_flag,r0
        andi r0,1
        ori  r0,>0500+(sprite_attr_table/>80)

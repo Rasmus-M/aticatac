@@ -176,7 +176,11 @@ h_player_appear:                       ; >8cb7
        ; AND A                         ; AND A             ; score flash timer active?
        jne  flash_score                ; JR NZ,$8C8C       ; jump if so
        movb @zx_frames,a               ; LD A,($5C78)      ;
-       andi a,>0100                    ; AND $03           ; 0 in range 0-3? TODO: Changed to 1
+       .ifeq hw_sprites,1
+       andi a,>0300                    ; AND $03           ; 0 in range 0-3?
+       .else
+       andi a,>0100                    ; AND $03           ; 0 in range 0-3?
+       .endif
        jne  h_player_appear_2          ; JP NZ,$8D12       ; jump if not
        ab   one,@>06(ix)               ; INC (IX+$06)      ; increase drawn height
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
@@ -238,15 +242,19 @@ h_player_appear_3:                     ; >8d20
        socb @bytes+>40,a               ; OR $40            ; add bright bit
        movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; set player attr
 ;      movb @>06(ix),a                 ; LD A,(IX+$06)     ; Drawn height
+       .ifeq hw_sprites,0
        movb @bytes+>12,a                                   ; Added, draw full height.
        bl   @draw_appear_attr          ; CALL $92E2        ; set spawn appearance width/height
+       .endif
        .pop af                         ; POP AF            ;
        movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; Restore flags
 ;      b    @appear_sound              ; JP $A45F          ; player appearance sound
        jmp  h_player_appear_5                              ; appear_sound would return
 h_player_appear_4:                     ; >8d32
        movb @>07(ix),*ix               ; LD A,(IX+$07)     ; player spawn sprite
-       bl   @draw_entity                                  ; Added to undraw.
+       .ifeq hw_sprites,0
+       bl   @draw_entity                                   ; Added in order to undraw.
+       .endif
 ;      movb a,*ix                      ; LD (IX+$00),A     ; set player graphic
        clr  af
        movb a,@entity_vx(ix)           ; LD (IX+$06),$00   ; no x movement
@@ -328,7 +336,9 @@ h_death:                               ; >8d45
        b    @h_player_appear_1         ; JP $8CD4          ;
 loc_8d5b:                              ; >8d5b
        movb @>07(ix),*ix               ;                   ; Added. Player spawn sprite
-       bl   @draw_entity               ;                   ; Added to undraw.
+       .ifeq hw_sprites,0
+       bl   @draw_entity               ;                   ; Added in order to undraw.
+       .endif
        bl   @place_tombstone           ; CALL $95A9        ; place a tombstone at the player position
        b    @prepare_player_branch     ; JP $9443          ; prepare player to spawn
 
@@ -1525,14 +1535,14 @@ h_food:                                ; >8c63
        bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        bl   @check_touching            ; CALL $90FB        ; touching food?
        jnc  !
-       jmp  loc_8c6e                   ; JR C,$8C6E        ; jump if so
+       jmp  h_food_1                   ; JR C,$8C6E        ; jump if so
 !      b    @draw_16x16                ; JP $92E0          ; draw 16x16 entity
-loc_8c6e:                              ; >8c6e
+h_food_1:                              ; >8c6e
        bl   @undraw_entity_as_bgrnd    ; CALL $9F56        ;
-       .ifeq hw_sprites
+       .ifeq hw_sprites,1
        movb @room_drawn,r0             ; BIT 0,(HL)        ; room drawn yet?
        jeq  !
-       bl   @ti_upload_zx_screen
+       bl   @ti_upload_sprite_entity_area
 !
        .endif
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; remove food item
@@ -1615,7 +1625,7 @@ h_door_common:                         ; >9193
        movb @room_drawn,r0             ; BIT 0,(HL)        ; room drawn yet?
        jeq  !
        bl   @draw_bgrnd_attrs
-       bl   @ti_upload_zx_screen
+       bl   @ti_upload_bgrnd_entity_area
        jmp  !!
 !      bl   @draw_room_item_call
 !
@@ -1665,7 +1675,7 @@ trap_common:                           ; >91cc
        movb @room_drawn,r0             ; BIT 0,(HL)        ; room drawn yet?
        jeq  !
        bl   @draw_bgrnd_attrs
-       bl   @ti_upload_zx_screen
+       bl   @ti_upload_bgrnd_entity_area
        jmp  !!
 !      bl   @draw_room_item_call
 !
@@ -1865,7 +1875,7 @@ loc_98b1:                              ; >98b1
 mushroom_death:                        ; >98c8
        bl   @undraw_entity_as_bgrnd    ; CALL $9F56       ;
        .ifeq hw_sprites
-       bl   @ti_upload_zx_screen
+       bl   @ti_upload_bgrnd_entity_area
        .endif
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; remove mushroom
        b    @player_dead               ; JP $8EA0          ;

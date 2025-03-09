@@ -172,7 +172,7 @@ n_sprite_patterns:
        equ  >a2                        ; One more than the actual number
 
 hw_sprites:
-       equ  0
+       equ  1
 show_loading_screen:
        equ  0
 

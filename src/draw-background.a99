@@ -480,9 +480,10 @@ blend_instr_7:                         ; >9b88
 
 *********************************************************************
 *
-* C=gfx idx, DE=coordinates
+* C=gfx idx
 *
-* On return b contain the width, c contains the height, and de contains the data address
+* On return b contain the width in bytes, c contains the height in pixels
+* de contains the data address, and hl contains the screen address
 *
 * Used by the routines at #R$99c9, #R$99e5, #R$9a0a, #R$9a50, #R$9acb, #R$9aef,
 * #R$9b14 and #R$9b5d.

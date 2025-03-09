@@ -17,7 +17,12 @@ save_and_set_entity_attrs:             ; >a00e
 set_entity_attrs:                      ; >a01a
        .proc
 set_entity_attrs_branch:
-       movb @entity_x(ix),@l           ; LD L,(IX+$03)     ; xpos
+       .ifeq hw_sprites,1
+       mov  @sprite_attr_table_addr,r0
+       jeq  !
+       .endproc                        ; Don't draw attributes for hardware sprites
+       .endif
+!      movb @entity_x(ix),@l           ; LD L,(IX+$03)     ; xpos
        movb @entity_y(ix),h            ; LD H,(IX+$04)     ; ypos
        movb @entity_flags(ix),d        ; LD D,(IX+$05)     ; entity attr
        movb @room_attr,@e              ; LD A,($5E1A)      ;
