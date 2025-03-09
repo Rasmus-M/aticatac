@@ -1563,8 +1563,7 @@ h_door_open:                           ; >915f
        andi a,>0100                    ; AND $01           ; 2 alternating tasks
        jeq  !                          ; JP NZ,$91F2       ; jump if we're checking exits this time
        b    @h_door_exit               ;
-!
-       movb @door_timer,a              ; LD A,($5E2E)      ;
+!      movb @door_timer,a              ; LD A,($5E2E)      ;
        ; AND A                         ; AND A             ; door timer expired?
        jeq  h_door_open_1              ; JR Z,$9174        ; jump if so
        sb   one,a                      ; DEC A             ; reduce timer
@@ -1573,10 +1572,8 @@ h_door_open:                           ; >915f
 h_door_open_1:                         ; >9174
        movb @in_doorway,a              ; LD A,($5E2D)      ;
        ; AND A                         ; AND A             ; player standing in doorway?
-       jeq  !                          ; JP NZ,$91F2       ; jump if so (run exit logic only)
-       b    @h_door_exit               ;
-!
-       jmp  h_door_common              ; JR $9193          ;
+       jeq  h_door_common              ; JR $9193          ; Jump if not
+       b    @h_door_exit               ; JP NZ,$91F2       ; jump if so (run exit logic only)
 
 *********************************************************************
 *
@@ -1587,8 +1584,7 @@ h_door_closed:                         ; >917d
        andi a,>0100                    ; AND $01           ; 2 alternating tasks
        jeq  !                          ; JP NZ,$91FE       ; jump if we're drawing this time
        b    @draw_room_item            ;
-!
-       movb @door_timer,a              ; LD A,($5E2E)      ;
+!      movb @door_timer,a              ; LD A,($5E2E)      ;
        ; AND A                         ; AND A             ; door timer expired?
        jeq  h_door_common              ; JP Z,$9193        ; jump if so
        sb   one,a                      ; DEC A             ;
