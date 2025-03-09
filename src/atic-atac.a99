@@ -1545,9 +1545,7 @@ loc_a259:                              ; >a259
        movb @room_attr,a               ; LD A,($5E1A)      ;
        li   bc,>0303                   ; LD BC,$0303       ; 3x3 (rosette body)
        bl   @fill_bc_hl_a              ; CALL $809A        ; fill C rows of B columns of value A at address HL
-       ai   hl,-61
-       movb a,*hl                      ; Colour single pixel column at the right side of the rosette
-       ai   hl,61
+       movb a,@-61(hl)                 ; Colour single pixel column at the right side of the rosette
        ab   one,@l                     ; INC L             ;
        movb a,*hl                      ; LD (HL),A         ; 
        a    de,hl                      ; ADD HL,DE         ; 
