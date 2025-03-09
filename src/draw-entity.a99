@@ -279,7 +279,7 @@ draw_entity:                           ; >9f4a
        .proc
        mov  @sprite_attr_table_addr,r0
        jeq  draw_entity_as_bgrnd_branch
-       bl   @ti_draw_sprite
+       bl   @ti_draw_sprite            ; Will set up width_bytes and height_lines
        .endproc
        .else
        equ  $

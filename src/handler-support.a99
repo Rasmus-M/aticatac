@@ -1305,12 +1305,12 @@ add_inventory:                         ; >9326
        movb @>05(ix),*hl               ; LD A,(IX+$05)     ;
 ;      movb a,*hl                      ; LD (HL),A         ;
        bl   @undraw_entity_as_bgrnd    ; CALL $9F56        ; Remove from play field
-       .ifeq hw_sprites
-       bl   @ti_upload_sprite_entity_area
-       .endif
        movb @room_attr,@>05(ix)        ; LD A,($5E1A)      ;
 ;      movb a,@>05(ix)                 ; LD (IX+$05),A     ;
        bl   @set_entity_attrs          ; CALL $A01A        ; set attrs covering previous and new position
+       .ifeq hw_sprites,1
+       bl   @ti_upload_sprite_entity_area                  ;
+       .endif
        sb   *ix,*ix                    ; LD (IX+$00),$00   ;
        bl   @inventory_sound           ; JP $A3BD          ;
        .endproc
@@ -1611,7 +1611,7 @@ loc_95b9:                              ; >95b9
        .ifeq hw_sprites,1
        .push ix
        mov  hl,ix
-       bl   @upload_entity_area
+       bl   @ti_upload_entity_area
        .pop ix
        .endif
        .endproc
@@ -1831,5 +1831,10 @@ add_score_bc_bcd_1:                    ; >a1ae
        li   hl,digit_charset           ; LD HL,$BFCC       ;
        mov  hl,@charset_addr           ; LD ($5E01),HL     ;
        li   hl,>50C8                   ; LD HL,$50C8       ;
-       b    @print_score_branch
-
+       bl   @print_score
+       .ifeq hw_sprites,1
+       li   hl,>50C8
+       li   bc,>0601
+       bl   @ti_upload_specified_area
+       .endif
+       .endproc

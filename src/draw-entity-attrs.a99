@@ -1,3 +1,35 @@
+*********************************************************************
+*
+* This entry point is used by the routines at #R$8c63, #R$92f5, #R$95d7 and
+* #R$988b.
+*
+draw_entity_attrs:                     ; >92e0
+;      movb @bytes+>10,a               ; LD A,$10          ; 16 lines high by default (this is not accurate for bottle, etc.)
+       movb *ix,a                                          ; RM: This is my fix
+       bl   @get_sprite_addr
+       movb *de,a
+       b    @draw_attr_at_height_branch
+
+*********************************************************************
+*
+* set spawn appearance width/height
+*
+* Used by the routine at #R$8cb7.
+draw_attrs_at_height:                  ; >92e2
+       .proc
+draw_attr_at_height_branch:
+       movb a,@height_lines            ; LD ($5E11),A      ;
+       movb @entity_x(ix),a            ; LD A,(IX+$03)     ; x
+       andi a,>0700                    ; AND $07           ; x aligned on cell boundary?
+       movb @bytes+>02,a               ; LD A,$02          ; 2 bytes wide
+       jeq  loc_92ef                   ; JR Z,$92EF        ;
+       ab   one,a                      ; INC A             ; extra byte needed
+loc_92ef:                              ; >92ef
+       movb a,@width_bytes             ; LD ($5E10),A      ;
+       b    @set_entity_attrs_branch   ; JP $A01A          ; set attrs covering previous and new position
+
+*********************************************************************
+*
 * paint entity with its current attr colour
 *
 * Used by the routines at #R$a14d and #R$a311.
@@ -8,6 +40,18 @@ save_and_set_entity_attrs:             ; >a00e
        movb @entity_y(ix),@saved_y     ; LD A,(IX+$04)     ; ypos
 ;      movb a,@saved_y                 ; LD ($5E17),A      ;
        jmp  set_entity_attrs_branch
+
+*********************************************************************
+*
+* Force drawing attributes in hw_sprites mode
+*
+save_and_set_entity_attrs_as_bgrnd:
+       .proc
+       movb @entity_x(ix),@saved_x
+       movb @entity_y(ix),@saved_y
+       jmp  set_entity_attrs_branch_1
+
+*********************************************************************
 *
 * This entry point is used by the routines at #R$81f0, #R$871a, #R$8e26,
 * #R$92e2 and #R$9326.
@@ -19,10 +63,11 @@ set_entity_attrs:                      ; >a01a
 set_entity_attrs_branch:
        .ifeq hw_sprites,1
        mov  @sprite_attr_table_addr,r0
-       jeq  !
+       jeq  set_entity_attrs_branch_1
        .endproc                        ; Don't draw attributes for hardware sprites
        .endif
-!      movb @entity_x(ix),@l           ; LD L,(IX+$03)     ; xpos
+set_entity_attrs_branch_1:
+       movb @entity_x(ix),@l           ; LD L,(IX+$03)     ; xpos
        movb @entity_y(ix),h            ; LD H,(IX+$04)     ; ypos
        movb @entity_flags(ix),d        ; LD D,(IX+$05)     ; entity attr
        movb @room_attr,@e              ; LD A,($5E1A)      ;

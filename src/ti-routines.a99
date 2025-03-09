@@ -513,7 +513,7 @@ ti_upload_bgrnd_entity_area:
        .proc
        movb *ix,@c
        bl   @get_gfx_data
-       jmp  upload_entity_area
+       jmp  ti_upload_entity_area
 *// ti_upload_bgrnd_entity_area:
 
 *********************************************************************************
@@ -532,7 +532,7 @@ ti_upload_sprite_entity_area:
        jeq  !
        ab   one,b
 !
-       jmp  upload_entity_area
+       jmp  ti_upload_entity_area
 *// ti_upload_sprite_entity_area
 
 *********************************************************************************
@@ -546,7 +546,7 @@ ti_upload_sprite_entity_area:
 *
 ti_upload_specified_area:
        .proc
-       jmp  upload_area
+       jmp  _upload_area
 *// ti_upload_spcified_area:
 
 *********************************************************************************
@@ -559,13 +559,13 @@ ti_upload_specified_area:
 *
 * Branch target
 *
-upload_entity_area:
+ti_upload_entity_area:
 *      Source address
        movb @entity_y(ix),h            ; y
        sb   @c,h                       ; y - height
        ab   one,h                      ; y - height + 1
        movb @entity_x(ix),@l           ; x
-upload_area:
+_upload_area:
        andi hl,>f8f8                   ; Align to character
        mov  hl,hl_                     ; Save coordinates
        bl   @xy_to_display             ; Calculate source screen address
@@ -655,7 +655,7 @@ upload_entity_area_5:
        .endproc
 w0700: data >0700
 w00e0: data >00e0
-*// ti_upload_entity_area:
+*// ti_upload_entity_area
 
 *********************************************************************
 *

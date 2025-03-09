@@ -1269,6 +1269,14 @@ loc_a143:                              ; >a143
 ;      movb a,@e                       ; LD E,A            ;
        sb   one,b                      ; DJNZ $A143        ; 
        jne  loc_a143                   ;                   
+       .ifeq hw_sprites,1
+       movb @room_drawn,r0
+       jeq  !
+       li   hl,>18c8
+       li   bc,>0618
+       bl   @ti_upload_specified_area
+!
+       .endif
        .endproc                        ; RET               ;
 
 *********************************************************************
@@ -1301,9 +1309,9 @@ loc_a15e:                              ; >a15e
        movb a,@>05(ix)                 ; LD (IX+$05),A     ; set attr
        .push hl                        ; PUSH HL           ; 
        bl   @clear_sprite              ; CALL $A185        ;
-       bl   @draw_entity               ; CALL $9F4A        ; draw entity graphic (no attrs)
-       bl   @save_and_set_entity_attrs ; CALL $A00E        ; paint entity with its current attr colour
-       .pop hl                         ; POP HL            ; 
+       bl   @draw_entity_as_bgrnd      ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl   @save_and_set_entity_attrs_as_bgrnd ; CALL $A00E        ; paint entity with its current attr colour.
+       .pop hl                         ; POP HL            ;
        .pop ix                         ; POP IX            ; 
        .pop de                         ; POP DE            ; 
        .pop bc                         ; POP BC            ; 
