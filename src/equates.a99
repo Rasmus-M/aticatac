@@ -1,3 +1,4 @@
+       copy "sound-defs.a99"
 **
 * Memory mapped addresses
 *
@@ -57,10 +58,26 @@ next_sprite_pattern_index:
        equ  double_buffer_flag+2
 sprite_attr_table_addr:
        equ  next_sprite_pattern_index+2
-exx_flag:
+snd_channel_1:
        equ  sprite_attr_table_addr+2
+snd_channel_2:
+       equ  snd_channel_1+snd_channel_size
+snd_channel_3:
+       equ  snd_channel_2+snd_channel_size
+snd_channel_4:
+       equ  snd_channel_3+snd_channel_size
+module_speed:
+       equ  snd_channel_4+snd_channel_size
+snd_track_1:
+       equ  module_speed+2
+snd_track_2:
+       equ  snd_track_1+snd_track_size
+snd_track_3:
+       equ  snd_track_2+snd_track_size
+snd_track_4:
+       equ  snd_track_3+snd_track_size
 pad_max:
-       equ  exx_flag+2
+       equ  snd_track_4+snd_track_size
 kscan_device:
        equ  >8374
 kscan_key:
@@ -175,5 +192,3 @@ hw_sprites:
        equ  1
 show_loading_screen:
        equ  1
-
-       copy "sound-defs.a99"
