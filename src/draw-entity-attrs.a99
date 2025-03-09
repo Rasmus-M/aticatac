@@ -65,6 +65,8 @@ set_entity_attrs_branch:
        mov  @sprite_attr_table_addr,r0
        jeq  set_entity_attrs_branch_1
        .endproc                        ; Don't draw attributes for hardware sprites
+       .else
+       equ  $
        .endif
 set_entity_attrs_branch_1:
        movb @entity_x(ix),@l           ; LD L,(IX+$03)     ; xpos
