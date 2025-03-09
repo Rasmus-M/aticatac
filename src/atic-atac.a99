@@ -463,6 +463,7 @@ loc_7e55:                              ; >7e55
        bl   @ti_upload_zx_screen
        .else
        bl   @ti_close_sprite_attr_table
+       bl   @module_player
        bl   @ti_update_sprite_pattern_usage_table
        .endif
        b    @main_loop                 ; JP $7DC3          ;
@@ -870,7 +871,7 @@ prepare_player_branch:
        li   bc,>0008                   ; LD BC,$0008       ; player entity size
        .ldir                           ; LDIR              ; copy to live player
        .ifeq hw_sprites,1
-       movb @bytes+104,@flash_timer    ; LD A,$68          ; flash score for 104 frames
+       movb @bytes+>48,@flash_timer    ; LD A,$68          ; flash score for 104 frames
        .else
        movb @bytes+32,@flash_timer     ; LD A,$68          ; flash score for 104 frames
        .endif

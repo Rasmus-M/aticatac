@@ -10,7 +10,7 @@ vdprd:                                 ; VDP read data
        equ  >8800
 vdpsta:                                ; VDP status
        equ  >8802
-sound1:                                 ; Sound
+sound:                                 ; Sound
        equ  >8400
 spchwt:
        equ  >9400

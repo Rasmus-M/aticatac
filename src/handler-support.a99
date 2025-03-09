@@ -114,7 +114,7 @@ serf_fire_1:
 throw_weapon:                          ; >817c
        li   hl,weapon+>0006            ; LD HL,$EA9E       ;
        movb @bytes+>30,a               ; LD A,$30          ;
-       movb a,@sound+>0007             ; LD ($EAA7),A      ;
+       movb a,@sound_entity+>0007             ; LD ($EAA7),A      ;
        sb   a,a                        ; LD A,$00          ;
        movb a,@weapon+>0002            ; LD ($EA9A),A      ;
        movb @>06(ix),a                 ; LD A,(IX+$06)     ;

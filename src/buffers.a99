@@ -39,7 +39,7 @@ weapon:                                ; >ea98
        byte >00,>00,>00,>00,>00,>00,>00,>00
 
 * Data block at eaa0
-sound:                                 ; >eaa0
+sound_entity:                          ; >eaa0
        byte >00,>00,>00,>00,>00,>00,>00,>00
 
 * Data block at eaa8

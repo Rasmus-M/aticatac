@@ -35,10 +35,10 @@ mp_one:
        equ  wrksp+6                    ; one in wrksp
 *
 module_player:
-       movb @vdpsta,@vdp_status
-       jlt  module_player_0
-       rt
-module_player_0:
+;       movb @vdpsta,@vdp_status
+;       jlt  module_player_0
+;       rt
+;module_player_0:
        lwpi sndws
        li   r5,snd_track_1
 module_player_1:

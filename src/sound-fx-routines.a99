@@ -6,7 +6,7 @@ mute_sound:
        li   r0,mute_table              ; Mute all
        li   r2,4
 mute_sound_1:
-       movb *r0+,@sound
+       movb *r0+,@sound_entity
        dec  r2
        jne  mute_sound_1
        clr  @snd_channel_1
@@ -316,6 +316,12 @@ door_sound:                            ; >a46e
 *
 * Used by the routine at #R$8c63.
 eat_sound:                             ; >a485
+       .proc
+       li   r0,snd_deposit
+       li   r1,snd_channel_2
+       li   r2,C4
+       bl   @play_snd
+       .endproc
 ;       li   bc,>a010                   ; LD BC,$A010       ; A0 is blank graphic with food-eaten handler (below)
 ;       b    @queue_sound               ; JP $A3E8          ;
        rt
