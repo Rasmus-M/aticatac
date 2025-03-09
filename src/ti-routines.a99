@@ -564,17 +564,19 @@ ti_upload_entity_area:
        movb @entity_y(ix),h            ; y
        sb   @c,h                       ; y - height
        ab   one,h                      ; y - height + 1
+       movb h,a                        ; Save unaligned y coordinate
        movb @entity_x(ix),@l           ; x
 _upload_area:
        andi hl,>f8f8                   ; Align to character
        mov  hl,hl_                     ; Save coordinates
        bl   @xy_to_display             ; Calculate source screen address
 *      Height
-       movb @c,a                       ; Height
+       andi a,>0700                    ; Top offset from character boundary
+       ab   @c,a                       ; Add height
        czc  @w0700,a                   ; Aligned?
        jeq  !                          ; Jump if so
-       ab   @bytes+8,a                 ; If not, h = (h + 8) % 8
-       andi a,>f800
+       ab   @bytes+8,a                 ; If not, h += 8
+       andi a,>f800                    ; h = (h + 8) % 8
 !      srl  a,3                        ; Height in characters
 *      VDP address
        mov  hl_,r0                     ; yyyyy000xxxxx000
