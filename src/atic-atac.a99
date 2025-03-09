@@ -844,7 +844,11 @@ prepare_player_branch:
        li   de,player                  ; LD DE,$EA90       ; 
        li   bc,>0008                   ; LD BC,$0008       ; player entity size
        .ldir                           ; LDIR              ; copy to live player
-       movb @bytes+32,@flash_timer     ; LD A,$68          ; flash score for 104 frames TODO: Changed to 32
+       .ifeq hw_sprites,1
+       movb @bytes+104,@flash_timer    ; LD A,$68          ; flash score for 104 frames
+       .else
+       movb @bytes+32,@flash_timer     ; LD A,$68          ; flash score for 104 frames
+       .endif
 ;      movb a,@flash_timer             ; LD ($5E3C),A      ; score flash timer
        movb @lives,a                   ; LD A,($5E21)      ; 
        cb   a,@bytes+>03               ; CP $03            ; first game spawn? (full lives)

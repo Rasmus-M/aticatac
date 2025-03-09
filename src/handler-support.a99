@@ -1705,7 +1705,11 @@ chk_trap_exit:                         ; >9731
        .push ix                        ; PUSH IX           ;
        bl   @draw_room_a               ; CALL $9BF1        ; draw trap door lines
        .pop ix                         ; POP IX            ;
-       movb @bytes+>40,b               ; LD B,$80          ; 128 frames of tunnel animation. TODO: Changed to 64
+       .ifeq hw_sprites,1
+       movb @bytes+>40,b               ; LD B,$80          ; 128 frames of tunnel animation.
+       .else
+       movb @bytes+>40,b               ; LD B,$80          ; 128 frames of tunnel animation.
+       .endif
 loc_9748:                              ; >9748
        movb @zx_frames,a               ; LD A,($5C78)      ;
        movb a,@c                       ; LD C,A            ;

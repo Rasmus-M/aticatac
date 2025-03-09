@@ -242,15 +242,18 @@ h_player_appear_3:                     ; >8d20
        socb @bytes+>40,a               ; OR $40            ; add bright bit
        movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; set player attr
 ;      movb @>06(ix),a                 ; LD A,(IX+$06)     ; Drawn height
-       .ifeq hw_sprites,0
        movb @bytes+>12,a                                   ; Added, draw full height.
-       bl   @draw_attrs_at_height       ; CALL $92E2        ; set spawn appearance width/height
-       .endif
+       bl   @draw_attrs_at_height      ; CALL $92E2       ; set spawn appearance width/height
        .pop af                         ; POP AF            ;
+       .ifeq hw_sprites,0
        movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; Restore flags
+       .endif
 ;      b    @appear_sound              ; JP $A45F          ; player appearance sound
        jmp  h_player_appear_5                              ; appear_sound would return
 h_player_appear_4:                     ; >8d32
+       .ifeq hw_sprites,1
+       movb @player_template+5,@entity_flags(ix)           ; Restore flags
+       .endif
        movb @>07(ix),*ix               ; LD A,(IX+$07)     ; player spawn sprite
        .ifeq hw_sprites,0
        bl   @draw_entity                                   ; Added in order to undraw.
@@ -272,9 +275,13 @@ flash_score:                           ; >8c8c             ;
        sb   one,a                      ; DEC A             ; timer expired?
        movb a,@flash_timer             ; LD ($5E3C),A      ; score flash timer
        jeq  loc_8ca7                   ; JR Z,$8CA7        ; jump if so (stop flash)
-       andi a,>0400                    ; AND $0F           ; 16th frame? TODO: Changed to 4
+       .ifeq hw_sprites,1
+       andi a,>1000                    ; AND $0F           ; 16th frame?
+       .else
+       andi a,>0400                    ; AND $0F           ; 16th frame?
+       .endif
        jne  !                          ; CALL Z,$A3E0      ; call if so (beep)
-      bl   @start_beep                 ;
+       bl   @start_beep                ;
        jmp  loc_8ca7                   ;                   ; Added
 !
        li   hl,>50C8                   ; LD HL,$50C8       ;
@@ -300,6 +307,11 @@ loc_8caf:                              ; >8caf
        sb   one,b                      ; DJNZ $8CAF        ;
        jne  loc_8caf                   ;
 flash_score_1:
+       .ifeq hw_sprites,1
+       li   hl,>50C8
+       li   bc,>0601
+       bl   @ti_upload_specified_area
+       .endif
        .endproc                        ; RET               ;
 
 *********************************************************************
@@ -312,11 +324,11 @@ h_death:                               ; >8d45
        jne  !
        b   @h_player_appear_2          ; JR Z,$8D12        ; jump if colouring this frame instead
 !      sb   one,@>06(ix)               ; DEC (IX+$06)      ; reduce player visible height
-       jlt  loc_8d5b                   ; JP M,$8D5B        ; jump if after zero
+       jlt  h_death_1                  ; JP M,$8D5B        ; jump if after zero
        movb @>07(ix),a                 ; LD A,(IX+$07)     ; player spawn sprite
        bl   @get_sprite_addr           ; CALL $9E89        ; return address of sprite A in DE
        b    @h_player_appear_1         ; JP $8CD4          ;
-loc_8d5b:                              ; >8d5b
+h_death_1:                             ; >8d5b
        movb @>07(ix),*ix               ;                   ; Added. Player spawn sprite
        .ifeq hw_sprites,0
        bl   @draw_entity               ;                   ; Added in order to undraw.
@@ -1584,9 +1596,12 @@ h_door_closed:                         ; >917d
        b    @draw_room_item            ; JP $91FE          ; draw room item
 *      Switch from open to closed or closed to open
 h_door_common:                         ; >9193
-;      movb @bytes+>5e,a               ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer ;
-                                                           ; processing
+;      movb @bytes+>5e,a               ; LD A,$5E          ; 0x5E * 2 / 50 = 3.76 seconds, due to halved timer processing
+       .ifeq hw_sprites,1
        movb @bytes+>5e,@door_timer     ; LD ($5E2E),A      ;
+       .else
+       movb @bytes+>18,@door_timer     ; LD ($5E2E),A      ;
+       .endif
 *      There doesn't seem to be any reason for undrawing and redrawing using XOR -
 *      we can just draw the new door using overwrite.
 ;      movb @>05(ix),a                 ; LD A,(IX+$05)     ; save door attr
