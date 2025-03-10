@@ -58,8 +58,10 @@ next_sprite_pattern_index:
        equ  double_buffer_flag+2
 sprite_attr_table_addr:
        equ  next_sprite_pattern_index+2
-snd_channel_1:
+sprites_enabled:
        equ  sprite_attr_table_addr+2
+snd_channel_1:
+       equ  sprites_enabled+2
 snd_channel_2:
        equ  snd_channel_1+snd_channel_size
 snd_channel_3:
@@ -191,4 +193,6 @@ n_sprite_patterns:
 hw_sprites:
        equ  1
 show_loading_screen:
+       equ  1
+extra_player_move:
        equ  1

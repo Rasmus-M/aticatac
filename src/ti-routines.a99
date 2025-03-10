@@ -897,6 +897,8 @@ ti_init_sprite_attr_table:
 *
 ti_draw_sprite:
        .proc
+       abs  @sprites_enabled
+       jeq  ti_draw_sprite_3
        bl   @get_sprite_addr_ix        ; Now a=sprite index and de=sprite graphics
        bl   @ti_upload_sprite_patterns ; Upload patterns as needed
        mov  @sprite_attr_table_addr,r0
@@ -946,6 +948,7 @@ ti_draw_sprite_2:
        dec  r2
        jne ti_draw_sprite_2
        clr  af
+ti_draw_sprite_3:
        .endproc
 w4:    data 4
 *// ti_draw_sprite
@@ -966,6 +969,7 @@ ti_close_sprite_attr_table:
        ori  r0,>0500+(sprite_attr_table/>80)
        bl   @vwtr
        inv  @double_buffer_flag
+       seto @sprites_enabled
        .endproc
 *// ti_close_sprite_attr_table
 

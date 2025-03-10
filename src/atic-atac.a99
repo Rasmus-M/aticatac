@@ -370,7 +370,17 @@ main_loop_1:                           ; >7ddc
        movb @last_frames,a             ; LD A,($5E03)      ; 
        cb   a,@c                       ; CP C              ; same frame as last time?
        jeq  !                          ; CALL NZ,$7EB2     ; call if not
+       .ifeq hw_sprites,1
+       .ifeq extra_player_move,1
+       clr  @sprites_enabled           ; If moving again later, don't draw these sprites
+       .endif
+       .endif
        bl   @run_player                ;
+       .ifeq hw_sprites,1
+       .ifeq extra_player_move,1
+       seto @sprites_enabled
+       .endif
+       .endif
 !
 *      Process entities from acg_key_1 to creature1
        movb @player_room,a             ; LD A,($EA91)      ; 
@@ -389,7 +399,7 @@ loop_return_1:                         ; >7df3
 ;       c    de,hl                     ; SBC HL,DE         ; end of list?
        ci   ix,creature1
        jl   main_loop_1                ; JR C,$7DDC        ; jump if not
-       .ifeq hw_sprites,0
+       .ifeq extra_player_move,1
        ab   one,@zx_frames             ;
        .endif
 * This entry point is used by the routine at #R$7e13.
@@ -871,7 +881,7 @@ prepare_player_branch:
        li   bc,>0008                   ; LD BC,$0008       ; player entity size
        .ldir                           ; LDIR              ; copy to live player
        .ifeq hw_sprites,1
-       movb @bytes+>48,@flash_timer    ; LD A,$68          ; flash score for 104 frames
+       movb @bytes+>68,@flash_timer    ; LD A,$68          ; flash score for 104 frames
        .else
        movb @bytes+32,@flash_timer     ; LD A,$68          ; flash score for 104 frames
        .endif
