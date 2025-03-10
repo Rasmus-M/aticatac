@@ -1842,13 +1842,19 @@ loc_989e:                              ; >989e
        sb   b,b                        ; LD B,$00          ;
        li   hl,mushroom_attrs          ; LD HL,$98C4       ;
        a    bc,hl                      ; ADD HL,BC         ;
-       movb *hl,a                      ; LD A,(HL)         ; new mushroom attr
-       movb a,@>05(ix)                 ; LD (IX+$05),A     ; set colour
-       b    @draw_entity_attrs          ; JP $92E0          ; draw 16x16 entity
+;      movb *hl,a                      ; LD A,(HL)         ; new mushroom attr
+       movb *hl,@>05(ix)               ; LD (IX+$05),A     ; set colour
+       .ifeq hw_sprites,0
+       b    @draw_entity_attrs         ; JP $92E0         ; draw 16x16 entity
+       .else
+       bl   @set_entity_attrs_as_bgrnd
+       bl   @ti_upload_sprite_entity_area
+       .endproc
+       .endif
 loc_98b1:                              ; >98b1
-       movb @player_energy,a           ; LD A,($5E28)      ;
-       sb   one,a                      ; DEC A             ;
-       movb a,@player_energy           ; LD ($5E28),A      ;
+;      movb @player_energy,a           ; LD A,($5E28)      ;
+       sb   one,@player_energy         ; DEC A             ;
+;      movb a,@player_energy           ; LD ($5E28),A      ;
        jne  !                          ; JP Z,$98C8        ;
        b    @mushroom_death            ;
 !

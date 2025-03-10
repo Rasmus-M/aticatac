@@ -3,6 +3,8 @@
 * This entry point is used by the routines at #R$8c63, #R$92f5, #R$95d7 and
 * #R$988b.
 *
+draw_entity_attrs_call:
+       .proc
 draw_entity_attrs:                     ; >92e0
 ;      movb @bytes+>10,a               ; LD A,$10          ; 16 lines high by default (this is not accurate for bottle, etc.)
        movb *ix,a                                          ; RM: This is my fix
@@ -49,6 +51,14 @@ save_and_set_entity_attrs_as_bgrnd:
        .proc
        movb @entity_x(ix),@saved_x
        movb @entity_y(ix),@saved_y
+       jmp  set_entity_attrs_branch_1
+
+*********************************************************************
+*
+* Force drawing attributes in hw_sprites mode
+*
+set_entity_attrs_as_bgrnd:
+       .proc
        jmp  set_entity_attrs_branch_1
 
 *********************************************************************
@@ -131,6 +141,8 @@ set_entity_attrs_4:                     ; >a050
        mov  *hl,hl
        bl   *hl                        ; JP (HL)           ;
        .endproc
+
+stop:  jmp stop
 
 * Data block at a064
 attr_handlers:                         ; >a064

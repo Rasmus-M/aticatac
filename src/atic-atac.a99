@@ -183,6 +183,7 @@ loc_7c73:                              ; >7c73
        bl   @ti_upload_specified_area
        clr  @redraw_menu_selections
 !
+       bl   @ti_check_quit
        b    @menu_loop                 ; JP $7C2F          ;
 
 *********************************************************************
@@ -322,8 +323,8 @@ start_game:                            ; >7d9a
        bl   @ti_reset_sprite_attr_table
        .endif
        bl   @clear_game_data           ; CALL $80CB        ; clear 5E10-5FFF
-       movb @bytes+>03,a               ; LD A,$03          ; 3 lives on startup
-       movb a,@lives                   ; LD ($5E21),A      ; 
+;      movb @bytes+>03,a               ; LD A,$03          ; 3 lives on startup
+       movb @bytes+>03,@lives          ; LD ($5E21),A      ;
        li   hl,food_items              ; LD HL,$EB58       ; 
        mov  hl,@food_ptr               ; LD ($5E55),HL     ; 
        bl   @clear_screen              ; CALL $80AA        ; clear display, attributes, and set black border
@@ -476,6 +477,7 @@ loc_7e55:                              ; >7e55
        bl   @module_player
        bl   @ti_update_sprite_pattern_usage_table
        .endif
+       bl   @ti_check_quit
        b    @main_loop                 ; JP $7DC3          ;
 
 *********************************************************************
@@ -635,7 +637,7 @@ draw_chicken_branch:
        movb a,@chicken_empty_size      ; LD (HL),A         ; Update graphics width at offset with modified value.
 ;      .push hl                        ; PUSH HL           ; Save the address at the offset
 ;      movb @bytes+>14,a               ; LD A,$14          ; empty chicken graphic
-       movb @bytes+>14,*ix             ; LD (IX+$00),A     ; Set entity to draw
+       movb @bytes+>14,*ix             ; LD (IX+$00),A     ; Chicken empty graphics
        li   hl,>77C8                   ; LD HL,$77C8       ; chicken draw coords
 ;      movb h,a                        ; LD A,H            ;
        sb   @c,h                       ; SUB C             ; Subtract desired height from y
@@ -767,8 +769,8 @@ change_room_branch:
        bl   @ti_close_sprite_attr_table
        .endif
        bl   @get_linked_door           ; CALL $9286        ; get connected door exit
-       movb @>01(ix),a                 ; LD A,(IX+$01)     ; 
-       movb a,@player_room             ; LD ($EA91),A      ; move player to connected room
+;      movb @>01(ix),a                 ; LD A,(IX+$01)     ;
+       movb @>01(ix),@player_room      ; LD ($EA91),A      ; move player to connected room
        movb @>02(ix),a                 ; LD A,(IX+$02)     ; bits 3-0 used for x offset
        sla  a,1                        ; RLCA              ; * 2
        andi a,>1e00                    ; AND $1E           ; 
@@ -828,7 +830,7 @@ draw_entities_1:                       ; >9295
        jne  draw_entities_2            ; JR NZ,$92A6       ; jump if not
        bl   @draw_entity_as_bgrnd      ; CALL $9F4A        ; draw entity graphic (no attrs)
        .ifeq hw_sprites,1
-       bl   @save_and_set_entity_attrs_as_bgrnd
+       bl   @set_entity_attrs_as_bgrnd
        .endif
 draw_entities_2:                       ; >92a6
 ;      li   de,>0008                   ; LD DE,$0008       ; 8 bytes per entry
@@ -838,9 +840,10 @@ draw_entities_2:                       ; >92a6
 ;      li   de,creature1               ; LD DE,$EE60       ; end marker
        ; AND A                         ; AND A             ; 
 ;      s    de,hl                      ; SBC HL,DE         ; more 8-byte entries to process?
-       ci   ix,creature1
+       ci   ix,blank                   ; Stop before blank instead of before creature1
        jl  draw_entities_1             ; JR C,$9295        ; jump back if so
 *      From creature1 to linked_items
+       ai   ix,8                       ; skip blank
 draw_entities_3:                       ; >92b6
        movb *ix,a                      ; LD A,(IX+$00)     ; 
        ; AND A                         ; AND A             ; slot used?
@@ -874,8 +877,8 @@ prepare_player_branch:
        andi a,>3000                    ; AND $30           ; base character graphic
        ab   @bytes+>08,a               ; ADD A,$08         ; offset to desired facing direction
        movb a,@player_template+>0007   ; LD ($9488),A      ; set spawn graphic
-       movb @player_room,a             ; LD A,($EA91)      ; current player room
-       movb a,@player_template+>0001   ; LD ($9482),A      ; respawn in same room
+;      movb @player_room,a             ; LD A,($EA91)      ; current player room
+       movb @player_room,@player_template+1 ; LD ($9482),A    ; respawn in same room
        li   hl,player_template         ; LD HL,$9481       ; 
        li   de,player                  ; LD DE,$EA90       ; 
        li   bc,>0008                   ; LD BC,$0008       ; player entity size
@@ -1278,8 +1281,8 @@ replenish_food:                        ; >9924
        ; AND A                         ; AND A             ; 
        c    de,hl                      ; SBC HL,DE         ; end of list?
        jle  replenish_food_1           ; JR NC,$995B       ; jump if so
-       movb @player_room,a             ; LD A,($EA91)      ; 
-       cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
+;      movb @player_room,a             ; LD A,($EA91)      ;
+       cb   @player_room,@>01(ix)      ; CP (IX+$01)       ; in player room?
        jne  replenish_food_2           ; RET Z             ; return if so
        movb *ix,a                      ; LD A,(IX+$00)     ;
        ; AND A                         ; AND A             ; does food still exist?

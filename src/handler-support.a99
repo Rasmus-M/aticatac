@@ -720,7 +720,7 @@ auto_walk_step_1:
 control_player:                        ; >8d77
        .proc
        movb @player_room,a             ; LD A,($EA91)      ;
-       movb a,@some_room+>0001         ; LD ($EE59),A      ; blank entity?
+       movb a,@blank+>0001         ; LD ($EE59),A      ; blank entity?
        .push bc                        ; PUSH BC           ;
        .push de                        ; PUSH DE           ;
        .push hl                        ; PUSH HL           ;
@@ -1613,7 +1613,7 @@ loc_95b9:                              ; >95b9
        .ifeq hw_sprites,1
        .push ix
        mov  hl,ix
-       bl   @save_and_set_entity_attrs_as_bgrnd
+       bl   @set_entity_attrs_as_bgrnd
        bl   @ti_upload_sprite_entity_area
        .pop ix
        .endif

@@ -233,7 +233,7 @@ food_end:                              ; >edd8
        byte >00,>00,>00,>00,>00,>00,>00,>00
 
 * Data block at ee58
-some_room:                             ; >ee58
+blank:                                 ; >ee58
        byte >00,>00,>00,>00,>00,>00,>00,>00
 
 * Data block at ee60

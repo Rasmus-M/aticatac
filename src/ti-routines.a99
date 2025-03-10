@@ -1229,6 +1229,9 @@ ti_wait_fire_1:
        li   r0,KEY_FI
        bl   @ti_check_key
        jne  ti_wait_fire_2
+       li   r0,KEY_0
+       bl   @ti_check_key
+       jne  ti_wait_fire_2
        li   r0,KEY_EN
        bl   @ti_check_key
        jeq  ti_wait_fire_1
