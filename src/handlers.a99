@@ -411,7 +411,10 @@ redraw_entity_and_attrs:               ; >8e8e
        bl   @redraw_entity             ; CALL $9FCA        ; draw entity to display (no attrs)
        b    @set_entity_attrs_branch   ; JP $A01A          ; set attrs covering previous and new position
 
+*********************************************************************
+*
 * This entry point is used by the routines at #R$8a1e, #R$8ed7 and #R$98c8.
+*
 player_dead:                           ; >8ea0
        movb @lives,a                   ; LD A,($5E21)      ;
        ; AND A                         ; AND A             ; no lives left?

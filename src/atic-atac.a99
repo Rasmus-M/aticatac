@@ -1627,8 +1627,9 @@ loc_a2f2:                              ; >a2f2
        movb @c,a                       ; LD A,C            ; 
        ; AND A                         ; AND A             ; life to show?
        jeq  loc_a2fd                   ; JR Z,$A2FD        ; jump if not
-       bl   @draw_entity               ; CALL $9F4A        ; draw player character
+       bl   @draw_entity_as_bgrnd      ; CALL $9F4A        ; draw player character
 loc_a2fd:                              ; >a2fd
+       bl   @ti_upload_sprite_entity_area
 ;      movb @>03(ix),a                 ; LD A,(IX+$03)     ;
        ab   @bytes+>10,@>03(ix)        ; ADD A,$10         ; offset to next life position
 ;      movb a,@>03(ix)                 ; LD (IX+$03),A     ;
