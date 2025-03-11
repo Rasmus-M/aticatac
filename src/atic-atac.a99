@@ -160,7 +160,6 @@ loc_7c73:                              ; >7c73
       bl   @ti_display_off
       b    @start_game                ;
 !
-
        li   hl,menu_attrs              ; LD HL,$7CEA       ;
        movb @bytes+>03,b               ; LD B,$03          ; 
        movb @c,a                       ; LD A,C            ; 
@@ -179,7 +178,7 @@ loc_7c73:                              ; >7c73
 !      abs  @redraw_menu_selections
        jeq  !
        li   hl,>1058
-       li   bc,>0e68
+       li   bc,>0e78
        bl   @ti_upload_specified_area
        clr  @redraw_menu_selections
 !
@@ -708,6 +707,7 @@ draw_chicken_5:                        ; >8c26
 * 
 * Used by the routine at #R$8e26.
 game_over:                             ; >8c35
+       bl   @mute_sound
        .ifeq hw_sprites,1
        bl   @ti_reset_sprite_attr_table
        .endif
@@ -1167,6 +1167,7 @@ loc_96e1:                              ; >96e1
 *
 * This entry point is used by the routine at #R$7e13.
 game_complete:                         ; >96ec
+       bl   @mute_sound
        .ifeq hw_sprites,0
        li   hl,player                  ; LD HL,$EA90       ; congratulate player on completion
        bl   @draw_entity_hl_as_bgrnd   ; CALL $95CC        ; undraw player

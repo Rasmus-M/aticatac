@@ -1367,7 +1367,9 @@ drop_item:                             ; >9358
 ;      .push de                        ; PUSH DE           ;
 ;      .pop ix                         ; POP IX            ;
        mov  de,ix
-       bl   @draw_entity               ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl   @draw_entity_as_bgrnd      ; CALL $9F4A        ; draw entity graphic (no attrs)
+       bl   @set_entity_attrs_as_bgrnd
+       bl   @ti_upload_sprite_entity_area
        .pop ix                         ; POP IX            ;
 drop_item_1:
        .endproc                        ; RET               ;
@@ -1689,6 +1691,7 @@ print_clock_branch:
 * Used by the routine at #R$91bc.
 *
 chk_trap_exit:                         ; >9731
+       bl   @mute_sound
        li   bc,>1818                   ; LD BC,$1818       ; 24x24
        bl   @check_exit                ; CALL $90CC        ; fallen into trap door?
        joc  trap_exit                  ; JP NC,$91FE       ; jump if not
@@ -1698,10 +1701,12 @@ trap_exit:
        bl   @ti_display_off
        bl   @ti_reset_sprite_attr_table
        bl   @clear_play_area           ; CALL $8093        ; clear screen and attrs of play area
-       movb @bytes+>96,a               ; LD A,$96          ; room 150 is trap door tunnel
+        movb @bytes+>96,a               ; LD A,$96          ; room 150 is trap door tunnel
        .push ix                        ; PUSH IX           ;
        bl   @draw_room_a               ; CALL $9BF1        ; draw trap door lines
        .pop ix                         ; POP IX            ;
+       clr  a
+       bl   @ti_set_border_color
        bl   @ti_upload_zx_screen
        movb @bytes+>40,b               ; LD B,$80          ; 128 frames of tunnel animation. RM: Changed
 trap_exit_1:                           ; >9748
@@ -1735,7 +1740,7 @@ trap_exit_3:                           ; >9762
        .pop bc                         ; POP BC            ;
        bl   @ti_upload_zx_attributes
        bl   @ti_display_on
-       sb   one,b                      ; DJNZ $9748        ; loop until end of effect
+        sb   one,b                      ; DJNZ $9748        ; loop until end of effect
        jne  trap_exit_1                ;
        b    @change_room_branch        ; JP $9117          ; move player to room linked to entity (usually door)
 

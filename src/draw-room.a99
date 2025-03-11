@@ -112,6 +112,10 @@ draw_room_frame:                       ; >9bea
 draw_room_a:                           ; >9bf1
        .proc
        seto @room_data_rom_bank
+!      clr  @is_trap
+       cb   a,@bytes+>96
+       jne  !
+       seto @is_trap
 !      li   bc,room_attrs              ; LD BC,$A854       ; room attr colour and style (0-B)
        movb a,@l                       ; LD L,A            ;
        sb   h,h                        ; LD H,$00          ;
@@ -193,7 +197,17 @@ loc_9c56:                              ; >9c56
        bl   @draw_line_bc_de           ; CALL $9C79        ; draw line from (B,C) to (D,E)
        .pop hl                         ; POP HL            ;
        .pop bc                         ; POP BC            ;
+       abs  @is_trap
+       jeq  loc_9c43                   ; JR $9C43          ; next target point
+       movb @zx_frames,a
+       andi a,>0400
+       jeq  !
+       li   a,>7f00
+!      bl   @ti_set_border_color
+       ab   one,@zx_frames
        jmp  loc_9c43                   ; JR $9C43          ; next target point
+is_trap:
+       data 0
 *// draw_room_frame
 
 *********************************************************************

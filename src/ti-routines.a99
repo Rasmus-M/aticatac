@@ -236,6 +236,7 @@ ti_display_on:
 *
 ti_set_border_color:
        .proc
+       srl  a,8
        movb @ti_colors(a),r0
        srl  r0,12
        ori  r0,>0700
