@@ -765,6 +765,7 @@ reset_game_state:                      ; >8d61
 change_room:                           ; >9117
        .proc
 change_room_branch:
+       bl   @mute_sound
        .ifeq hw_sprites,1
        bl   @ti_close_sprite_attr_table
        .endif

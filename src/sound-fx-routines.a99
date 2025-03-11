@@ -1,82 +1,14 @@
 *********************************************************************
 *
-* Mute sound
-*
-mute_sound:
-       li   r0,mute_table              ; Mute all
-       li   r2,4
-mute_sound_1:
-       movb *r0+,@sound_entity
-       dec  r2
-       jne  mute_sound_1
-       clr  @snd_channel_1
-       clr  @snd_channel_2
-       clr  @snd_channel_3
-       clr  @snd_channel_4
-       clr  @snd_track_1
-       clr  @snd_track_2
-       clr  @snd_track_3
-*      Return
-       rt
-mute_table:
-       byte >9f, >bf, >df, >ff
-*// mute_sound
-
-*********************************************************************
-*
-* Play shot
-*
-play_shot_1:
-       .proc
-       li   r0,snd_shot_1
-       li   r1,snd_channel_4
-       bl   @play_snd
-       .endproc
-*// play_shot_1
-
-*********************************************************************
-*
-* Play shot
-*
-play_shot_2:
-       .proc
-       li   r0,snd_shot_2
-       li   r1,snd_channel_4
-       bl   @play_snd
-       .endproc
-*// play_shot_2
-
-*********************************************************************
-*
-* Play shot
-*
-play_shot_3:
-       .proc
-       li   r0,snd_shot_3
-       li   r1,snd_channel_4
-       bl   @play_snd
-       .endproc
-*// play_shot_3
-
-*********************************************************************
-*
-* Play deposit
-*
-play_deposit:
-       .proc
-       li   r0,snd_deposit
-       li   r1,snd_channel_2
-       li   r2,C4
-       bl   @play_snd
-       .endproc
-*// play_deposit
-
-*********************************************************************
-*
 * Routine at a3a8
 *
 * Used by the routines at #R$9731, #R$a41b, #R$a427, #R$a438 and #R$a445.
-click_sound:                                 ; >a3a8
+trap_sound:                                 ; >a3a8
+       .proc
+       li   r0,snd_trap
+       li   r1,snd_channel_1
+       bl   @play_snd
+       .endproc
 ;       movb one,@c                     ; LD C,$01          ; length 1 for a short click
 ;* This entry point is used by the routines at #R$a3c2, #R$a3c7, #R$a3e0,
 ;* #R$a3ef, #R$a408, #R$a445, #R$a48b and #R$a4b0.
@@ -97,26 +29,41 @@ click_sound:                                 ; >a3a8
 ;       .pop bc                         ; POP BC            ;
 ;       sb   one,@c                     ; DEC C             ;
 ;       jne  beep                       ; JR NZ,$A3AA       ; freq B (low is higher), length C
-       rt                              ; RET               ;
+;       rt                              ; RET               ;
 
 * This entry point is used by the routine at #R$9326.
 inventory_sound:                       ; >a3bd
+       .proc
+       li   r0,snd_inventory
+       li   r1,snd_channel_1
+       bl   @play_snd_with_note
+       .endproc
 ;       li   bc,>4040                   ; LD BC,$4040       ;
 ;       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-       rt
+;       rt
 
 * Routine at a3c2
 *
 * Used by the routine at #R$9358.
 drop_sound:                            ; >a3c2
+       .proc
+       li   r0,snd_drop
+       li   r1,snd_channel_1
+       bl   @play_snd_with_note
+       .endproc
 ;       li   bc,>2080                   ; LD BC,$2080       ; long high beep
 ;       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-       rt
+;       rt
 
 * play walk clicks if due
 *
 * Used by the routines at #R$80d2, #R$8dc4 and #R$8e26.
 walk_sound:                            ; >a3c7
+       .proc
+       li   r0,snd_walk
+       li   r1,snd_channel_4
+       bl   @play_snd_with_note
+       .endproc
 ;       li   hl,walk_counter            ; LD HL,$5E2F       ;
 ;       ab   one,*hl                    ; INC (HL)          ;
 ;       movb *hl,a                      ; LD A,(HL)         ;
@@ -136,12 +83,12 @@ walk_sound:                            ; >a3c7
 ;!
 ;       li   bc,>6004                   ; LD BC,$6004       ; low beep
 ;       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
-       rt
+;       rt
 
 ;* Routine at a3e0
 ;*
 ;* Used by the routine at #R$8c8c.
-start_beep:                            ; >a3e0
+score_sound:                            ; >a3e0
 ;       li   bc,>8060                   ; LD BC,$8060       ; long low beep
 ;       jmp  beep                       ; JR $A3AA          ; freq B (low is higher), length C
        rt
@@ -150,8 +97,13 @@ start_beep:                            ; >a3e0
 *
 * Used by the routines at #R$85b2 and #R$988b.
 touching_sound:                        ; >a3e5
+       .proc
+       li   r0,snd_touching
+       li   r1,snd_channel_2
+       bl   @play_snd_with_note
+       .endproc
 ;       li   bc,>6410                   ; LD BC,$6410       ;
-       rt
+;       rt
 
 *This entry point is used by the routines at #R$a403 and #R$a485.
 queue_sound:                           ; >a3e8
@@ -159,7 +111,7 @@ queue_sound:                           ; >a3e8
 ;       movb b,*hl                      ; LD (HL),B         ; blank graphic with required sound handler (64 or 65)
 ;       inc  hl                         ; INC HL            ;
 ;       movb @c,*hl                     ; LD (HL),C         ; effect counter
-       rt                              ; RET               ;
+;       rt                              ; RET               ;
 
 * play next note of sound effect
 h_sound_effect:                        ; >a3ef
@@ -176,15 +128,20 @@ h_sound_effect:                        ; >a3ef
 * This entry point is used by the routines at #R$a408 and #R$a48b.
 clear_sound:                           ; >a3fe
 ;      sb   *ix,*ix                    ; LD (IX+$00),$00   ;
-       rt                              ; RET               ;
+;      rt                              ; RET               ;
 
 * room entry sound effect
 *
 * Used by the routine at #R$9117.
 entry_sound:                           ; >a403
+       .proc
+       li   r0,snd_entry
+       li   r1,snd_channel_2
+       bl   @play_snd_with_note
+       .endproc
 ;       li   bc,>650a                   ; LD BC,$650A       ;
 ;       jmp  queue_sound                ; JR $A3E8          ;
-       rt
+;       rt
 
 * play next note of sound effect
 h_sound_effect2:                       ; >a408
@@ -192,9 +149,9 @@ h_sound_effect2:                       ; >a408
 ;       jeq  clear_sound                ; JR Z,$A3FE        ;
 ;       movb @>01(ix),a                 ; LD A,(IX+$01)     ; also used for freq and length
 ;       movb a,@c                       ; LD C,A            ;
-;       sla  a,1                        ; RLCA              ; TODO: check code.
-;       sla  a,1                        ; RLCA              ; TODO: check code.
-;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       sla  a,1                        ; RLCA              ;
+;       sla  a,1                        ; RLCA              ;
+;       sla  a,1                        ; RLCA              ;
 ;       inv  a                          ; CPL               ;
 ;       li   r0,64*256                  ; XOR $40           ;
 ;       xor  r0,a                       ;
@@ -206,6 +163,11 @@ h_sound_effect2:                       ; >a408
 *
 * Used by the routine at #R$8134.
 axe_sound:                             ; >a41b
+       .proc
+       li   r0,snd_axe
+       li   r1,snd_channel_3
+       bl   @play_snd_with_note
+       .endproc
 ;       movb @bytes+>0c,d               ; LD D,$0C          ;
 ;loc_a41d:                              ; >a41d
 ;       movb d,a                        ; LD A,D            ;
@@ -214,52 +176,67 @@ axe_sound:                             ; >a41b
 ;       bl   @click                    ; CALL $A3A8        ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  loc_a41d                   ; JR NZ,$A41D       ;
-       rt                              ; RET               ;
+;       rt                              ; RET               ;
 
 * play sword throw sound
 *
 * Used by the routine at #R$8283.
 sword_sound:                           ; >a427
+       .proc
+       li   r0,snd_sword
+       li   r1,snd_channel_3
+       bl   @play_snd_with_note
+       .endproc
 ;       movb @bytes+>10,d               ; LD D,$10          ;
 ;loc_a429:                              ; >a429
 ;       movb d,a                        ; LD A,D            ;
-;       sla  a,1                        ; RLCA              ; TODO: check code.
-;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       sla  a,1                        ; RLCA              ;
+;       sla  a,1                        ; RLCA              ;
 ;       li   r0,7*256                   ; XOR $07           ;
 ;       xor  r0,a                       ;
-;       sla  a,1                        ; RLCA              ; TODO: check code.
-;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       sla  a,1                        ; RLCA              ;
+;       sla  a,1                        ; RLCA              ;
 ;       movb a,b                        ; LD B,A            ; set freq
 ;       bl   @click                    ; CALL $A3A8        ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  loc_a429                   ; JR NZ,$A429       ;
-       rt                              ; RET               ;
+;       rt                              ; RET               ;
 
 * play fireball throw sound
 *
 * Used by the routine at #R$814b.
 fireball_sound:                        ; >a438
+       .proc
+       li   r0,snd_fireball
+       li   r1,snd_channel_3
+       bl   @play_snd_with_note
+       .endproc
 ;       movb @bytes+>08,d               ; LD D,$08          ;
 ;loc_a43a:                              ; >a43a
 ;       movb d,a                        ; LD A,D            ;
 ;       inv  a                          ; CPL               ;
-;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       sla  a,1                        ; RLCA              ;
 ;       movb a,b                        ; LD B,A            ; set freq
 ;       bl   @click                    ; CALL $A3A8        ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  loc_a43a                   ; JR NZ,$A43A       ;
-       rt                              ; RET               ;
+;       rt                              ; RET               ;
 
 * weapon disappearing sound
 *
 * Used by the routine at #R$81f0.
 weapon_pop_sound:                       ; >a445
+       .proc
+       li   r0,snd_weapon_pop
+       li   r1,snd_channel_1
+       bl   @play_snd_with_note
+       .endproc
 ;       movb @num_creatures,a           ; LD A,($5E25)      ; number of creatures processed this frame
 ;       ab   one,a                      ; INC A             ;
-;       sla  a,1                        ; RLCA              ; TODO: check code.
-;       sla  a,1                        ; RLCA              ; TODO: check code.
-;       sla  a,1                        ; RLCA              ; TODO: check code.
-;       sla  a,1                        ; RLCA              ; TODO: check code. * 16
+;       sla  a,1                        ; RLCA              ;
+;       sla  a,1                        ; RLCA              ;
+;       sla  a,1                        ; RLCA              ;
+;       sla  a,1                        ; RLCA              ; * 16
 ;       socb @bytes+>0f,a               ; OR $0F            ; + 15
 ;       andi a,>7f00                    ; AND $7F           ; 7-bit
 ;       movb a,d                        ; LD D,A            ;
@@ -278,13 +255,18 @@ weapon_pop_sound:                       ; >a445
 ;       rt                              ;
 ;!
 ;       jmp  loc_a452                   ; JR $A452          ;
-       rt
+;       rt
 
 * This entry point is used by the routine at #R$8cb7.
 appear_sound:                          ; >a45f
+       .proc
+       li   r0,snd_appear
+       li   r1,snd_channel_4
+       bl   @play_snd_with_note
+       .endproc
 ;       movb @>06(ix),a                 ; LD A,(IX+$06)     ; player appearance sound
 ;       inv  a                          ; CPL               ;
-;       sla  a,1                        ; RLCA              ; TODO: check code.
+;       sla  a,1                        ; RLCA              ; 
 ;       andi a,>3f00                    ; AND $3F           ;
 ;       socb @bytes+>40,a               ; OR $40            ;
 ;       movb a,b                        ; LD B,A            ;
@@ -294,6 +276,11 @@ appear_sound:                          ; >a45f
 
 * This entry point is used by the routines at #R$915f and #R$91bc.
 door_sound:                            ; >a46e
+       .proc
+       li   r0,snd_door
+       li   r1,snd_channel_4
+       bl   @play_snd_with_note
+       .endproc
 ;       li   bc,>0830                   ; LD BC,$0830       ; 48 bytes * 8 bits to output
 ;       li   hl,>0000                   ; LD HL,$0000       ; ROM start
 ;loc_a474:                              ; >a474
@@ -310,21 +297,20 @@ door_sound:                            ; >a46e
 ;       .pop bc                         ; POP BC            ;
 ;       sb   one,@c                     ; DEC C             ; done all bytes?
 ;       jne  loc_a474                   ; JR NZ,$A474       ; jump back if not
-       rt                              ; RET               ;
+;       rt                              ; RET               ;
 
 * Routine at a485
 *
 * Used by the routine at #R$8c63.
 eat_sound:                             ; >a485
        .proc
-       li   r0,snd_deposit
-       li   r1,snd_channel_2
-       li   r2,C4
-       bl   @play_snd
+       li   r0,snd_eat
+       li   r1,snd_channel_1
+       bl   @play_snd_with_note
        .endproc
 ;       li   bc,>a010                   ; LD BC,$A010       ; A0 is blank graphic with food-eaten handler (below)
 ;       b    @queue_sound               ; JP $A3E8          ;
-       rt
+;       rt
 
 * eaten food sound effect handler
 h_food_eaten:                          ; >a48b
@@ -348,6 +334,11 @@ h_food_eaten:                          ; >a48b
 *
 * Used by the routine at #R$81f0.
 bounce_sound:                          ; >a4b0
+       .proc
+       li   r0,snd_bounce
+       li   r1,snd_channel_3
+       bl   @play_snd_with_note
+       .endproc
 ;       movb @bytes+>40,d               ; LD D,$40          ;
 ;       sb   one,d                      ; DEC D             ;
 ;       jne  !                          ; RET Z             ;
@@ -360,4 +351,4 @@ bounce_sound:                          ; >a4b0
 ;       movb a,b                        ; LD B,A            ;
 ;       movb @bytes+>04,@c              ; LD C,$04          ;
 ;       b    @beep                      ; JP $A3AA          ; freq B (low is higher), length C
-       rt
+;       rt

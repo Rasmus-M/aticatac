@@ -248,7 +248,7 @@ h_player_appear_3:                     ; >8d20
        .ifeq hw_sprites,0
        movb a,@entity_flags(ix)        ; LD (IX+$05),A     ; Restore flags
        .endif
-;      b    @appear_sound              ; JP $A45F          ; player appearance sound
+       bl   @appear_sound              ; JP $A45F          ; player appearance sound
        jmp  h_player_appear_5                              ; appear_sound would return
 h_player_appear_4:                     ; >8d32
        .ifeq hw_sprites,1
@@ -281,7 +281,7 @@ flash_score:                           ; >8c8c             ;
        andi a,>0400                    ; AND $0F           ; 16th frame?
        .endif
        jne  !                          ; CALL Z,$A3E0      ; call if so (beep)
-       bl   @start_beep                ;
+       bl   @score_sound               ;
        jmp  loc_8ca7                   ;                   ; Added
 !
        li   hl,>50C8                   ; LD HL,$50C8       ;

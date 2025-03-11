@@ -1,5 +1,29 @@
 *********************************************************************
 *
+* Mute sound
+*
+mute_sound:
+       li   r0,mute_table              ; Mute all
+       li   r2,4
+mute_sound_1:
+       movb *r0+,@sound
+       dec  r2
+       jne  mute_sound_1
+       clr  @snd_channel_1
+       clr  @snd_channel_2
+       clr  @snd_channel_3
+       clr  @snd_channel_4
+       clr  @snd_track_1
+       clr  @snd_track_2
+       clr  @snd_track_3
+*      Return
+       rt
+mute_table:
+       byte >9f, >bf, >df, >ff
+*// mute_sound
+
+*********************************************************************
+*
 * Play sound
 *
 * r0: Address of sound to play
@@ -8,6 +32,9 @@
 *
 * Modifies r0-r3
 *
+play_snd_with_note:
+       mov  *r0+,r2
+       jlt  play_snd_4
 play_snd:
        .push r3
        mov  r0,*r1+                    ; Init address
@@ -39,6 +66,7 @@ play_snd_1:
        movb r3,@sound
 play_snd_3:
        .pop r3
+play_snd_4:
        rt
 *// play_snd
 

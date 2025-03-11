@@ -1712,7 +1712,7 @@ trap_exit_2:                           ; >974c
        movb b,a                        ; LD A,B            ;
        inv  a                          ; CPL               ; ~frame counter is effect frequency
        movb a,b                        ; LD B,A            ;
-       bl   @click_sound               ; CALL $A3A8        ; short beep
+       bl   @trap_sound               ; CALL $A3A8        ; short beep
        .pop bc                         ; POP BC            ;
        ab   one,@zx_frames                                 ; Added to make time pass
        movb @zx_frames,a               ; LD A,($5C78)      ;
