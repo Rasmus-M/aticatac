@@ -1628,12 +1628,12 @@ loc_95b9:                              ; >95b9
 * Used by the routine at #R$7ec5.
 clock_tick:                            ; >95da
        movb @zx_frames,a               ; LD A,($5C78)      ;
-       cb   a,@bytes+>32               ; CP $32            ; 1 second elapsed?
+       cb   a,@bytes+>26               ; CP $32            ; 1 second elapsed? RM: Adjusted
        jhe  !                          ; RET C             ; return if not
        rt                              ;
 *
 !      .proc
-       sb   @bytes+>32,a               ; SUB $32           ; subtract 1 second
+       sb   @bytes+>26,a               ; SUB $32           ; subtract 1 second RM: Adjusted
        movb a,@zx_frames               ; LD ($5C78),A      ; store back [this keeps LSB in 0-49 range!]
        li   hl,clock_seconds           ; LD HL,$5E3F       ;
        movb *hl,a                      ; LD A,(HL)         ;
