@@ -473,9 +473,9 @@ loc_7e55:                              ; >7e55
        bl   @ti_upload_zx_screen
        .else
        bl   @ti_close_sprite_attr_table
-       bl   @module_player
        bl   @ti_update_sprite_pattern_usage_table
        .endif
+       bl   @module_player
        bl   @ti_check_quit
        b    @main_loop                 ; JP $7DC3          ;
 
