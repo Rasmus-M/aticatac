@@ -662,7 +662,7 @@ h_dracula:                             ; >8906
        jne  !                          ; CALL Z,$8A1E      ; call if so (reduce health by 8)
        bl   @damage_8                  ;
 !
-       li   de,zx_screen+>068a         ; LD DE,$468A       ; yellow crucafix object
+       li   de,>468a                   ; LD DE,$468A       ; yellow crucifix object
        bl   @check_carrying            ; CALL $9273        ; is player carrying crucafix?
        jne  loc_8931                   ; JR NZ,$8931       ; jump if not
        movb @player_x,@e               ; LD DE,($EA93)     ; current player position

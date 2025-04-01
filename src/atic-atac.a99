@@ -926,7 +926,7 @@ check_pause:                           ; >9489             ;
 ;!
        li   r0,KEY_P
        bl   @ti_check_key
-       jeq  check_pause_3
+       jeq  check_pause_4
 ;loc_9497:                              ; >9497
 ;       equ  $
 ;       movb @bytes+>7e,a               ; LD A,$7E          ;
@@ -953,11 +953,19 @@ check_pause_1:
        li   r0,KEY_P
        bl   @ti_check_key
        jne  check_pause_1
+       bl   @mute_sound
+       clr  r0
+!      dec  r0
+       jne -!
 check_pause_2:
        li   r0,KEY_P
        bl   @ti_check_key
        jeq  check_pause_2
 check_pause_3:
+       li   r0,KEY_P
+       bl   @ti_check_key
+       jne  check_pause_3
+check_pause_4:
        .endproc                        ; RET               ;
 
 *********************************************************************
