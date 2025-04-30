@@ -297,7 +297,7 @@ add_hl_a:                              ; >926c
 * return signed top nibble
 *
 * Used by the routine at #R$8eef.
-get_signed_b7_4:                       ; >8f80
+div_16_signed:                         ; >8f80
 ;       ; AND A                         ; AND A             ; positive?
 ;       ; JP P,$8F8F                    ; JP P,$8F8F        ; jump if so
 ;       movb a,a
@@ -319,7 +319,8 @@ get_signed_b7_4:                       ; >8f80
 ;       ; RRCA                          ; RRCA              ; high nibble to low nibble
 ;       srl  a,4
 ;       andi a,>0f00                    ; AND $0F           ; keep low nibble
-       sra  a,4                        ; TODO: not sure
+       sra  a,4                        ;
+       andi a,>ff00                    ; Required for chk_wall_move
        rt                              ; RET               ;
 
 *********************************************************************

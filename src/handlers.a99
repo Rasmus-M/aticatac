@@ -341,8 +341,8 @@ h_death_1:                             ; >8d5b
 * knight character handler
 *
 h_knight:                              ; >8e26
-       li   bc,>2020                   ; LD BC,$2020       ; walk deceleration
-       li   de,>0303                   ; LD DE,$0303       ; walk acceleration
+       li   bc,>2020                   ; LD BC,$2020       ; walk deceleration (max velocities)
+       li   de,>0303                   ; LD DE,$0303       ; walk acceleration (decelerations)
        li   hl,>0707                   ; LD HL,$0707       ; unused
        bl   @control_player            ; CALL $8D77        ; read controls and apply player movement
        movb @>06(ix),@e                ; LD E,(IX+$06)     ; current x velocity
@@ -403,7 +403,9 @@ entry_from_wizard_and_serf:            ; >8e78
        movb @player_energy,a           ; LD A,($5E28)      ;
        sb   one,a                      ; DEC A             ; reduce health by 1
        jeq  player_dead                ; JR Z,$8EA0        ;
+       .ifeq can_die,1
        movb a,@player_energy           ; LD ($5E28),A      ;
+       .endif
        bl   @draw_chicken              ; CALL $8B8A        ; draw chicken energy bar
 * This entry point is used by the routines at #R$81f0, #R$8301, #R$845f,
 * #R$85f7 and #R$8787.
@@ -637,7 +639,7 @@ loc_88d7:                              ; >88d7
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; if leaf in player room?
        jne  loc_88f0                   ; JR NZ,$88F0       ;
-       bl   @draw_entity               ; CALL $9F4A        ; undraw leaf
+       bl   @draw_entity               ; CALL $9F4A        ; undraw leaf TODO
 loc_88f0:                              ; >88f0
        .pop ix                         ; POP IX            ;
        movb @bytes+>6b,a               ; LD A,$6B          ; room 6B
@@ -706,7 +708,7 @@ loc_8952:                              ; >8952
        movb a,@c                       ; LD C,A            ;
        bl   @get_room_style            ; CALL $897D        ; get style of room in A, returns style (0-B)
        cb   a,@bytes+>03               ; CP $03            ; non-square room?
-       jl   !                          ; JP NC,$8940       ; jump if so (ignore)
+       jl   !                          ; JP NC,$8940       ; jump if so (ignore) TODO
        b    @loc_8940                  ;
 !
        movb @player_room,a             ; LD A,($EA91)      ;
@@ -1464,7 +1466,7 @@ h_hunchback:                           ; >8aff
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jne  loc_8b3c                   ; JR NZ,$8B3C       ; jump if not
-       bl   @draw_entity               ; CALL $9F4A        ; undraw item
+       bl   @draw_entity               ; CALL $9F4A        ; undraw item TODO
 loc_8b3c:                              ; >8b3c
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; remove item
        .pop ix                         ; POP IX            ;
@@ -1856,7 +1858,9 @@ loc_989e:                              ; >989e
        .endif
 loc_98b1:                              ; >98b1
 ;      movb @player_energy,a           ; LD A,($5E28)      ;
+       .ifeq can_die,1
        sb   one,@player_energy         ; DEC A             ;
+       .endif
 ;      movb a,@player_energy           ; LD ($5E28),A      ;
        jne  !                          ; JP Z,$98C8        ;
        b    @mushroom_death            ;

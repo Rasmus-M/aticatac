@@ -691,7 +691,9 @@ damage_8:                              ; >8a1e
 
 * This entry point is used by the routine at #R$8a15.
 update_energy:                         ; >8a25
+       .ifeq can_die,1
        movb a,@player_energy           ; LD ($5E28),A      ;
+       .endif
        b    @draw_chicken_branch       ; JP $8B8A          ; draw chicken energy bar
 
 * This entry point is used by the routine at #R$8a15.
@@ -720,9 +722,9 @@ auto_walk_step_1:
 control_player:                        ; >8d77
        .proc
        movb @player_room,a             ; LD A,($EA91)      ;
-       movb a,@blank+>0001         ; LD ($EE59),A      ; blank entity?
-       .push bc                        ; PUSH BC           ;
-       .push de                        ; PUSH DE           ;
+       movb a,@blank+>0001             ; LD ($EE59),A      ; blank entity?
+       .push bc                        ; PUSH BC           ; acceleration (max velocities)
+       .push de                        ; PUSH DE           ; deceleration
        .push hl                        ; PUSH HL           ;
        bl   @auto_walk_step            ; CALL $8D6D        ; reduce auto-walk counter
        movb @>02(ix),a                 ; LD A,(IX+$02)     ;
@@ -731,7 +733,9 @@ control_player:                        ; >8d77
        bl   @save_entity               ; CALL $9FFB        ; save entity position for undraw
        bl   @read_controls             ; CALL $93BE        ; return controls in A (FUDLR order, negative logic)
        movb a,@c                       ; LD C,A            ; FUDLR
-       .pop hl                         ; POP HL            ;
+       .pop hl                         ; POP HL            ; Unused
+*      Set DE to required accelerations
+*      B is still max velocity x?, C is the control bits
        li   de,>0000                   ; LD DE,$0000       ; no movement yet
        movb @c,r0                      ; BIT 1,C           ; left pressed?
        andi r0,>0200                   ;
@@ -757,9 +761,9 @@ loc_8da8:                              ; >8da8
        neg a                           ; NEG               ; negate for up
        movb a,d                        ; LD D,A            ;
 loc_8db0:                              ; >8db0
-       .pop hl                         ; POP HL            ; DE value from function entry
+       .pop hl                         ; POP HL            ; DE value from function entry (decelerations)
        bl   @slow_player               ; CALL $8F96        ; decelerate player movement
-       .pop hl                         ; POP HL            ; BC value from function entry
+       .pop hl                         ; POP HL            ; BC value from function entry (max velocities)
        bl   @move_player               ; CALL $8EEF        ; apply player movement, including auto-walk
        bl   @chk_wall_move             ; CALL $8FCA        ; check if walls are blocking movement in DE
        bl   @check_doorway             ; CALL $957D        ; check if player is standing in a doorway
@@ -771,34 +775,45 @@ loc_8db0:                              ; >8db0
 * apply player movement, including auto-walk
 *
 * Used by the routine at #R$8d77.
+*
+* DE holds accelerations
+* HL holds max velocities
+*
 move_player:                           ; >8eef
        .proc
        movb @>02(ix),a                 ; LD A,(IX+$02)     ;
        andi a,>0f00                    ; AND $0F           ; auto-walk active?
        jne  auto_walk                  ; JR NZ,$8F35       ; jump if so
+*      Update x velocity
        movb @e,a                       ; LD A,E            ; x acceleration
        ab   @>06(ix),a                 ; ADD A,(IX+$06)    ; add x velocity
        jlt  loc_8F21                   ; JP M,$8F21        ; jump if moving left
+*      Moving right or still
        cb   a,@l                       ; CP L              ; max x velocity?
        jl   loc_8f01                   ; JR C,$8F01        ; jump if not
        movb @l,a                       ; LD A,L            ; limit velocity to max
+*      Both
 loc_8f01:                              ; >8f01
        movb a,@>06(ix)                 ; LD (IX+$06),A     ; update x velocity
+*      Update y velocity
        movb d,a                        ; LD A,D            ; y acceleration
        ab   @>07(ix),a                 ; ADD A,(IX+$07)    ; add y velocity
        jlt loc_8F2B                    ; JP M,$8F2B        ; jump if moving up
+*      Moving down or still
        cb   a,h                        ; CP H              ; max y velocity?
        jl   loc_8f0f                   ; JR C,$8F0F        ; jump if not
        movb h,a                        ; LD A,H            ; limit velocity to max
 loc_8f0f:                              ; >8f0f
        movb a,@>07(ix)                 ; LD (IX+$07),A     ; update y velocity
-       movb @>06(ix),a                 ; LD A,(IX+$06)     ;
-       bl   @get_signed_b7_4           ; CALL $8F80        ; return signed top nibble
-       movb a,@e                       ; LD E,A            ; x offset
-       movb @>07(ix),a                 ; LD A,(IX+$07)     ;
-       bl   @get_signed_b7_4           ; CALL $8F80        ; return signed top nibble
-       movb a,d                        ; LD D,A            ; y move offset
+*      Calculate movement
+       movb @>06(ix),a                 ; LD A,(IX+$06)     ; x velocity
+       bl   @div_16_signed             ; CALL $8F80        ; divide by 16
+       movb a,@e                       ; LD E,A            ; x move
+       movb @>07(ix),a                 ; LD A,(IX+$07)     ; y velocity
+       bl   @div_16_signed             ; CALL $8F80        ; divide by 16
+       movb a,d                        ; LD D,A            ; y move
        jmp  move_player_1              ; RET               ;
+*      Update x velocity - moving left
 loc_8f21:                              ; >8f21
        neg a                           ; NEG               ; abs
        cb   a,@l                       ; CP L              ; max x velocity?
@@ -807,6 +822,7 @@ loc_8f21:                              ; >8f21
 loc_8f27:                              ; >8f27
        neg a                           ; NEG               ; re-negate
        jmp  loc_8f01                   ; JR $8F01          ;
+*      Update y velocity - moving up
 loc_8f2b:                              ; >8f2b
        neg a                           ; NEG               ; abs
        cb   a,h                        ; CP H              ; max y velocity?
@@ -815,6 +831,7 @@ loc_8f2b:                              ; >8f2b
 loc_8f31:                              ; >8f31
        neg a                           ; NEG               ; re-negate
        jmp  loc_8f0f                   ; JR $8F0F          ;
+*      Auto walk
 auto_walk:                             ; >8f35
        movb @>06(ix),a                 ; LD A,(IX+$06)     ; x velocity
        ; AND A                         ; AND A             ; x movement?
@@ -845,6 +862,7 @@ loc_8f5c:                              ; >8f5c
        jeq  loc_8f50                   ; JR Z,$8F50        ; jump if not
        movb @b254,a                    ; LD A,$FE          ; walk up 2 pixels
        jmp  loc_8f50                   ; JR $8F50          ;
+
 * This entry point is used by the routine at #R$8d77.
 apply_move:                            ; >8f66
        movb @>02(ix),r0                ; BIT 4,(IX+$02)    ; x movement allowed?
@@ -868,6 +886,9 @@ move_player_1:
 * decelerate player movement
 *
 * Used by the routine at #R$8d77.
+*
+* HL holds decelerations
+*
 slow_player:                           ; >8f96
        movb @>02(ix),a                 ; LD A,(IX+$02)     ;
        andi a,>0f00                    ; AND $0F           ; is auto-walk active?
@@ -875,7 +896,8 @@ slow_player:                           ; >8f96
        movb @>06(ix),a                 ; LD A,(IX+$06)     ;
        ; AND A                         ; AND A             ; x movement?
        jeq  loc_8fad                   ; JR Z,$8FAD        ; jump if not
-       jlt loc_8Fbe                    ; JP M,$8FBE        ; jump if left
+       jlt  loc_8fbe                   ; JP M,$8FBE        ; jump if left
+*      Moving right
        sb   @l,a                       ; SUB L             ; decelerate
        jgt  loc_8faa                   ; JP P,$8FAA        ; jump if still positive
 stop_x:                                ; >8fa9
@@ -885,22 +907,25 @@ loc_8faa:                              ; >8faa
 loc_8fad:                              ; >8fad
        movb @>07(ix),a                 ; LD A,(IX+$07)     ;
        ; AND A                         ; AND A             ; y movement?
-       jeq slow_player_1                           ; RET Z             ; return if not
+       jeq  slow_player_1              ; RET Z             ; return if not
        jlt  loc_8fc4                   ; JP M,$8FC4        ; jump if moving up
+*      Moving down
        sb   h,a                        ; SUB H             ; decelerate
        jgt  loc_8FBA                   ; JP P,$8FBA        ; jump if still positive
 stop_y:                                ; >8fb9
        sb   a,a                        ; XOR A             ; clear auto-walk up/down
 loc_8fba:                              ; >8fba
        movb a,@>07(ix)                 ; LD (IX+$07),A     ; update y velocity
-       jmp  slow_player_1                            ; RET               ;
+       jmp  slow_player_1              ; RET               ;
+*      Moving left
 loc_8fbe:                              ; >8fbe
        ab   @l,a                       ; ADD A,L           ; decelerate
        jlt  loc_8faa                   ; JP M,$8FAA        ; jump if still negative
        jmp  stop_x                     ; JR $8FA9          ; stopped on x axis
+*      Moving up
 loc_8fc4:                              ; >8fc4
        ab   h,a                        ; ADD A,H           ; decelerate
-       jlt loc_8fba                    ; JP M,$8FBA        ; jump if negative
+       jlt  loc_8fba                   ; JP M,$8FBA        ; jump if negative
        jmp  stop_y                     ; JR $8FB9          ; stopped on y axis
 slow_player_1:
        rt                              ; OK
@@ -944,7 +969,7 @@ chk_walls:                             ; >8fe9
        neg a                           ; NEG               ; abs
 loc_8ff4:                              ; >8ff4
        cb   a,*hl                      ; CP (HL)           ; within room width?
-       jhe  chk_walls_1                ; RET NC            ; return if so
+       jhe  chk_walls_1                ; RET NC            ; return if not so
 *      y
        inc  hl                         ; INC HL            ; room_height
        movb d,a                        ; LD A,D            ; player y
@@ -953,8 +978,8 @@ loc_8ff4:                              ; >8ff4
        neg a                           ; NEG               ; abs
 loc_8fff:                              ; >8fff
        cb   a,*hl                      ; CP (HL)           ; within room height?
-       jhe  chk_walls_1                ; RET NC            ; return if so
-*      Clear bit
+       jhe  chk_walls_1                ; RET NC            ; return if not so
+*      No collision - clear bit
 ;       movb b,a                        ; LD A,B            ;
 ;       inv  a                          ; CPL               ;
 ;       movb @2(ix),r0
