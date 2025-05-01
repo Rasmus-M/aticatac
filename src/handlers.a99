@@ -639,7 +639,11 @@ loc_88d7:                              ; >88d7
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; if leaf in player room?
        jne  loc_88f0                   ; JR NZ,$88F0       ;
-       bl   @draw_entity               ; CALL $9F4A        ; undraw leaf TODO
+       bl   @save_entity
+       bl   @undraw_entity_as_bgrnd    ; CALL $9F4A        ; undraw leaf
+       .ifeq hw_sprites,1
+       bl   @ti_upload_sprite_entity_area
+       .endif
 loc_88f0:                              ; >88f0
        .pop ix                         ; POP IX            ;
        movb @bytes+>6b,a               ; LD A,$6B          ; room 6B
@@ -1466,7 +1470,11 @@ h_hunchback:                           ; >8aff
        movb @player_room,a             ; LD A,($EA91)      ;
        cb   a,@>01(ix)                 ; CP (IX+$01)       ; in player room?
        jne  loc_8b3c                   ; JR NZ,$8B3C       ; jump if not
-       bl   @draw_entity               ; CALL $9F4A        ; undraw item TODO
+       bl   @save_entity
+       bl   @undraw_entity_as_bgrnd    ; CALL $9F4A         undraw item TODO
+       .ifeq hw_sprites,1
+       bl   @ti_upload_sprite_entity_area
+       .endif
 loc_8b3c:                              ; >8b3c
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; remove item
        .pop ix                         ; POP IX            ;
@@ -1874,7 +1882,7 @@ loc_98b1:                              ; >98b1
 * Used by the routine at #R$988b.
 mushroom_death:                        ; >98c8
        bl   @undraw_entity_as_bgrnd    ; CALL $9F56       ;
-       .ifeq hw_sprites
+       .ifeq hw_sprites,1
        bl   @ti_upload_bgrnd_entity_area
        .endif
        sb   *ix,*ix                    ; LD (IX+$00),$00   ; remove mushroom

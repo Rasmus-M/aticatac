@@ -337,6 +337,8 @@ start_game:                            ; >7d9a
        bl   @place_key_pieces          ; CALL $94B6        ; set locations of ACG key pieces
        bl   @set_key_positions         ; CALL $98D2        ; set positions of red/green/cyan keys, and mummy
        bl   @randomise_doors           ; CALL $94F5        ; randomise which doors can open/close
+;      movb @hunchback+1,@player_room  ; Enable for testing
+;      movb @hunchback+1,@wine+1       ;
        bl   @prepare_player            ; CALL $9443        ; prepare player to spawn
        b    @enter_room                ; JP $9147          ; Will jump back to main_loop
 

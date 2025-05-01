@@ -193,8 +193,8 @@ n_sprite_patterns:
 hw_sprites:
        equ  1
 show_loading_screen:
-       equ  0
+       equ  1
 extra_player_move:
        equ  1
 can_die:
-       equ  0
+       equ  1
